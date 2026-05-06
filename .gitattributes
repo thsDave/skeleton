@@ -1,0 +1,29 @@
+# Normalizar saltos de línea al hacer commit (LF en el repositorio)
+* text=auto
+
+# PHP y archivos de texto -> LF en repo
+*.php text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.sql text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.htaccess text eol=lf
+.gitignore text eol=lf
+
+# Binarios -> sin conversión
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.zip binary
+*.rar binary

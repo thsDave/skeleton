@@ -1,0 +1,47 @@
+/* Ajustes personalizados para Skeleton MVC */
+
+/* Logo en sidebar para pantallas pequeñas */
+.logo-sm {
+  display: none;
+}
+
+.pc-sidebar.pc-sidebar-hide .logo-lg {
+  display: none;
+}
+
+.pc-sidebar.pc-sidebar-hide .logo-sm {
+  display: inline-block;
+}
+
+/* Layout principal */
+.pc-main-content {
+  min-height: 100vh;
+}
+
+/* Cards de perfil */
+.avtar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.avtar.avtar-xl {
+  width: 80px;
+  height: 80px;
+}
+
+.avtar.avtar-s {
+  width: 40px;
+  height: 40px;
+}
+
+/* Alertas */
+.alert {
+  border-radius: 8px;
+}
+
+/* Login */
+.auth-main.v1 {
+  min-height: 100vh;
+}

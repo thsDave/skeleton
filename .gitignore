@@ -1,0 +1,46 @@
+# ─── Entorno y credenciales ───────────────────────────────────
+.env
+.env.*
+*.env
+
+# ─── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+
+# ─── Caché y temporales ───────────────────────────────────────
+cache/
+tmp/
+temp/
+
+# ─── Dependencias ─────────────────────────────────────────────
+vendor/
+node_modules/
+
+# ─── Fuente de DashboardKit (assets ya copiados a public/assets) ──
+dashboardkit-src/
+
+# ─── Herramientas de desarrollo local ─────────────────────────
+.claude/
+.codex/
+.vscode/
+.idea/
+
+# ─── Sistema operativo ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Comprimidos y backups ────────────────────────────────────
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.bak
+*.sql.bak
+*.backup
+
+# ─── PHP ──────────────────────────────────────────────────────
+*.phar
+
+# NOTA: database/db_skeleton.sql SÍ se incluye en el repo
+# porque contiene solo la estructura base (sin datos reales sensibles).
