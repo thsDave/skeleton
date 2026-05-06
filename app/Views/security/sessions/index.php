@@ -1,7 +1,7 @@
 <?php
 $pageTitle  = __('security.sessions.title');
 $activeMenu = 'security_sessions';
-require dirname(__DIR__) . '/../../layouts/main.php';
+require dirname(dirname(__DIR__)) . '/layouts/main.php';
 ?>
 
 <div class="page-header">
@@ -115,7 +115,7 @@ require dirname(__DIR__) . '/../../layouts/main.php';
   </div>
 </div>
 
-<?php require dirname(__DIR__) . '/../../layouts/footer.php'; ?>
+<?php require dirname(dirname(__DIR__)) . '/layouts/footer.php'; ?>
 
 <script>
 (function () {
