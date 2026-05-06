@@ -15,10 +15,12 @@ class User extends Model
     {
         return 'SELECT u.*,
                        s.slug AS status_slug, s.name AS status_name,
-                       r.slug AS role_slug,   r.name AS role_name
+                       r.slug AS role_slug,   r.name AS role_name,
+                       COALESCE(lang.code, \'es\') AS lang_code
                 FROM ' . self::TABLE . ' u
-                LEFT JOIN tbl_statuses s ON u.status_id = s.id
-                LEFT JOIN tbl_roles    r ON u.role_id   = r.id';
+                LEFT JOIN tbl_statuses  s    ON u.status_id   = s.id
+                LEFT JOIN tbl_roles     r    ON u.role_id     = r.id
+                LEFT JOIN tbl_languages lang ON u.language_id = lang.id';
     }
 
     public function findByEmail(string $email): array|false
@@ -130,6 +132,16 @@ class User extends Model
         );
         $stmt->execute([$email, $excludeId]);
         return (bool)$stmt->fetch();
+    }
+
+    public function updatePreferences(int $id, string $theme, ?int $languageId): bool
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . '
+             SET theme_preference = ?, language_id = ?, updated_at = NOW()
+             WHERE id = ?'
+        );
+        return $stmt->execute([$theme, $languageId, $id]);
     }
 
     public function updatePassword(int $id, string $hashedPassword): bool

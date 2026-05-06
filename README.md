@@ -1,6 +1,8 @@
-# Skeleton MVC — PHP 8.3 + MySQL + DashboardKit
+# Skeleton MVC v3.0 — PHP 8.3 + MySQL + DashboardKit
 
 Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks externos. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
+
+**v3.0** agrega: modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema y manuales de usuario descargables.
 
 ---
 
@@ -12,7 +14,7 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 | MySQL 8 | Base de datos relacional |
 | PDO | Acceso a datos con consultas preparadas |
 | Bootstrap 5 | UI base (vía DashboardKit) |
-| DashboardKit Free | Plantilla visual admin |
+| DashboardKit Free | Plantilla visual admin (dark/light mode) |
 | DataTables 1.13 | Tablas con búsqueda y paginación (CDN) |
 | SweetAlert2 11 | Alertas y confirmaciones modales (CDN) |
 | Select2 4.1 | Dropdowns con búsqueda (CDN) |
@@ -39,66 +41,83 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 /
 ├── app/
 │   ├── Controllers/
-│   │   ├── AuthController.php       ← Login, logout
-│   │   ├── DashboardController.php  ← Dashboard principal
-│   │   ├── ProfileController.php    ← Mi Perfil + subida de foto
-│   │   ├── AccountController.php   ← Mi Cuenta (email + password)
-│   │   └── UsersController.php     ← CRUD de usuarios (solo admin)
+│   │   ├── AuthController.php              ← Login, logout
+│   │   ├── DashboardController.php         ← Dashboard principal
+│   │   ├── ProfileController.php           ← Mi Perfil + foto + preferencias
+│   │   ├── AccountController.php           ← Mi Cuenta (email + password)
+│   │   ├── UsersController.php             ← CRUD de usuarios (solo admin)
+│   │   ├── LanguagesController.php         ← CRUD de idiomas (solo admin)
+│   │   └── SystemInformationController.php ← Info del sistema + manuales
 │   ├── Models/
-│   │   ├── User.php                 ← CRUD usuarios con JOINs
-│   │   ├── Role.php                 ← Roles del sistema
-│   │   ├── Status.php               ← Estados del sistema
-│   │   └── LoginLog.php             ← Registro de intentos de login
+│   │   ├── User.php                        ← CRUD usuarios con JOINs
+│   │   ├── Language.php                    ← Idiomas del sistema
+│   │   ├── SystemSetting.php               ← Configuración del sistema
+│   │   ├── UserManual.php                  ← Manuales de usuario
+│   │   ├── Role.php                        ← Roles del sistema
+│   │   ├── Status.php                      ← Estados del sistema
+│   │   └── LoginLog.php                    ← Registro de intentos de login
 │   └── Views/
-│       ├── auth/
-│       │   └── login.php
-│       ├── dashboard/
-│       │   └── index.php
+│       ├── auth/login.php
+│       ├── dashboard/index.php
 │       ├── profile/
-│       │   ├── index.php
-│       │   └── edit.php             ← Incluye subida de foto de perfil
+│       │   ├── index.php            ← Datos personales + preferencias (tema/idioma)
+│       │   └── edit.php             ← Editar info + foto de perfil
 │       ├── account/
 │       │   ├── index.php
 │       │   ├── edit_email.php
 │       │   └── edit_password.php
 │       ├── users/
 │       │   ├── index.php            ← DataTables + inactivar con SweetAlert2
-│       │   ├── create.php           ← Select2 para rol/estado
-│       │   └── edit.php             ← Select2, contraseña opcional
+│       │   ├── create.php
+│       │   └── edit.php
+│       ├── languages/
+│       │   ├── index.php            ← Listado de idiomas (solo admin)
+│       │   ├── create.php
+│       │   └── edit.php
+│       ├── system_information/
+│       │   ├── index.php            ← Info del sistema + listado de manuales
+│       │   └── edit.php             ← Editar info (solo admin)
+│       ├── manuals/
+│       │   └── create.php           ← Subir manual (solo admin)
 │       ├── layouts/
-│       │   ├── header.php           ← <head> + CDN CSS (Select2, DataTables)
-│       │   ├── sidebar.php          ← Menú lateral (admin ve sección Administración)
-│       │   ├── topbar.php           ← Avatar de perfil + dropdown usuario
-│       │   ├── main.php             ← Incluye los 3 anteriores + abre pc-container
-│       │   ├── footer.php           ← CDN JS + SweetAlert2 flash + Select2 init
-│       │   └── alerts.php           ← Mensajes flash Bootstrap (compatibilidad)
-│       └── errors/
-│           └── 404.php
+│       │   ├── header.php           ← <head> + tema dinámico (light/dark)
+│       │   ├── sidebar.php          ← Menú con i18n + secciones por rol
+│       │   ├── topbar.php           ← Avatar + dropdown con i18n
+│       │   ├── main.php             ← Incluye los 3 anteriores
+│       │   ├── footer.php           ← JS + SweetAlert2 + tema dinámico
+│       │   └── alerts.php
+│       └── errors/404.php
 ├── config/
-│   ├── app.php                      ← URL base, timezone, timeouts, upload config
-│   └── database.php                 ← Host, puerto, BD, usuario, password
+│   ├── app.php                      ← URL, timezone, uploads (perfiles + manuales)
+│   └── database.php
 ├── core/
-│   ├── Router.php                   ← Enrutador front-controller con parámetros {id}
-│   ├── Controller.php               ← Clase base de controllers
-│   ├── Model.php                    ← Clase base de models
-│   ├── Database.php                 ← Singleton PDO
-│   ├── Auth.php                     ← Login, requireAuth, requireAdmin, isAdmin
-│   ├── Session.php                  ← Manejo de sesiones + timeout
-│   ├── CSRF.php                     ← Token CSRF para formularios POST
-│   ├── Validator.php                ← Validaciones de entrada
-│   ├── Redirect.php                 ← Redirecciones + mensajes flash
-│   └── Logger.php                   ← Logs de seguridad en /logs/
+│   ├── Router.php
+│   ├── Controller.php
+│   ├── Model.php
+│   ├── Database.php
+│   ├── Auth.php                     ← + theme(), lang(), updateSession()
+│   ├── Lang.php                     ← i18n: __($key), carga /lang/*.php
+│   ├── Session.php
+│   ├── CSRF.php
+│   ├── Validator.php
+│   ├── Redirect.php
+│   └── Logger.php
+├── lang/
+│   ├── es.php                       ← Español (idioma base)
+│   └── en.php                       ← English
 ├── database/
-│   ├── db_skeleton.sql                              ← Esquema base (001)
-│   └── 002_update_users_roles_statuses_profile_image.sql ← Migración v3.0
+│   ├── db_skeleton.sql                                        ← Esquema base (001)
+│   ├── 002_update_users_roles_statuses_profile_image.sql      ← Migración (002)
+│   └── 003_add_preferences_languages_system_info_manuals.sql  ← Migración v3.0
 ├── logs/
-│   └── security.log                 ← Log de eventos de seguridad
+│   └── security.log
 ├── public/
-│   ├── index.php                    ← Front controller (único punto de entrada)
-│   ├── .htaccess                    ← Rewrite rules + headers de seguridad
+│   ├── index.php                    ← Front controller + todas las rutas
+│   ├── .htaccess
 │   ├── uploads/
-│   │   └── profiles/                ← Fotos de perfil subidas por usuarios
-│   └── assets/                      ← CSS, JS, fonts e imágenes de DashboardKit
+│   │   ├── profiles/                ← Fotos de perfil
+│   │   └── manuals/                 ← Archivos de manuales (PDF/DOC/DOCX)
+│   └── assets/
 └── README.md
 ```
 
@@ -142,17 +161,27 @@ C:\laragon\www\template\
 7. Haz clic en **Importar** (o **Go**).
 8. Verifica que se hayan creado las tablas `tbl_users` y `tbl_login_logs`.
 
-### Paso 3 — Aplicar la migración v3.0
+### Paso 3 — Aplicar las migraciones
 
-Repite el proceso de importación con el segundo archivo SQL:
+Repite el proceso de importación con cada archivo SQL en orden:
 
+**Migración 002:**
 1. Con `db_skeleton` seleccionada, ve a **Importar**.
-2. Selecciona el archivo:
+2. Selecciona:
    ```
    C:\laragon\www\template\database\002_update_users_roles_statuses_profile_image.sql
    ```
 3. Haz clic en **Importar**.
-4. Verifica que existan las tablas `tbl_roles` y `tbl_statuses`, y que `tbl_users` tenga las columnas `role_id`, `status_id` y `profile_image`.
+4. Verifica que existan `tbl_roles`, `tbl_statuses` y que `tbl_users` tenga `role_id`, `status_id` y `profile_image`.
+
+**Migración 003 (v3.0 — nueva):**
+1. Con `db_skeleton` seleccionada, ve a **Importar**.
+2. Selecciona:
+   ```
+   C:\laragon\www\template\database\003_add_preferences_languages_system_info_manuals.sql
+   ```
+3. Haz clic en **Importar**.
+4. Verifica que existan `tbl_languages`, `tbl_system_settings`, `tbl_user_manuals` y que `tbl_users` tenga `theme_preference` y `language_id`.
 
 > **Alternativa rápida:** En el menú de Laragon, haz clic derecho → **Database** → **phpMyAdmin** para abrirlo directamente.
 
@@ -184,9 +213,9 @@ Edita `config/app.php` y ajusta la URL según tu entorno:
 
 > **Recomendación con Laragon:** Crea un virtual host haciendo clic derecho en Laragon → **www** → **template** → **Create website**. Laragon creará automáticamente el dominio `template.test`.
 
-### Paso 6 — Verificar permisos del directorio de uploads
+### Paso 6 — Verificar permisos de los directorios de uploads
 
-El directorio `public/uploads/profiles/` debe ser escribible por PHP. En Laragon/Windows esto funciona por defecto.
+Los directorios `public/uploads/profiles/` y `public/uploads/manuals/` deben ser escribibles por PHP. En Laragon/Windows esto funciona por defecto.
 
 ### Paso 7 — Acceder al sistema
 
@@ -224,20 +253,66 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | POST | `/login` | Procesar credenciales | Público |
 | POST | `/logout` | Cerrar sesión | Autenticado |
 | GET | `/dashboard` | Dashboard principal | Autenticado |
-| GET | `/profile` | Ver perfil personal | Autenticado |
+| GET | `/profile` | Ver perfil + preferencias | Autenticado |
 | GET | `/profile/edit` | Formulario editar perfil + foto | Autenticado |
 | POST | `/profile/update` | Guardar cambios de perfil | Autenticado |
+| POST | `/profile/preferences` | Guardar tema e idioma | Autenticado |
 | GET | `/account` | Ver cuenta | Autenticado |
 | GET | `/account/edit-email` | Formulario cambiar correo | Autenticado |
 | POST | `/account/update-email` | Guardar nuevo correo | Autenticado |
 | GET | `/account/edit-password` | Formulario cambiar contraseña | Autenticado |
 | POST | `/account/update-password` | Guardar nueva contraseña | Autenticado |
+| GET | `/system-information` | Info del sistema + manuales | Autenticado |
+| GET | `/system-information/edit` | Formulario editar info | Solo admin |
+| POST | `/system-information/update` | Guardar info del sistema | Solo admin |
+| GET | `/manuals/create` | Formulario subir manual | Solo admin |
+| POST | `/manuals/store` | Subir manual | Solo admin |
+| POST | `/manuals/toggle/{id}` | Activar/Desactivar manual | Solo admin |
+| GET | `/manuals/download/{id}` | Descargar manual | Autenticado |
 | GET | `/users` | Listado de usuarios (DataTables) | Solo admin |
 | GET | `/users/create` | Formulario nuevo usuario | Solo admin |
 | POST | `/users/store` | Crear usuario | Solo admin |
 | GET | `/users/edit/{id}` | Formulario editar usuario | Solo admin |
 | POST | `/users/update/{id}` | Guardar cambios de usuario | Solo admin |
 | POST | `/users/delete/{id}` | Inactivar usuario | Solo admin |
+| GET | `/languages` | Listado de idiomas | Solo admin |
+| GET | `/languages/create` | Formulario nuevo idioma | Solo admin |
+| POST | `/languages/store` | Crear idioma | Solo admin |
+| GET | `/languages/edit/{id}` | Formulario editar idioma | Solo admin |
+| POST | `/languages/update/{id}` | Guardar cambios de idioma | Solo admin |
+| POST | `/languages/toggle/{id}` | Activar/Desactivar idioma | Solo admin |
+
+---
+
+## Novedades v3.0
+
+### Modo oscuro y preferencias de usuario
+- Cada usuario puede seleccionar **modo claro** u **oscuro** desde su perfil.
+- Tema almacenado en `tbl_users.theme_preference`, activo en toda la sesión.
+- Se aplica automáticamente al cargar cada página mediante `data-pc-theme`.
+
+### Internacionalización (i18n)
+- Sistema de traducción propio vía `Core\Lang` y el helper global `__($key)`.
+- Archivos de traducción en `/lang/es.php` (base) y `/lang/en.php`.
+- El idioma preferido del usuario se almacena en `tbl_users.language_id`.
+- Fallback automático a Español si una clave no existe en el idioma activo.
+- Para agregar un idioma nuevo: créalo en la sección **Idiomas** y luego agrega `/lang/{code}.php`.
+
+### Módulo de idiomas (solo admin)
+- CRUD completo para gestionar idiomas del sistema.
+- Protección: el idioma predeterminado (Español) no puede desactivarse.
+- Aviso automático si se crea un idioma sin archivo de traducción correspondiente.
+
+### Información del Sistema
+- Vista accesible para todos los usuarios autenticados.
+- Muestra: año de lanzamiento, líder del proyecto, versión del sistema (SemVer).
+- Solo el admin puede editar estos datos.
+
+### Manuales de Usuario
+- El admin puede subir archivos PDF, DOC o DOCX (máx. 10 MB).
+- Todos los usuarios autenticados pueden descargarlos.
+- El admin puede activar/desactivar manuales desde la misma vista.
+- Los archivos se almacenan con nombre único en `public/uploads/manuals/`.
 
 ---
 

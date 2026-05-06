@@ -1,5 +1,5 @@
 <?php
-$pageTitle  = 'Mi Perfil';
+$pageTitle  = __('profile.title');
 $activeMenu = 'profile';
 require dirname(__DIR__) . '/layouts/main.php';
 ?>
@@ -57,7 +57,7 @@ $_prfStatus = $user['status_slug'] ?? $user['status'] ?? '';
         </span>
         <div class="d-grid">
           <a href="<?= BASE_URL ?>/profile/edit" class="btn btn-primary btn-sm">
-            <i class="ph-duotone ph-pencil me-1"></i> Editar Perfil
+            <i class="ph-duotone ph-pencil me-1"></i> <?= __('profile.edit_profile') ?>
           </a>
         </div>
       </div>
@@ -107,6 +107,52 @@ $_prfStatus = $user['status_slug'] ?? $user['status'] ?? '';
             </p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preferencias -->
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="ph-duotone ph-sliders me-2 text-primary"></i><?= __('profile.preferences') ?></h5>
+      </div>
+      <div class="card-body">
+        <form action="<?= BASE_URL ?>/profile/preferences" method="POST" novalidate>
+          <?= \Core\CSRF::field() ?>
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold"><?= __('profile.theme') ?></label>
+              <select name="theme_preference" class="form-select">
+                <option value="light" <?= ($user['theme_preference'] ?? 'light') === 'light' ? 'selected' : '' ?>>
+                  ☀️ <?= __('profile.theme_light') ?>
+                </option>
+                <option value="dark" <?= ($user['theme_preference'] ?? 'light') === 'dark' ? 'selected' : '' ?>>
+                  🌙 <?= __('profile.theme_dark') ?>
+                </option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold"><?= __('profile.language') ?></label>
+              <select name="language_id" class="form-select select2">
+                <option value=""><?= __('profile.language_default') ?></option>
+                <?php foreach ($languages as $lang): ?>
+                <option value="<?= $lang['id'] ?>" <?= ($user['language_id'] ?? null) == $lang['id'] ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($lang['name'], ENT_QUOTES, 'UTF-8') ?>
+                  <?php if ($lang['native_name']): ?>(<?= htmlspecialchars($lang['native_name'], ENT_QUOTES, 'UTF-8') ?>)<?php endif; ?>
+                </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="ph-duotone ph-floppy-disk me-1"></i> <?= __('buttons.save_preferences') ?>
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>

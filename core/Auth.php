@@ -15,6 +15,9 @@ class Auth
         Session::set('user_role_slug',     $user['role_slug']   ?? 'user');
         Session::set('user_role_name',     $user['role_name']   ?? 'Usuario');
         Session::set('user_profile_image', $user['profile_image'] ?? null);
+        Session::set('user_theme',         $user['theme_preference'] ?? 'light');
+        Session::set('user_lang',          $user['lang_code'] ?? 'es');
+        Session::set('user_lang_id',       $user['language_id'] ?? null);
         Session::set('_last_activity',     time());
     }
 
@@ -73,7 +76,20 @@ class Auth
             'role_slug'     => Session::get('user_role_slug'),
             'role_name'     => Session::get('user_role_name'),
             'profile_image' => Session::get('user_profile_image'),
+            'theme'         => Session::get('user_theme', 'light'),
+            'lang'          => Session::get('user_lang', 'es'),
+            'lang_id'       => Session::get('user_lang_id'),
         ];
+    }
+
+    public static function theme(): string
+    {
+        return Session::get('user_theme', 'light');
+    }
+
+    public static function lang(): string
+    {
+        return Session::get('user_lang', 'es');
     }
 
     public static function logout(): void
@@ -96,6 +112,15 @@ class Auth
         }
         if (array_key_exists('profile_image', $data)) {
             Session::set('user_profile_image', $data['profile_image']);
+        }
+        if (isset($data['theme'])) {
+            Session::set('user_theme', $data['theme']);
+        }
+        if (isset($data['lang'])) {
+            Session::set('user_lang', $data['lang']);
+        }
+        if (array_key_exists('lang_id', $data)) {
+            Session::set('user_lang_id', $data['lang_id']);
         }
     }
 }

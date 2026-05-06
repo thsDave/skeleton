@@ -9,30 +9,85 @@ use Core\Redirect;
 use Core\Validator;
 use Core\Logger;
 use App\Models\User;
+use App\Models\Language;
 
 class ProfileController extends Controller
 {
-    private User $userModel;
+    private User     $userModel;
+    private Language $langModel;
 
     public function __construct()
     {
         $this->userModel = new User();
+        $this->langModel = new Language();
     }
 
     public function index(): void
     {
         Auth::requireAuth();
-        $authUser = Auth::user();
-        $user     = $this->userModel->findById(Auth::id());
-        $this->view('profile.index', compact('authUser', 'user'));
+        $authUser  = Auth::user();
+        $user      = $this->userModel->findById(Auth::id());
+        $languages = $this->langModel->getActive();
+        $this->view('profile.index', compact('authUser', 'user', 'languages'));
     }
 
     public function edit(): void
     {
         Auth::requireAuth();
-        $authUser = Auth::user();
-        $user     = $this->userModel->findById(Auth::id());
-        $this->view('profile.edit', compact('authUser', 'user'));
+        $authUser  = Auth::user();
+        $user      = $this->userModel->findById(Auth::id());
+        $languages = $this->langModel->getActive();
+        $this->view('profile.edit', compact('authUser', 'user', 'languages'));
+    }
+
+    public function updatePreferences(): void
+    {
+        Auth::requireAuth();
+
+        if (!$this->isPost()) {
+            Redirect::to('/profile');
+        }
+
+        CSRF::validateOrFail();
+
+        $theme      = $this->input('theme_preference', 'light');
+        $languageId = $this->input('language_id', null);
+
+        // Validar tema
+        if (!in_array($theme, ['light', 'dark'], true)) {
+            $theme = 'light';
+        }
+
+        // Validar idioma
+        $langIdInt = $languageId ? (int)$languageId : null;
+        if ($langIdInt && !$this->langModel->isActiveById($langIdInt)) {
+            Redirect::withError('/profile', 'El idioma seleccionado no es válido.');
+        }
+
+        $id = Auth::id();
+
+        try {
+            $this->userModel->updatePreferences($id, $theme, $langIdInt);
+
+            // Determinar código de idioma para actualizar la sesión
+            $langCode = 'es';
+            if ($langIdInt) {
+                $lang = $this->langModel->findById($langIdInt);
+                $langCode = $lang ? $lang['code'] : 'es';
+            }
+
+            Auth::updateSession([
+                'theme'  => $theme,
+                'lang'   => $langCode,
+                'lang_id'=> $langIdInt,
+            ]);
+
+            Logger::info("Preferencias actualizadas - ID {$id} tema={$theme} lang={$langCode}");
+            Redirect::withSuccess('/profile', __('profile.preferences_updated'));
+        } catch (\PDOException $e) {
+            Logger::error('ProfileController::updatePreferences PDOException: ' . $e->getMessage());
+            Redirect::withError('/profile', __('alerts.internal'));
+        }
     }
 
     public function update(): void

@@ -23,6 +23,9 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
+// Lang helper — must be loaded before views since it defines global __()
+require dirname(__DIR__) . '/core/Lang.php';
+
 // Configuración de errores según entorno
 $appConfig = require dirname(__DIR__) . '/config/app.php';
 date_default_timezone_set($appConfig['timezone']);
@@ -46,6 +49,9 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
 use Core\Session;
 Session::start();
 
+// Inicializar idioma del usuario
+\Core\Lang::setLocale(Session::get('user_lang', 'es'));
+
 // Definir BASE_URL para vistas
 define('BASE_URL', rtrim($appConfig['url'], '/'));
 
@@ -56,6 +62,8 @@ use App\Controllers\DashboardController;
 use App\Controllers\ProfileController;
 use App\Controllers\AccountController;
 use App\Controllers\UsersController;
+use App\Controllers\LanguagesController;
+use App\Controllers\SystemInformationController;
 
 $router = new Router();
 
@@ -68,9 +76,10 @@ $router->post('/logout',[AuthController::class, 'logout']);
 $router->get('/dashboard', [DashboardController::class, 'index']);
 
 // Profile
-$router->get('/profile',         [ProfileController::class, 'index']);
-$router->get('/profile/edit',    [ProfileController::class, 'edit']);
-$router->post('/profile/update', [ProfileController::class, 'update']);
+$router->get('/profile',                   [ProfileController::class, 'index']);
+$router->get('/profile/edit',              [ProfileController::class, 'edit']);
+$router->post('/profile/update',           [ProfileController::class, 'update']);
+$router->post('/profile/preferences',      [ProfileController::class, 'updatePreferences']);
 
 // Account
 $router->get('/account',                  [AccountController::class, 'index']);
@@ -86,6 +95,25 @@ $router->post('/users/store',             [UsersController::class, 'store']);
 $router->get('/users/edit/{id}',          [UsersController::class, 'edit']);
 $router->post('/users/update/{id}',       [UsersController::class, 'update']);
 $router->post('/users/delete/{id}',       [UsersController::class, 'delete']);
+
+// Languages (admin)
+$router->get('/languages',                   [LanguagesController::class, 'index']);
+$router->get('/languages/create',            [LanguagesController::class, 'create']);
+$router->post('/languages/store',            [LanguagesController::class, 'store']);
+$router->get('/languages/edit/{id}',         [LanguagesController::class, 'edit']);
+$router->post('/languages/update/{id}',      [LanguagesController::class, 'update']);
+$router->post('/languages/toggle/{id}',      [LanguagesController::class, 'toggle']);
+
+// System Information
+$router->get('/system-information',          [SystemInformationController::class, 'index']);
+$router->get('/system-information/edit',     [SystemInformationController::class, 'edit']);
+$router->post('/system-information/update',  [SystemInformationController::class, 'update']);
+
+// Manuals
+$router->get('/manuals/create',              [SystemInformationController::class, 'createManual']);
+$router->post('/manuals/store',              [SystemInformationController::class, 'storeManual']);
+$router->post('/manuals/toggle/{id}',        [SystemInformationController::class, 'toggleManual']);
+$router->get('/manuals/download/{id}',       [SystemInformationController::class, 'downloadManual']);
 
 // Raíz — redirigir a dashboard o login
 $router->get('/', [DashboardController::class, 'index']);

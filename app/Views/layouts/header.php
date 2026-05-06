@@ -26,7 +26,7 @@
 
   <?php if (isset($extraHead)) echo $extraHead; ?>
 </head>
-<body data-pc-preset="preset-1" data-pc-sidebar-theme="dark" data-pc-header-theme="light" data-pc-sidebar-caption="true" data-pc-direction="ltr" data-pc-theme="light">
+<body data-pc-preset="preset-1" data-pc-sidebar-theme="dark" data-pc-header-theme="light" data-pc-sidebar-caption="true" data-pc-direction="ltr" data-pc-theme="<?= \Core\Auth::check() ? htmlspecialchars(\Core\Auth::theme(), ENT_QUOTES, 'UTF-8') : 'light' ?>">
 
 <div class="loader-bg">
   <div class="pc-loader"><div class="loader-fill"></div></div>

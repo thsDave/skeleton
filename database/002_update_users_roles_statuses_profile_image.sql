@@ -48,9 +48,9 @@ INSERT IGNORE INTO `tbl_roles` (`id`, `name`, `slug`) VALUES
 
 -- Paso 1: Añadir columnas nuevas (nullable para no romper registros existentes)
 ALTER TABLE `tbl_users`
-  ADD COLUMN IF NOT EXISTS `status_id`     INT          NULL DEFAULT NULL AFTER `status`,
-  ADD COLUMN IF NOT EXISTS `role_id`       INT          NULL DEFAULT NULL AFTER `status_id`,
-  ADD COLUMN IF NOT EXISTS `profile_image` VARCHAR(255) NULL DEFAULT NULL AFTER `remember_token`;
+  ADD `status_id`     INT          NULL DEFAULT NULL AFTER `status`,
+  ADD `role_id`       INT          NULL DEFAULT NULL AFTER `status_id`,
+  ADD `profile_image` VARCHAR(255) NULL DEFAULT NULL AFTER `remember_token`;
 
 -- Paso 2: Migrar valores del ENUM status existente → status_id
 UPDATE `tbl_users` SET `status_id` = 1 WHERE `status` = 'active'    AND `status_id` IS NULL;

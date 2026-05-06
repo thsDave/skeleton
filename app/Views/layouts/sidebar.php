@@ -13,43 +13,57 @@
       <ul class="pc-navbar">
 
         <li class="pc-item pc-caption">
-          <label>Navegación</label>
+          <label><?= __('menu.navigation') ?></label>
         </li>
 
         <li class="pc-item <?= ($activeMenu ?? '') === 'dashboard' ? 'active' : '' ?>">
           <a href="<?= BASE_URL ?>/dashboard" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-gauge"></i></span>
-            <span class="pc-mtext">Dashboard</span>
+            <span class="pc-mtext"><?= __('menu.dashboard') ?></span>
           </a>
         </li>
 
         <li class="pc-item pc-caption">
-          <label>Mi Cuenta</label>
+          <label><?= __('menu.my_account') ?></label>
         </li>
 
         <li class="pc-item <?= ($activeMenu ?? '') === 'profile' ? 'active' : '' ?>">
           <a href="<?= BASE_URL ?>/profile" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-user-circle"></i></span>
-            <span class="pc-mtext">Mi Perfil</span>
+            <span class="pc-mtext"><?= __('menu.my_profile') ?></span>
           </a>
         </li>
 
         <li class="pc-item <?= ($activeMenu ?? '') === 'account' ? 'active' : '' ?>">
           <a href="<?= BASE_URL ?>/account" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-gear"></i></span>
-            <span class="pc-mtext">Mi Cuenta</span>
+            <span class="pc-mtext"><?= __('menu.my_account_link') ?></span>
+          </a>
+        </li>
+
+        <li class="pc-item <?= ($activeMenu ?? '') === 'system_information' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/system-information" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-info"></i></span>
+            <span class="pc-mtext"><?= __('menu.system_information') ?></span>
           </a>
         </li>
 
         <?php if (\Core\Auth::isAdmin()): ?>
         <li class="pc-item pc-caption">
-          <label>Administración</label>
+          <label><?= __('menu.administration') ?></label>
         </li>
 
         <li class="pc-item <?= ($activeMenu ?? '') === 'users' ? 'active' : '' ?>">
           <a href="<?= BASE_URL ?>/users" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-users-three"></i></span>
-            <span class="pc-mtext">Usuarios</span>
+            <span class="pc-mtext"><?= __('menu.users') ?></span>
+          </a>
+        </li>
+
+        <li class="pc-item <?= ($activeMenu ?? '') === 'languages' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/languages" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-translate"></i></span>
+            <span class="pc-mtext"><?= __('menu.languages') ?></span>
           </a>
         </li>
         <?php endif; ?>

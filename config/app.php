@@ -17,4 +17,14 @@ return [
     'upload_allowed_ext'   => ['jpg', 'jpeg', 'png', 'webp'],
     'upload_profile_path'  => dirname(__DIR__) . '/public/uploads/profiles/',
     'upload_profile_url'   => '/uploads/profiles/',
+
+    // Carga de manuales
+    'upload_manuals_max_size' => 10 * 1024 * 1024, // 10 MB
+    'upload_manuals_mime'     => [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ],
+    'upload_manuals_path'     => dirname(__DIR__) . '/public/uploads/manuals/',
+    'upload_manuals_url'      => '/uploads/manuals/',
 ];

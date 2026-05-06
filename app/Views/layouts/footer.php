@@ -39,7 +39,7 @@ $_swError   = \Core\Session::getFlash('error');
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-  layout_change('light');
+  layout_change('<?= \Core\Auth::check() ? htmlspecialchars(\Core\Auth::theme(), ENT_QUOTES, 'UTF-8') : 'light' ?>');
   layout_sidebar_change('dark');
   layout_caption_change('true');
   layout_rtl_change('false');
