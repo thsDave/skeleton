@@ -138,49 +138,220 @@
   border-bottom-color: var(--bs-border-color);
 }
 
-/* ── DataTables ──────────────────────────────────────────── */
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_length select,
+/* ══════════════════════════════════════════════════════════
+   DataTables — corrección completa para modo oscuro
+   Integración: dataTables.bootstrap5.min.css (v1.13.7)
+
+   Estructura HTML que genera DataTables:
+     .dataTables_wrapper
+       .dataTables_length > label > select.form-select.form-select-sm
+       .dataTables_filter > label > input.form-control.form-control-sm
+       .dataTables_info
+       .dataTables_paginate
+         .pagination > li.paginate_button.page-item > a.page-link
+
+   Problemas identificados en DashboardKit style.css:
+     - .pagination tiene border-color, hover-bg, disabled-bg hardcodeados
+     - table.dataTable thead th usa border rgba(0,0,0,.3): invisible en dark
+     - Las flechas de orden (::before/::after) heredan color del th
+       → si el th es oscuro, las flechas son invisibles en dark
+     - Filas con .odd pueden conservar fondo blanco con table-striped
+   ══════════════════════════════════════════════════════════ */
+
+/* — Wrapper y textos ──────────────────────────────────────── */
+[data-bs-theme=dark] .dataTables_wrapper {
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_length label,
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_filter label {
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_info {
+  color: var(--bs-secondary-color);
+}
+
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_processing {
+  color: var(--bs-body-color);
+  background: var(--bs-secondary-bg);
+  border-color: var(--bs-border-color);
+}
+
+/* — Controles: select de cantidad e input de búsqueda ─────── */
+/* Se refuerza con !important para superar la especificidad
+   de dataTables.bootstrap5.min.css que carga desde CDN */
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_length select {
+  color: var(--bs-body-color) !important;
+  background-color: var(--bs-secondary-bg) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
 [data-bs-theme=dark] .dataTables_wrapper .dataTables_filter input {
+  color: var(--bs-body-color) !important;
+  background-color: var(--bs-secondary-bg) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_filter input::placeholder {
+  color: var(--bs-tertiary-color);
+  opacity: 1;
+}
+
+/* — Paginación: corregir las variables hardcodeadas de DashboardKit ── */
+/* .pagination en style.css define border-color:#dbe0e5, hover-bg:#f3f5f7,
+   disabled-bg:#ffffff — ninguno tiene override para [data-bs-theme=dark] */
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .pagination {
+  --bs-pagination-bg: var(--bs-secondary-bg);
+  --bs-pagination-color: var(--bs-body-color);
+  --bs-pagination-border-color: var(--bs-border-color);
+  --bs-pagination-hover-bg: var(--bs-tertiary-bg);
+  --bs-pagination-hover-color: var(--bs-emphasis-color);
+  --bs-pagination-hover-border-color: var(--bs-border-color);
+  --bs-pagination-focus-bg: var(--bs-tertiary-bg);
+  --bs-pagination-focus-color: var(--bs-emphasis-color);
+  --bs-pagination-disabled-color: var(--bs-secondary-color);
+  --bs-pagination-disabled-bg: rgba(255, 255, 255, 0.04);
+  --bs-pagination-disabled-border-color: var(--bs-border-color);
+}
+
+/* Fallback explícito sobre .page-link por si la herencia de variables
+   no llega a tiempo (DT inicializa el DOM tras la carga del CSS) */
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .page-link {
   color: var(--bs-body-color);
   background-color: var(--bs-secondary-bg);
-  border: 1px solid var(--bs-border-color);
-  border-radius: 6px;
-  padding: 4px 8px;
+  border-color: var(--bs-border-color);
 }
 
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_length,
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_filter,
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_info,
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_processing,
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate {
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .page-link:hover {
+  color: var(--bs-emphasis-color);
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color);
+}
+
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .page-item.active .page-link {
+  color: #fff;
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link {
+  color: var(--bs-secondary-color);
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--bs-border-color);
+}
+
+/* — Tabla base ─────────────────────────────────────────────── */
+[data-bs-theme=dark] table.dataTable {
+  color: var(--bs-body-color) !important;
+  border-color: var(--bs-border-color) !important;
+}
+
+/* — Encabezados ────────────────────────────────────────────── */
+/* El color en th hace que los ::before/::after de las flechas
+   de orden hereden un color claro y sean visibles en dark mode */
+[data-bs-theme=dark] table.dataTable thead th,
+[data-bs-theme=dark] table.dataTable thead td {
+  color: var(--bs-body-color) !important;
+  background-color: var(--bs-tertiary-bg) !important;
+  border-bottom: 1px solid var(--bs-border-color) !important;
+}
+
+/* — Flechas de ordenamiento ────────────────────────────────── */
+/* DataTables 1.13.x usa ::before / ::after con color heredado
+   del th y opacity para mostrar la dirección activa/inactiva */
+[data-bs-theme=dark] table.dataTable thead th.sorting::before,
+[data-bs-theme=dark] table.dataTable thead th.sorting::after,
+[data-bs-theme=dark] table.dataTable thead th.sorting_asc::before,
+[data-bs-theme=dark] table.dataTable thead th.sorting_asc::after,
+[data-bs-theme=dark] table.dataTable thead th.sorting_desc::before,
+[data-bs-theme=dark] table.dataTable thead th.sorting_desc::after,
+[data-bs-theme=dark] table.dataTable thead th.sorting_asc_disabled::before,
+[data-bs-theme=dark] table.dataTable thead th.sorting_asc_disabled::after,
+[data-bs-theme=dark] table.dataTable thead th.sorting_desc_disabled::before,
+[data-bs-theme=dark] table.dataTable thead th.sorting_desc_disabled::after {
+  color: rgba(222, 226, 230, 0.45) !important;
+  opacity: 1 !important;
+}
+
+/* Flecha activa: la dirección de orden seleccionada */
+[data-bs-theme=dark] table.dataTable thead th.sorting_asc::before,
+[data-bs-theme=dark] table.dataTable thead th.sorting_desc::after {
+  color: var(--bs-body-color) !important;
+  opacity: 1 !important;
+}
+
+/* — Cuerpo de la tabla ─────────────────────────────────────── */
+[data-bs-theme=dark] table.dataTable tbody tr {
+  color: var(--bs-body-color);
+  background-color: transparent;
+}
+
+[data-bs-theme=dark] table.dataTable tbody td,
+[data-bs-theme=dark] table.dataTable tbody th {
+  color: var(--bs-body-color) !important;
+  background-color: transparent !important;
+  border-top: 1px solid var(--bs-border-color) !important;
+  box-shadow: none !important;
+}
+
+/* — Tabla a rayas (striped) ────────────────────────────────── */
+/* DataTables agrega .odd/.even en <tr>; Bootstrap usa :nth-of-type.
+   Se apunta a ambos para garantizar cobertura. */
+[data-bs-theme=dark] table.dataTable.table-striped > tbody > tr.odd > *,
+[data-bs-theme=dark] table.dataTable.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  box-shadow: none !important;
+}
+
+[data-bs-theme=dark] table.dataTable.table-striped > tbody > tr.even > *,
+[data-bs-theme=dark] table.dataTable.table-striped > tbody > tr:nth-of-type(even) > * {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* — Hover de filas ─────────────────────────────────────────── */
+[data-bs-theme=dark] table.dataTable.table-hover > tbody > tr:hover > *,
+[data-bs-theme=dark] table.dataTable.table-hover > tbody > tr:hover.odd > *,
+[data-bs-theme=dark] table.dataTable.table-hover > tbody > tr:hover.even > * {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  color: var(--bs-body-color) !important;
+  box-shadow: none !important;
+}
+
+/* — Fila seleccionada ──────────────────────────────────────── */
+[data-bs-theme=dark] table.dataTable > tbody > tr.selected > *,
+[data-bs-theme=dark] table.dataTable > tbody > tr.selected:hover > * {
+  background-color: rgba(var(--bs-primary-rgb), 0.2) !important;
+  color: var(--bs-body-color) !important;
+  box-shadow: none !important;
+}
+
+/* — Pie de tabla ───────────────────────────────────────────── */
+[data-bs-theme=dark] table.dataTable tfoot th,
+[data-bs-theme=dark] table.dataTable tfoot td {
+  color: var(--bs-body-color) !important;
+  background-color: var(--bs-tertiary-bg) !important;
+  border-top: 1px solid var(--bs-border-color) !important;
+}
+
+/* — Celda sin resultados ───────────────────────────────────── */
+[data-bs-theme=dark] table.dataTable tbody td.dataTables_empty {
+  color: var(--bs-secondary-color);
+}
+
+/* — Filas expandidas (responsive) ─────────────────────────── */
+[data-bs-theme=dark] table.dataTable > tbody > tr.child td.child {
+  background-color: var(--bs-tertiary-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme=dark] table.dataTable > tbody > tr.child ul.dtr-details {
   color: var(--bs-body-color);
 }
 
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .paginate_button {
-  color: var(--bs-body-color) !important;
-  border: 1px solid var(--bs-border-color);
-  background: transparent;
-  border-radius: 4px;
-}
-
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-  color: var(--bs-body-color) !important;
-  background: var(--bs-tertiary-bg) !important;
-  border-color: var(--bs-border-color) !important;
-}
-
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-  color: #fff !important;
-  background: var(--bs-primary) !important;
-  border-color: var(--bs-primary) !important;
-}
-
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
-[data-bs-theme=dark] .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
-  color: var(--bs-secondary-color) !important;
-  background: transparent !important;
-  border-color: var(--bs-border-color) !important;
+[data-bs-theme=dark] table.dataTable > tbody > tr.child ul.dtr-details li {
+  border-bottom-color: var(--bs-border-color);
 }
 
 /* ── Select2 ─────────────────────────────────────────────── */
