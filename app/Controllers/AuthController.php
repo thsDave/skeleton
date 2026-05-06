@@ -62,8 +62,8 @@ class AuthController extends Controller
             Redirect::withErrors('/login', ['general' => 'La cuenta está bloqueada temporalmente. Intenta en 15 minutos.'], ['email' => $email]);
         }
 
-        // Verificar status
-        if ($user['status'] !== 'active') {
+        // Verificar status (usa status_slug del JOIN con tbl_statuses)
+        if (($user['status_slug'] ?? '') !== 'active') {
             $this->logModel->record($user['id'], $email, 'failed', 'Cuenta inactiva o bloqueada');
             Logger::security("Login fallido - cuenta inactiva ID {$user['id']}");
             Redirect::withErrors('/login', ['general' => 'Las credenciales ingresadas no son válidas.'], ['email' => $email]);

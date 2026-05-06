@@ -7,12 +7,15 @@ class Auth
     public static function login(array $user): void
     {
         Session::regenerate();
-        Session::set('user_id', $user['id']);
-        Session::set('user_email', $user['email']);
-        Session::set('user_name', $user['nombres'] . ' ' . $user['apellidos']);
-        Session::set('user_nombres', $user['nombres']);
-        Session::set('user_apellidos', $user['apellidos']);
-        Session::set('_last_activity', time());
+        Session::set('user_id',            $user['id']);
+        Session::set('user_email',         $user['email']);
+        Session::set('user_name',          $user['nombres'] . ' ' . $user['apellidos']);
+        Session::set('user_nombres',       $user['nombres']);
+        Session::set('user_apellidos',     $user['apellidos']);
+        Session::set('user_role_slug',     $user['role_slug']   ?? 'user');
+        Session::set('user_role_name',     $user['role_name']   ?? 'Usuario');
+        Session::set('user_profile_image', $user['profile_image'] ?? null);
+        Session::set('_last_activity',     time());
     }
 
     public static function check(): bool
@@ -39,6 +42,21 @@ class Auth
         }
     }
 
+    public static function isAdmin(): bool
+    {
+        return Session::get('user_role_slug') === 'administrator';
+    }
+
+    public static function requireAdmin(): void
+    {
+        self::requireAuth();
+        if (!self::isAdmin()) {
+            Session::flash('error', 'Acceso denegado. No tienes permisos para acceder a esa sección.');
+            Redirect::to('/dashboard');
+            exit;
+        }
+    }
+
     public static function id(): ?int
     {
         return Session::get('user_id');
@@ -47,11 +65,14 @@ class Auth
     public static function user(): array
     {
         return [
-            'id'        => Session::get('user_id'),
-            'email'     => Session::get('user_email'),
-            'name'      => Session::get('user_name'),
-            'nombres'   => Session::get('user_nombres'),
-            'apellidos' => Session::get('user_apellidos'),
+            'id'            => Session::get('user_id'),
+            'email'         => Session::get('user_email'),
+            'name'          => Session::get('user_name'),
+            'nombres'       => Session::get('user_nombres'),
+            'apellidos'     => Session::get('user_apellidos'),
+            'role_slug'     => Session::get('user_role_slug'),
+            'role_name'     => Session::get('user_role_name'),
+            'profile_image' => Session::get('user_profile_image'),
         ];
     }
 
@@ -72,6 +93,9 @@ class Auth
         if (isset($data['apellidos'])) {
             Session::set('user_apellidos', $data['apellidos']);
             Session::set('user_name', Session::get('user_nombres') . ' ' . $data['apellidos']);
+        }
+        if (array_key_exists('profile_image', $data)) {
+            Session::set('user_profile_image', $data['profile_image']);
         }
     }
 }

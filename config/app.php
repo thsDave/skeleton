@@ -6,8 +6,15 @@ return [
     'env'             => 'development', // 'production'
     'debug'           => true,
     'timezone'        => 'America/El_Salvador',
-    'session_timeout' => 1800, // 30 minutos en segundos
+    'session_timeout' => 1800,
     'log_path'        => dirname(__DIR__) . '/logs/security.log',
     'max_login_attempts' => 5,
     'lockout_minutes'    => 15,
+
+    // Carga de imágenes de perfil
+    'upload_max_size'      => 2 * 1024 * 1024, // 2 MB
+    'upload_allowed_mime'  => ['image/jpeg', 'image/png', 'image/webp'],
+    'upload_allowed_ext'   => ['jpg', 'jpeg', 'png', 'webp'],
+    'upload_profile_path'  => dirname(__DIR__) . '/public/uploads/profiles/',
+    'upload_profile_url'   => '/uploads/profiles/',
 ];

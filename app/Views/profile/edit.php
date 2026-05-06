@@ -49,8 +49,48 @@ foreach ($generalErrors as $msg): ?>
         <h5 class="mb-0"><i class="ph-duotone ph-pencil me-2 text-primary"></i>Editar Información Personal</h5>
       </div>
       <div class="card-body">
-        <form action="<?= BASE_URL ?>/profile/update" method="POST" novalidate>
+        <?php
+        $_editImg = $user['profile_image'] ?? null;
+        $_editAvatar = $_editImg
+            ? BASE_URL . '/uploads/profiles/' . htmlspecialchars($_editImg, ENT_QUOTES, 'UTF-8')
+            : null;
+        ?>
+        <form action="<?= BASE_URL ?>/profile/update" method="POST" enctype="multipart/form-data" novalidate>
           <?= CSRF::field() ?>
+
+          <!-- Imagen de perfil -->
+          <div class="mb-4 text-center">
+            <div class="mb-2">
+              <?php if ($_editAvatar): ?>
+                <img src="<?= $_editAvatar ?>"
+                     alt="avatar actual"
+                     id="avatarPreview"
+                     class="rounded-circle"
+                     style="width:90px;height:90px;object-fit:cover;"
+                     onerror="this.src=''">
+              <?php else: ?>
+                <div class="avtar bg-light-primary d-inline-flex align-items-center justify-content-center rounded-circle mb-1"
+                     id="avatarFallback"
+                     style="width:90px;height:90px;">
+                  <i class="ph-duotone ph-user-circle text-primary" style="font-size:3.5rem;"></i>
+                </div>
+                <img id="avatarPreview" src="" alt="" class="rounded-circle d-none"
+                     style="width:90px;height:90px;object-fit:cover;">
+              <?php endif; ?>
+            </div>
+            <label for="profile_image" class="form-label fw-semibold d-block">
+              Foto de Perfil <span class="text-muted small fw-normal">(JPG, PNG o WEBP — máx. 2 MB)</span>
+            </label>
+            <input type="file"
+                   name="profile_image"
+                   id="profile_image"
+                   class="form-control <?= isset($errors['profile_image']) ? 'is-invalid' : '' ?>"
+                   accept=".jpg,.jpeg,.png,.webp"
+                   onchange="previewAvatar(this)">
+            <?php if (isset($errors['profile_image'])): ?>
+              <div class="invalid-feedback d-block"><?= htmlspecialchars($errors['profile_image'], ENT_QUOTES, 'UTF-8') ?></div>
+            <?php endif; ?>
+          </div>
 
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -140,4 +180,22 @@ foreach ($generalErrors as $msg): ?>
   </div>
 </div>
 
+<?php
+$extraScript = <<<'JS'
+<script>
+function previewAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById('avatarPreview');
+    var fallback = document.getElementById('avatarFallback');
+    preview.src = e.target.result;
+    preview.classList.remove('d-none');
+    if (fallback) fallback.classList.add('d-none');
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+</script>
+JS;
+?>
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>

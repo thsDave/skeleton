@@ -13,6 +13,10 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 | PDO | Acceso a datos con consultas preparadas |
 | Bootstrap 5 | UI base (vía DashboardKit) |
 | DashboardKit Free | Plantilla visual admin |
+| DataTables 1.13 | Tablas con búsqueda y paginación (CDN) |
+| SweetAlert2 11 | Alertas y confirmaciones modales (CDN) |
+| Select2 4.1 | Dropdowns con búsqueda (CDN) |
+| jQuery 3.7 | Requerido por DataTables y Select2 (CDN) |
 
 ---
 
@@ -37,10 +41,13 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 │   ├── Controllers/
 │   │   ├── AuthController.php       ← Login, logout
 │   │   ├── DashboardController.php  ← Dashboard principal
-│   │   ├── ProfileController.php    ← Mi Perfil
-│   │   └── AccountController.php   ← Mi Cuenta (email + password)
+│   │   ├── ProfileController.php    ← Mi Perfil + subida de foto
+│   │   ├── AccountController.php   ← Mi Cuenta (email + password)
+│   │   └── UsersController.php     ← CRUD de usuarios (solo admin)
 │   ├── Models/
-│   │   ├── User.php                 ← CRUD usuarios
+│   │   ├── User.php                 ← CRUD usuarios con JOINs
+│   │   ├── Role.php                 ← Roles del sistema
+│   │   ├── Status.php               ← Estados del sistema
 │   │   └── LoginLog.php             ← Registro de intentos de login
 │   └── Views/
 │       ├── auth/
@@ -49,41 +56,48 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 │       │   └── index.php
 │       ├── profile/
 │       │   ├── index.php
-│       │   └── edit.php
+│       │   └── edit.php             ← Incluye subida de foto de perfil
 │       ├── account/
 │       │   ├── index.php
 │       │   ├── edit_email.php
 │       │   └── edit_password.php
+│       ├── users/
+│       │   ├── index.php            ← DataTables + inactivar con SweetAlert2
+│       │   ├── create.php           ← Select2 para rol/estado
+│       │   └── edit.php             ← Select2, contraseña opcional
 │       ├── layouts/
-│       │   ├── header.php           ← <head> + inicio de <body>
-│       │   ├── sidebar.php          ← Menú lateral DashboardKit
-│       │   ├── topbar.php           ← Barra superior
+│       │   ├── header.php           ← <head> + CDN CSS (Select2, DataTables)
+│       │   ├── sidebar.php          ← Menú lateral (admin ve sección Administración)
+│       │   ├── topbar.php           ← Avatar de perfil + dropdown usuario
 │       │   ├── main.php             ← Incluye los 3 anteriores + abre pc-container
-│       │   ├── footer.php           ← Cierra layout + scripts JS
-│       │   └── alerts.php           ← Mensajes flash (success/error)
+│       │   ├── footer.php           ← CDN JS + SweetAlert2 flash + Select2 init
+│       │   └── alerts.php           ← Mensajes flash Bootstrap (compatibilidad)
 │       └── errors/
 │           └── 404.php
 ├── config/
-│   ├── app.php                      ← URL base, timezone, timeouts
+│   ├── app.php                      ← URL base, timezone, timeouts, upload config
 │   └── database.php                 ← Host, puerto, BD, usuario, password
 ├── core/
-│   ├── Router.php                   ← Enrutador front-controller
+│   ├── Router.php                   ← Enrutador front-controller con parámetros {id}
 │   ├── Controller.php               ← Clase base de controllers
 │   ├── Model.php                    ← Clase base de models
 │   ├── Database.php                 ← Singleton PDO
-│   ├── Auth.php                     ← Autenticación y control de acceso
+│   ├── Auth.php                     ← Login, requireAuth, requireAdmin, isAdmin
 │   ├── Session.php                  ← Manejo de sesiones + timeout
 │   ├── CSRF.php                     ← Token CSRF para formularios POST
 │   ├── Validator.php                ← Validaciones de entrada
 │   ├── Redirect.php                 ← Redirecciones + mensajes flash
 │   └── Logger.php                   ← Logs de seguridad en /logs/
 ├── database/
-│   └── db_skeleton.sql              ← Script SQL completo para importar
+│   ├── db_skeleton.sql                              ← Esquema base (001)
+│   └── 002_update_users_roles_statuses_profile_image.sql ← Migración v3.0
 ├── logs/
 │   └── security.log                 ← Log de eventos de seguridad
 ├── public/
 │   ├── index.php                    ← Front controller (único punto de entrada)
 │   ├── .htaccess                    ← Rewrite rules + headers de seguridad
+│   ├── uploads/
+│   │   └── profiles/                ← Fotos de perfil subidas por usuarios
 │   └── assets/                      ← CSS, JS, fonts e imágenes de DashboardKit
 └── README.md
 ```
@@ -96,7 +110,7 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
   - PHP 8.3
   - MySQL 8.0
   - Apache con `mod_rewrite` habilitado
-- Extensiones PHP requeridas: `pdo`, `pdo_mysql`, `mbstring`, `json`
+- Extensiones PHP requeridas: `pdo`, `pdo_mysql`, `mbstring`, `json`, `fileinfo`
 - No requiere Composer ni dependencias externas
 
 ---
@@ -128,9 +142,21 @@ C:\laragon\www\template\
 7. Haz clic en **Importar** (o **Go**).
 8. Verifica que se hayan creado las tablas `tbl_users` y `tbl_login_logs`.
 
+### Paso 3 — Aplicar la migración v3.0
+
+Repite el proceso de importación con el segundo archivo SQL:
+
+1. Con `db_skeleton` seleccionada, ve a **Importar**.
+2. Selecciona el archivo:
+   ```
+   C:\laragon\www\template\database\002_update_users_roles_statuses_profile_image.sql
+   ```
+3. Haz clic en **Importar**.
+4. Verifica que existan las tablas `tbl_roles` y `tbl_statuses`, y que `tbl_users` tenga las columnas `role_id`, `status_id` y `profile_image`.
+
 > **Alternativa rápida:** En el menú de Laragon, haz clic derecho → **Database** → **phpMyAdmin** para abrirlo directamente.
 
-### Paso 3 — Configurar la conexión a la base de datos
+### Paso 4 — Configurar la conexión a la base de datos
 
 Edita `config/database.php` si tu configuración de MySQL en Laragon es diferente:
 
@@ -144,7 +170,7 @@ return [
 ];
 ```
 
-### Paso 4 — Configurar la URL base
+### Paso 5 — Configurar la URL base
 
 Edita `config/app.php` y ajusta la URL según tu entorno:
 
@@ -158,11 +184,11 @@ Edita `config/app.php` y ajusta la URL según tu entorno:
 
 > **Recomendación con Laragon:** Crea un virtual host haciendo clic derecho en Laragon → **www** → **template** → **Create website**. Laragon creará automáticamente el dominio `template.test`.
 
-### Paso 5 — Verificar permisos del directorio logs
+### Paso 6 — Verificar permisos del directorio de uploads
 
-El directorio `/logs` debe ser escribible por PHP. En Laragon/Windows esto funciona por defecto.
+El directorio `public/uploads/profiles/` debe ser escribible por PHP. En Laragon/Windows esto funciona por defecto.
 
-### Paso 6 — Acceder al sistema
+### Paso 7 — Acceder al sistema
 
 Abre tu navegador y ve a:
 
@@ -184,6 +210,7 @@ http://template.test/public/login
 |---|---|
 | Correo electrónico | `admin@skeleton.local` |
 | Contraseña | `Admin123*` |
+| Rol | Administrador |
 
 La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la base de datos.
 
@@ -198,13 +225,42 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | POST | `/logout` | Cerrar sesión | Autenticado |
 | GET | `/dashboard` | Dashboard principal | Autenticado |
 | GET | `/profile` | Ver perfil personal | Autenticado |
-| GET | `/profile/edit` | Formulario editar perfil | Autenticado |
+| GET | `/profile/edit` | Formulario editar perfil + foto | Autenticado |
 | POST | `/profile/update` | Guardar cambios de perfil | Autenticado |
 | GET | `/account` | Ver cuenta | Autenticado |
 | GET | `/account/edit-email` | Formulario cambiar correo | Autenticado |
 | POST | `/account/update-email` | Guardar nuevo correo | Autenticado |
 | GET | `/account/edit-password` | Formulario cambiar contraseña | Autenticado |
 | POST | `/account/update-password` | Guardar nueva contraseña | Autenticado |
+| GET | `/users` | Listado de usuarios (DataTables) | Solo admin |
+| GET | `/users/create` | Formulario nuevo usuario | Solo admin |
+| POST | `/users/store` | Crear usuario | Solo admin |
+| GET | `/users/edit/{id}` | Formulario editar usuario | Solo admin |
+| POST | `/users/update/{id}` | Guardar cambios de usuario | Solo admin |
+| POST | `/users/delete/{id}` | Inactivar usuario | Solo admin |
+
+---
+
+## Módulo de usuarios (v3.0)
+
+- **Listado:** tabla con DataTables (búsqueda, paginación, orden), foto de perfil, nombre, email, teléfono, rol, estado, fecha de registro, botones de editar/inactivar.
+- **Crear:** formulario con foto (opcional), todos los campos personales, contraseña obligatoria con confirmación, Select2 para rol y estado.
+- **Editar:** igual que crear, pero contraseña y foto son opcionales (se mantiene la anterior si no se sube nueva).
+- **Inactivar:** confirmación con SweetAlert2. Protecciones:
+  - No puede inactivarse a sí mismo.
+  - No puede inactivar al último administrador activo.
+- **Acceso:** exclusivo para usuarios con rol `administrator`.
+
+---
+
+## Foto de perfil
+
+- Se sube desde **Mi Perfil → Editar** o desde el formulario de usuario (admin).
+- Formatos permitidos: JPG, PNG, WEBP (validado por MIME real, no solo extensión).
+- Tamaño máximo: 2 MB.
+- Se almacena en `public/uploads/profiles/` con nombre único (`avatar_{id}_{random}.ext`).
+- Se muestra en: topbar, dashboard, vista de perfil, listado de usuarios.
+- Fallback automático al avatar por defecto si el archivo no existe.
 
 ---
 
@@ -222,6 +278,9 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | Cookie insegura | `httponly=true`, `samesite=Lax`, `secure` en HTTPS |
 | Enumeración de usuarios | Mensaje genérico en login para email y contraseña incorrectos |
 | Acceso sin autenticación | `Auth::requireAuth()` en todas las rutas protegidas |
+| Acceso sin rol admin | `Auth::requireAdmin()` en todas las rutas del módulo de usuarios |
+| Upload malicioso | Validación MIME con `finfo_file()`, extensión y tamaño |
+| Path traversal en uploads | Nombre de archivo generado internamente, nunca del cliente |
 | Errores técnicos expuestos | Capturados en logs, mensajes genéricos al usuario |
 | Headers HTTP inseguros | X-Frame-Options, X-Content-Type-Options, CSP, Referrer-Policy |
 
@@ -248,3 +307,4 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 - Cambia las credenciales de base de datos en `config/database.php`.
 - Asegúrate de que `/logs/security.log` no sea accesible públicamente (el `.htaccess` ya lo bloquea).
 - El directorio `dashboardkit-src/` (fuente del template) puede eliminarse en producción.
+- El directorio `public/uploads/` debe tener permisos de escritura para el proceso de PHP.

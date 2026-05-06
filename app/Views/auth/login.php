@@ -4,7 +4,6 @@ use Core\CSRF;
 
 $errors = Session::getFlash('errors', []);
 $old    = Session::getFlash('old', []);
-$pageTitle = 'Iniciar Sesión';
 ?>
 <!doctype html>
 <html lang="es">
@@ -24,7 +23,7 @@ $pageTitle = 'Iniciar Sesión';
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css" id="main-style-link" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style-preset.css" />
 </head>
-<body data-pc-preset="preset-1" data-pc-sidebar-theme="dark" data-pc-header-theme="light" data-pc-direction="ltr" data-pc-theme="light">
+<body data-pc-preset="preset-1" data-pc-sidebar-theme="dark" data-pc-direction="ltr" data-pc-theme="light">
 
 <div class="loader-bg">
   <div class="pc-loader"><div class="loader-fill"></div></div>
@@ -37,16 +36,26 @@ $pageTitle = 'Iniciar Sesión';
       <div class="card my-5">
         <div class="card-body">
 
+          <!-- Logo: icono + texto, siempre visible sin depender de archivos externos -->
           <div class="text-center mb-4">
-            <img src="<?= BASE_URL ?>/assets/images/logo-dark.svg" alt="Skeleton" class="img-fluid img-logo" style="max-height:50px;" />
+            <div class="d-inline-flex align-items-center gap-2">
+              <div class="bg-primary rounded-3 d-flex align-items-center justify-content-center"
+                   style="width:44px;height:44px;">
+                <i class="ph-duotone ph-shield-check text-white" style="font-size:1.5rem;"></i>
+              </div>
+              <div class="text-start">
+                <h4 class="mb-0 fw-bold text-primary lh-1">Skeleton</h4>
+                <small class="text-muted">Sistema MVC</small>
+              </div>
+            </div>
           </div>
 
-          <h4 class="mb-1 f-w-500 text-center">Iniciar Sesión</h4>
-          <p class="text-muted text-center mb-4">Ingresa tus credenciales para acceder</p>
+          <h5 class="mb-1 f-w-500 text-center">Iniciar Sesión</h5>
+          <p class="text-muted text-center mb-4 small">Ingresa tus credenciales para acceder</p>
 
           <?php if (!empty($errors)): ?>
             <?php foreach ($errors as $msg): ?>
-              <div class="alert alert-danger py-2">
+              <div class="alert alert-danger py-2 small">
                 <i class="ph-duotone ph-warning-circle me-2"></i>
                 <?= htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') ?>
               </div>
@@ -57,7 +66,7 @@ $pageTitle = 'Iniciar Sesión';
             <?= CSRF::field() ?>
 
             <div class="mb-3">
-              <label for="email" class="form-label">Correo electrónico</label>
+              <label for="email" class="form-label fw-semibold">Correo electrónico</label>
               <div class="input-group">
                 <span class="input-group-text"><i data-feather="mail"></i></span>
                 <input
@@ -70,32 +79,26 @@ $pageTitle = 'Iniciar Sesión';
                   required
                   autocomplete="email"
                 />
-                <?php if (isset($errors['email'])): ?>
-                  <div class="invalid-feedback"><?= htmlspecialchars($errors['email'], ENT_QUOTES, 'UTF-8') ?></div>
-                <?php endif; ?>
               </div>
             </div>
 
             <div class="mb-4">
-              <label for="password" class="form-label">Contraseña</label>
+              <label for="password" class="form-label fw-semibold">Contraseña</label>
               <div class="input-group">
                 <span class="input-group-text"><i data-feather="lock"></i></span>
                 <input
                   type="password"
                   name="password"
                   id="password"
-                  class="form-control <?= isset($errors['password']) ? 'is-invalid' : '' ?>"
+                  class="form-control"
                   placeholder="••••••••"
                   required
                   autocomplete="current-password"
                 />
-                <?php if (isset($errors['password'])): ?>
-                  <div class="invalid-feedback"><?= htmlspecialchars($errors['password'], ENT_QUOTES, 'UTF-8') ?></div>
-                <?php endif; ?>
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block w-100 mb-3">
+            <button type="submit" class="btn btn-primary w-100 mb-3">
               <i class="ph-duotone ph-sign-in me-2"></i> Iniciar Sesión
             </button>
           </form>

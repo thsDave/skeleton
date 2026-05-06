@@ -9,10 +9,22 @@ class User extends Model
 {
     private const TABLE = 'tbl_users';
 
+    // ─── Consultas con JOINs (status_slug, role_slug) ────────────────────────
+
+    private function withDetails(): string
+    {
+        return 'SELECT u.*,
+                       s.slug AS status_slug, s.name AS status_name,
+                       r.slug AS role_slug,   r.name AS role_name
+                FROM ' . self::TABLE . ' u
+                LEFT JOIN tbl_statuses s ON u.status_id = s.id
+                LEFT JOIN tbl_roles    r ON u.role_id   = r.id';
+    }
+
     public function findByEmail(string $email): array|false
     {
         $stmt = $this->db->prepare(
-            'SELECT * FROM ' . self::TABLE . ' WHERE email = ? LIMIT 1'
+            $this->withDetails() . ' WHERE u.email = ? LIMIT 1'
         );
         $stmt->execute([$email]);
         return $stmt->fetch();
@@ -21,17 +33,29 @@ class User extends Model
     public function findById(int $id): array|false
     {
         $stmt = $this->db->prepare(
-            'SELECT * FROM ' . self::TABLE . ' WHERE id = ? LIMIT 1'
+            $this->withDetails() . ' WHERE u.id = ? LIMIT 1'
         );
         $stmt->execute([$id]);
         return $stmt->fetch();
     }
 
+    public function getAll(): array
+    {
+        $stmt = $this->db->prepare(
+            $this->withDetails() . ' ORDER BY u.created_at DESC'
+        );
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // ─── Auth ─────────────────────────────────────────────────────────────────
+
     public function updateLastLogin(int $id, string $ip): void
     {
         $stmt = $this->db->prepare(
             'UPDATE ' . self::TABLE . '
-             SET last_login_at = NOW(), last_login_ip = ?, failed_login_attempts = 0, locked_until = NULL
+             SET last_login_at = NOW(), last_login_ip = ?,
+                 failed_login_attempts = 0, locked_until = NULL
              WHERE id = ?'
         );
         $stmt->execute([$ip, $id]);
@@ -40,7 +64,9 @@ class User extends Model
     public function incrementFailedAttempts(int $id): void
     {
         $stmt = $this->db->prepare(
-            'UPDATE ' . self::TABLE . ' SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ?'
+            'UPDATE ' . self::TABLE . '
+             SET failed_login_attempts = failed_login_attempts + 1
+             WHERE id = ?'
         );
         $stmt->execute([$id]);
     }
@@ -48,7 +74,9 @@ class User extends Model
     public function lockAccount(int $id, int $minutes): void
     {
         $stmt = $this->db->prepare(
-            'UPDATE ' . self::TABLE . ' SET locked_until = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE id = ?'
+            'UPDATE ' . self::TABLE . '
+             SET locked_until = DATE_ADD(NOW(), INTERVAL ? MINUTE)
+             WHERE id = ?'
         );
         $stmt->execute([$minutes, $id]);
     }
@@ -60,6 +88,8 @@ class User extends Model
         }
         return strtotime($user['locked_until']) > time();
     }
+
+    // ─── Perfil propio ────────────────────────────────────────────────────────
 
     public function updateProfile(int $id, array $data): bool
     {
@@ -75,6 +105,14 @@ class User extends Model
             $data['direccion'] ?? null,
             $id,
         ]);
+    }
+
+    public function updateProfileImage(int $id, string $filename): bool
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . ' SET profile_image = ?, updated_at = NOW() WHERE id = ?'
+        );
+        return $stmt->execute([$filename, $id]);
     }
 
     public function updateEmail(int $id, string $email): bool
@@ -102,5 +140,88 @@ class User extends Model
              WHERE id = ?'
         );
         return $stmt->execute([$hashedPassword, $id]);
+    }
+
+    // ─── CRUD admin ───────────────────────────────────────────────────────────
+
+    public function create(array $data): int|false
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO ' . self::TABLE . '
+             (nombres, apellidos, telefono, direccion, email, password,
+              status_id, role_id, profile_image, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+        );
+        $ok = $stmt->execute([
+            $data['nombres'],
+            $data['apellidos'],
+            $data['telefono']      ?? null,
+            $data['direccion']     ?? null,
+            $data['email'],
+            $data['password'],
+            $data['status_id']     ?? 1,
+            $data['role_id']       ?? 2,
+            $data['profile_image'] ?? null,
+        ]);
+        return $ok ? (int)$this->db->lastInsertId() : false;
+    }
+
+    public function adminUpdate(int $id, array $data): bool
+    {
+        $fields = ['nombres=?', 'apellidos=?', 'telefono=?', 'direccion=?',
+                   'email=?', 'status_id=?', 'role_id=?', 'updated_at=NOW()'];
+        $params = [
+            $data['nombres'],
+            $data['apellidos'],
+            $data['telefono']  ?? null,
+            $data['direccion'] ?? null,
+            $data['email'],
+            $data['status_id'],
+            $data['role_id'],
+        ];
+
+        if (!empty($data['password'])) {
+            $fields[] = 'password=?';
+            $params[] = $data['password'];
+        }
+        if (array_key_exists('profile_image', $data) && $data['profile_image'] !== null) {
+            $fields[] = 'profile_image=?';
+            $params[] = $data['profile_image'];
+        }
+
+        $params[] = $id;
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . ' SET ' . implode(', ', $fields) . ' WHERE id = ?'
+        );
+        return $stmt->execute($params);
+    }
+
+    public function inactivate(int $id): bool
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . ' SET status_id = 2, updated_at = NOW() WHERE id = ?'
+        );
+        return $stmt->execute([$id]);
+    }
+
+    public function countActiveAdmins(): int
+    {
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*) FROM ' . self::TABLE . ' u
+             JOIN tbl_roles    r ON u.role_id   = r.id
+             JOIN tbl_statuses s ON u.status_id = s.id
+             WHERE r.slug = ? AND s.slug = ?'
+        );
+        $stmt->execute(['administrator', 'active']);
+        return (int)$stmt->fetchColumn();
+    }
+
+    public function isLastActiveAdmin(int $id): bool
+    {
+        $user = $this->findById($id);
+        if (!$user || ($user['role_slug'] ?? '') !== 'administrator') {
+            return false;
+        }
+        return $this->countActiveAdmins() <= 1;
     }
 }

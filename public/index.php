@@ -40,7 +40,7 @@ header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:;");
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdn.datatables.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.datatables.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: https://cdn.datatables.net;");
 
 // Iniciar sesión
 use Core\Session;
@@ -55,6 +55,7 @@ use App\Controllers\AuthController;
 use App\Controllers\DashboardController;
 use App\Controllers\ProfileController;
 use App\Controllers\AccountController;
+use App\Controllers\UsersController;
 
 $router = new Router();
 
@@ -77,6 +78,14 @@ $router->get('/account/edit-email',       [AccountController::class, 'editEmail'
 $router->post('/account/update-email',    [AccountController::class, 'updateEmail']);
 $router->get('/account/edit-password',    [AccountController::class, 'editPassword']);
 $router->post('/account/update-password', [AccountController::class, 'updatePassword']);
+
+// Users (admin only)
+$router->get('/users',                    [UsersController::class, 'index']);
+$router->get('/users/create',             [UsersController::class, 'create']);
+$router->post('/users/store',             [UsersController::class, 'store']);
+$router->get('/users/edit/{id}',          [UsersController::class, 'edit']);
+$router->post('/users/update/{id}',       [UsersController::class, 'update']);
+$router->post('/users/delete/{id}',       [UsersController::class, 'delete']);
 
 // Raíz — redirigir a dashboard o login
 $router->get('/', [DashboardController::class, 'index']);

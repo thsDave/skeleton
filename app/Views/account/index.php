@@ -24,7 +24,7 @@ require dirname(__DIR__) . '/layouts/main.php';
   </div>
 </div>
 
-<?php require dirname(__DIR__) . '/layouts/alerts.php'; ?>
+<?php $_accStatus = $user['status_slug'] ?? $user['status'] ?? ''; ?>
 
 <div class="row">
   <!-- Correo electrónico -->
@@ -106,8 +106,8 @@ require dirname(__DIR__) . '/layouts/main.php';
           <div class="col-sm-6 col-md-3 mb-2">
             <p class="mb-0 text-muted small">Estado de cuenta</p>
             <p class="mb-0">
-              <span class="badge bg-<?= $user['status'] === 'active' ? 'success' : 'danger' ?>">
-                <?= $user['status'] === 'active' ? 'Activa' : ucfirst($user['status'] ?? '') ?>
+              <span class="badge bg-<?= $_accStatus === 'active' ? 'success' : 'danger' ?>">
+                <?= $_accStatus === 'active' ? 'Activa' : ucfirst($user['status_name'] ?? $_accStatus) ?>
               </span>
             </p>
           </div>

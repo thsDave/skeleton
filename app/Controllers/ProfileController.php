@@ -23,7 +23,7 @@ class ProfileController extends Controller
     {
         Auth::requireAuth();
         $authUser = Auth::user();
-        $user = $this->userModel->findById(Auth::id());
+        $user     = $this->userModel->findById(Auth::id());
         $this->view('profile.index', compact('authUser', 'user'));
     }
 
@@ -31,7 +31,7 @@ class ProfileController extends Controller
     {
         Auth::requireAuth();
         $authUser = Auth::user();
-        $user = $this->userModel->findById(Auth::id());
+        $user     = $this->userModel->findById(Auth::id());
         $this->view('profile.edit', compact('authUser', 'user'));
     }
 
@@ -67,19 +67,106 @@ class ProfileController extends Controller
             ]);
         }
 
-        $updated = $this->userModel->updateProfile(Auth::id(), [
+        $id        = Auth::id();
+        $uploadedImage = null;
+
+        // Procesar imagen de perfil si se envió
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $result = $this->handleImageUpload($_FILES['profile_image']);
+            if ($result['error']) {
+                Redirect::withErrors('/profile/edit', ['profile_image' => $result['error']], [
+                    'nombres'   => $nombres,
+                    'apellidos' => $apellidos,
+                    'telefono'  => $telefono,
+                    'direccion' => $direccion,
+                ]);
+            }
+            $uploadedImage = $result['filename'];
+        }
+
+        $updated = $this->userModel->updateProfile($id, [
             'nombres'   => $nombres,
             'apellidos' => $apellidos,
             'telefono'  => $telefono ?: null,
             'direccion' => $direccion ?: null,
         ]);
 
+        if ($uploadedImage) {
+            // Eliminar imagen anterior si existe
+            $currentUser = $this->userModel->findById($id);
+            $this->deleteOldImage($currentUser['profile_image'] ?? null);
+            $this->userModel->updateProfileImage($id, $uploadedImage);
+        }
+
         if ($updated) {
-            Auth::updateSession(['nombres' => $nombres, 'apellidos' => $apellidos]);
-            Logger::info("Perfil actualizado - ID " . Auth::id());
+            Auth::updateSession([
+                'nombres'      => $nombres,
+                'apellidos'    => $apellidos,
+                'profile_image' => $uploadedImage ?? Auth::user()['profile_image'],
+            ]);
+            Logger::info("Perfil actualizado - ID {$id}");
             Redirect::withSuccess('/profile', 'Perfil actualizado correctamente.');
         } else {
             Redirect::withError('/profile/edit', 'No se pudo actualizar el perfil. Intenta de nuevo.');
+        }
+    }
+
+    // ─── Helpers de imagen ────────────────────────────────────────────────────
+
+    private function handleImageUpload(array $file): array
+    {
+        $config = require dirname(__DIR__, 2) . '/config/app.php';
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return ['error' => 'Error al subir el archivo.', 'filename' => null];
+        }
+        if ($file['size'] > $config['upload_max_size']) {
+            return ['error' => 'La imagen no debe superar 2 MB.', 'filename' => null];
+        }
+
+        // Validar MIME real (no confiar en extensión)
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($mime, $config['upload_allowed_mime'], true)) {
+            return ['error' => 'Solo se permiten imágenes JPG, PNG o WEBP.', 'filename' => null];
+        }
+
+        $ext      = match($mime) {
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/webp' => 'webp',
+            default      => null,
+        };
+
+        if (!$ext) {
+            return ['error' => 'Formato de imagen no permitido.', 'filename' => null];
+        }
+
+        $filename = 'avatar_' . Auth::id() . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
+        $destPath = $config['upload_profile_path'] . $filename;
+
+        if (!is_dir($config['upload_profile_path'])) {
+            mkdir($config['upload_profile_path'], 0755, true);
+        }
+
+        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+            return ['error' => 'No se pudo guardar la imagen.', 'filename' => null];
+        }
+
+        return ['error' => null, 'filename' => $filename];
+    }
+
+    private function deleteOldImage(?string $filename): void
+    {
+        if (!$filename) {
+            return;
+        }
+        $config = require dirname(__DIR__, 2) . '/config/app.php';
+        $path   = $config['upload_profile_path'] . $filename;
+        if (file_exists($path)) {
+            @unlink($path);
         }
     }
 }

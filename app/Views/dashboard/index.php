@@ -26,15 +26,29 @@ require dirname(__DIR__) . '/layouts/main.php';
 <!-- [ breadcrumb ] end -->
 
 <!-- [ Main Content ] start -->
+<?php
+$_dashImg = $authUser['profile_image'] ?? null;
+$_dashAvatar = $_dashImg
+    ? BASE_URL . '/uploads/profiles/' . htmlspecialchars($_dashImg, ENT_QUOTES, 'UTF-8')
+    : null;
+?>
 <div class="row">
   <div class="col-12">
     <div class="card">
       <div class="card-body">
         <div class="d-flex align-items-center">
           <div class="flex-shrink-0">
-            <div class="avtar avtar-xl bg-light-primary">
-              <i class="ph-duotone ph-user-circle text-primary" style="font-size:3rem;"></i>
-            </div>
+            <?php if ($_dashAvatar): ?>
+              <img src="<?= $_dashAvatar ?>"
+                   alt="avatar"
+                   class="rounded-circle"
+                   style="width:64px;height:64px;object-fit:cover;"
+                   onerror="this.replaceWith(document.querySelector('#_dashFallback').content.cloneNode(true))">
+            <?php else: ?>
+              <div class="avtar avtar-xl bg-light-primary">
+                <i class="ph-duotone ph-user-circle text-primary" style="font-size:3rem;"></i>
+              </div>
+            <?php endif; ?>
           </div>
           <div class="flex-grow-1 ms-3">
             <h4 class="mb-1">
