@@ -23,7 +23,7 @@ class SecurityController
     public function updateSessions(): void
     {
         Auth::requireAdmin();
-        CSRF::verify();
+        CSRF::validateOrFail();
 
         $enabled = isset($_POST['session_lock_enabled']) ? 1 : 0;
         $seconds = (int) ($_POST['session_inactivity_seconds'] ?? 900);

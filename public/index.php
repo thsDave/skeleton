@@ -76,8 +76,9 @@ $router->post('/login', [AuthController::class, 'loginProcess']);
 $router->post('/logout',[AuthController::class, 'logout']);
 
 // Session lock
-$router->get('/lock',    [LockController::class, 'show']);
-$router->post('/unlock', [LockController::class, 'unlock']);
+$router->get('/lock',          [LockController::class, 'show']);
+$router->post('/lock/session', [LockController::class, 'lockSession']); // AJAX: mark session as locked
+$router->post('/unlock',       [LockController::class, 'unlock']);
 
 // Dashboard
 $router->get('/dashboard', [DashboardController::class, 'index']);

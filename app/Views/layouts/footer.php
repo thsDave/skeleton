@@ -141,22 +141,28 @@ $_secIsAuth   = \Core\Auth::check();
 $_secLocked   = \Core\Session::get('is_locked', false);
 $_secSettings = \Core\Session::get('_sec_settings');
 if ($_secIsAuth && !$_secLocked && !empty($_secSettings) && $_secSettings['session_lock_enabled']):
-    $_secMs      = (int)$_secSettings['session_inactivity_seconds'] * 1000;
-    $_warnMs     = min(30000, (int)$_secSettings['session_inactivity_seconds'] * 100); // 10% or 30s
-    $_lockTitle  = json_encode(__('lock.session_locked'),  JSON_UNESCAPED_UNICODE);
-    $_lockHtml   = json_encode(__('lock.warning_html'),    JSON_UNESCAPED_UNICODE);
-    $_lockBtn    = json_encode(__('lock.warning_confirm'), JSON_UNESCAPED_UNICODE);
+    $_secMs   = (int)$_secSettings['session_inactivity_seconds'] * 1000;
+    // Warning fires at 90% of the timeout (at least 10 s before, at most 30 s before)
+    $_warnMs  = min(30000, max(10000, (int)($_secMs * 0.1)));
+    $_lockTitle = json_encode(__('lock.session_locked'),  JSON_UNESCAPED_UNICODE);
+    $_lockHtml  = json_encode(__('lock.warning_html'),    JSON_UNESCAPED_UNICODE);
+    $_lockBtn   = json_encode(__('lock.warning_confirm'), JSON_UNESCAPED_UNICODE);
+    $_csrfToken = json_encode(\Core\CSRF::token(),        JSON_UNESCAPED_UNICODE);
 ?>
 <script>
 (function () {
-  var TIMEOUT_MS = <?= $_secMs ?>;
-  var WARN_MS    = <?= $_warnMs ?>;
-  var last       = Date.now();
-  var warned     = false;
+  var TIMEOUT_MS  = <?= $_secMs ?>;
+  var WARN_MS     = <?= $_warnMs ?>;
+  var BASE        = '<?= rtrim(BASE_URL, '/') ?>';
+  var csrfToken   = <?= $_csrfToken ?>;
+  var last        = Date.now();
+  var warned      = false;
+  var locking     = false; // guard against double-call
 
   function resetTimer() {
-    last   = Date.now();
-    warned = false;
+    last    = Date.now();
+    warned  = false;
+    locking = false;
     if (typeof Swal !== 'undefined') Swal.close();
   }
 
@@ -164,11 +170,38 @@ if ($_secIsAuth && !$_secLocked && !empty($_secSettings) && $_secSettings['sessi
     document.addEventListener(ev, resetTimer, { passive: true });
   });
 
+  /**
+   * Tell the server to mark the session as locked, then redirect to /lock.
+   * This must happen BEFORE the redirect so LockController::show() finds
+   * is_locked=true in the session and renders the lock screen instead of
+   * bouncing back to /dashboard.
+   */
+  function lockAndRedirect() {
+    if (locking) return;
+    locking = true;
+
+    var body = '_csrf_token=' + encodeURIComponent(csrfToken) +
+               '&intended_url=' + encodeURIComponent(window.location.pathname);
+
+    fetch(BASE + '/lock/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body,
+      credentials: 'same-origin'
+    }).then(function () {
+      window.location.replace(BASE + '/lock');
+    }).catch(function () {
+      // Network error — redirect anyway; server-side check will handle it
+      window.location.replace(BASE + '/lock');
+    });
+  }
+
   setInterval(function () {
+    if (locking) return;
     var idle = Date.now() - last;
 
     if (idle >= TIMEOUT_MS) {
-      window.location.replace('<?= BASE_URL ?>/lock');
+      lockAndRedirect();
       return;
     }
 
@@ -186,10 +219,17 @@ if ($_secIsAuth && !$_secLocked && !empty($_secSettings) && $_secSettings['sessi
           showConfirmButton: true,
           confirmButtonText: <?= $_lockBtn ?>,
           confirmButtonColor: '#4680ff'
-        }).then(function () { resetTimer(); });
+        }).then(function (result) {
+          // Only reset the timer if the user explicitly clicked the button.
+          // If the Swal timer expired naturally, the setInterval will call
+          // lockAndRedirect() on its next tick.
+          if (result.isConfirmed) {
+            resetTimer();
+          }
+        });
       }
     }
-  }, 3000);
+  }, 2000);
 })();
 </script>
 <?php endif; ?>

@@ -2,10 +2,10 @@
 use Core\Session;
 use Core\CSRF;
 
-$_lockError  = Session::getFlash('lock_error');
-$_lockTheme  = Session::get('user_theme', 'light');
+$_lockError   = Session::getFlash('lock_error');
+$_lockTheme   = Session::get('user_theme', 'light');
 $_lockBsTheme = ($_lockTheme === 'dark') ? 'dark' : 'light';
-$_lockName   = trim(Session::get('user_nombres', '') . ' ' . Session::get('user_apellidos', ''));
+$_lockName    = trim(Session::get('user_nombres', '') . ' ' . Session::get('user_apellidos', ''));
 if (!$_lockName) $_lockName = Session::get('user_name', 'Usuario');
 $_lockImg    = Session::get('user_profile_image');
 $_lockAvatar = $_lockImg
@@ -27,6 +27,10 @@ $_lockAvatar = $_lockImg
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css" id="main-style-link" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style-preset.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/dark-mode.css" />
+  <style>
+    /* Suppress DashboardKit preloader — lock screen must be immediately visible */
+    .loader-bg { display: none !important; }
+  </style>
 </head>
 <body
   data-pc-preset="preset-1"
@@ -35,10 +39,6 @@ $_lockAvatar = $_lockImg
   data-pc-theme="<?= htmlspecialchars($_lockTheme, ENT_QUOTES, 'UTF-8') ?>"
   data-bs-theme="<?= $_lockBsTheme ?>"
 >
-
-<div class="loader-bg">
-  <div class="pc-loader"><div class="loader-fill"></div></div>
-</div>
 
 <div class="auth-main v1">
   <div class="bg-overlay bg-primary"></div>
@@ -68,7 +68,7 @@ $_lockAvatar = $_lockImg
           <p class="text-muted small mb-4"><?= __('lock.message') ?></p>
 
           <?php if ($_lockError): ?>
-            <div class="alert alert-danger py-2 small text-start">
+            <div class="alert alert-danger py-2 small text-start mb-3">
               <i class="ph-duotone ph-warning-circle me-2"></i>
               <?= htmlspecialchars($_lockError, ENT_QUOTES, 'UTF-8') ?>
             </div>
@@ -76,7 +76,6 @@ $_lockAvatar = $_lockImg
 
           <form action="<?= BASE_URL ?>/unlock" method="POST" novalidate>
             <?= CSRF::field() ?>
-
             <div class="mb-3 text-start">
               <label for="password" class="form-label fw-semibold"><?= __('lock.password') ?></label>
               <div class="input-group">
@@ -93,7 +92,6 @@ $_lockAvatar = $_lockImg
                 />
               </div>
             </div>
-
             <button type="submit" class="btn btn-primary w-100 mb-3">
               <i class="ph-duotone ph-lock-open me-2"></i> <?= __('lock.unlock') ?>
             </button>
@@ -112,27 +110,28 @@ $_lockAvatar = $_lockImg
   </div>
 </div>
 
+<!--
+  Script order: feather BEFORE pcoded so pcoded's DOMContentLoaded callback
+  finds `feather` already defined (avoids "feather is not defined" at pcoded.js:19).
+-->
 <script src="<?= BASE_URL ?>/assets/js/plugins/popper.min.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/plugins/simplebar.min.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/plugins/bootstrap.min.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/fonts/custom-font.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/plugins/feather.min.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/pcoded.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/theme.js"></script>
-<?php if ($_lockTheme === 'default'): ?>
 <script>
+<?php if ($_lockTheme === 'default'): ?>
 (function () {
   var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   var t = prefersDark ? 'dark' : 'light';
   layout_change(t);
   document.body.setAttribute('data-bs-theme', t);
 })();
-</script>
 <?php else: ?>
-<script>
   layout_change('<?= htmlspecialchars($_lockTheme, ENT_QUOTES, 'UTF-8') ?>');
-</script>
 <?php endif; ?>
-<script>
   layout_sidebar_change('dark');
   preset_change('preset-1');
 </script>
