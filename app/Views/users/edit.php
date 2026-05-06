@@ -140,7 +140,13 @@ $_editAvatar = $_editImg
               <?php if (isset($errors['password'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['password'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
-              <div class="form-text">Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial.</div>
+              <div id="pwd-requirements" class="mt-2 small lh-lg">
+                <div id="req-length"  class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Mínimo 10 caracteres</div>
+                <div id="req-upper"   class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos una mayúscula</div>
+                <div id="req-lower"   class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos una minúscula</div>
+                <div id="req-number"  class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos un número</div>
+                <div id="req-special" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos un carácter especial</div>
+              </div>
             </div>
             <div class="col-md-6 mb-3">
               <label for="password_confirmation" class="form-label fw-semibold">Confirmar Contraseña</label>
@@ -150,6 +156,7 @@ $_editAvatar = $_editImg
               <?php if (isset($errors['password_confirmation'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['password_confirmation'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
+              <div id="pwd-match" class="mt-1"></div>
             </div>
           </div>
 
@@ -244,6 +251,40 @@ function previewAvatar(input) {
   };
   reader.readAsDataURL(input.files[0]);
 }
+(function () {
+  var pwdEl = document.getElementById('password');
+  var cfmEl = document.getElementById('password_confirmation');
+  if (!pwdEl || !cfmEl) return;
+  var rules = [
+    { id: 'req-length',  fn: function(v){ return v.length >= 10; } },
+    { id: 'req-upper',   fn: function(v){ return /[A-Z]/.test(v); } },
+    { id: 'req-lower',   fn: function(v){ return /[a-z]/.test(v); } },
+    { id: 'req-number',  fn: function(v){ return /[0-9]/.test(v); } },
+    { id: 'req-special', fn: function(v){ return /[\W_]/.test(v); } }
+  ];
+  pwdEl.addEventListener('input', function () {
+    var val = this.value;
+    rules.forEach(function (r) {
+      var el = document.getElementById(r.id);
+      if (!el) return;
+      var ok = r.fn(val);
+      el.className = val ? (ok ? 'text-success' : 'text-danger') : 'text-muted';
+      var icon = el.querySelector('i');
+      if (icon) icon.className = val ? (ok ? 'ph-fill ph-check-circle me-1' : 'ph-fill ph-x-circle me-1') : 'ph-duotone ph-circle me-1';
+    });
+    checkMatch();
+  });
+  cfmEl.addEventListener('input', checkMatch);
+  function checkMatch() {
+    var matchDiv = document.getElementById('pwd-match');
+    if (!matchDiv) return;
+    var p = pwdEl.value, c = cfmEl.value;
+    if (!c) { matchDiv.innerHTML = ''; return; }
+    matchDiv.innerHTML = p === c
+      ? '<span class="text-success small"><i class="ph-fill ph-check-circle me-1"></i>Las contraseñas coinciden.</span>'
+      : '<span class="text-danger small"><i class="ph-fill ph-x-circle me-1"></i>Las contraseñas no coinciden.</span>';
+  }
+}());
 </script>
 JS;
 ?>

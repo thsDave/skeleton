@@ -56,8 +56,8 @@ class Validator
             return $this;
         }
         $errors = [];
-        if (mb_strlen($value) < 8) {
-            $errors[] = 'mínimo 8 caracteres';
+        if (mb_strlen($value) < 10) {
+            $errors[] = 'mínimo 10 caracteres';
         }
         if (!preg_match('/[A-Z]/', $value)) {
             $errors[] = 'al menos una mayúscula';

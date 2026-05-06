@@ -74,15 +74,18 @@ require dirname(__DIR__) . '/layouts/main.php';
                 class="form-control <?= isset($errors['new_password']) ? 'is-invalid' : '' ?>"
                 required
                 autocomplete="new-password"
-                placeholder="Nueva contraseña"
+                placeholder="Mínimo 10 caracteres"
               />
               <?php if (isset($errors['new_password'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['new_password'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
             </div>
-            <div class="form-text">
-              <i class="ph-duotone ph-info me-1"></i>
-              Mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (Ej: <code>!</code> <code>@</code> <code>#</code> <code>*</code>).
+            <div id="pwd-requirements" class="mt-2 small lh-lg">
+              <div id="req-length"  class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Mínimo 10 caracteres</div>
+              <div id="req-upper"   class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos una mayúscula</div>
+              <div id="req-lower"   class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos una minúscula</div>
+              <div id="req-number"  class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos un número</div>
+              <div id="req-special" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos un carácter especial</div>
             </div>
           </div>
 
@@ -105,6 +108,7 @@ require dirname(__DIR__) . '/layouts/main.php';
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['confirm_password'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
             </div>
+            <div id="pwd-match" class="mt-1"></div>
           </div>
 
           <div class="d-flex gap-2">
@@ -121,4 +125,44 @@ require dirname(__DIR__) . '/layouts/main.php';
   </div>
 </div>
 
+<?php
+$extraScript = <<<'JS'
+<script>
+(function () {
+  var pwdEl = document.getElementById('new_password');
+  var cfmEl = document.getElementById('confirm_password');
+  if (!pwdEl || !cfmEl) return;
+  var rules = [
+    { id: 'req-length',  fn: function(v){ return v.length >= 10; } },
+    { id: 'req-upper',   fn: function(v){ return /[A-Z]/.test(v); } },
+    { id: 'req-lower',   fn: function(v){ return /[a-z]/.test(v); } },
+    { id: 'req-number',  fn: function(v){ return /[0-9]/.test(v); } },
+    { id: 'req-special', fn: function(v){ return /[\W_]/.test(v); } }
+  ];
+  pwdEl.addEventListener('input', function () {
+    var val = this.value;
+    rules.forEach(function (r) {
+      var el = document.getElementById(r.id);
+      if (!el) return;
+      var ok = r.fn(val);
+      el.className = val ? (ok ? 'text-success' : 'text-danger') : 'text-muted';
+      var icon = el.querySelector('i');
+      if (icon) icon.className = val ? (ok ? 'ph-fill ph-check-circle me-1' : 'ph-fill ph-x-circle me-1') : 'ph-duotone ph-circle me-1';
+    });
+    checkMatch();
+  });
+  cfmEl.addEventListener('input', checkMatch);
+  function checkMatch() {
+    var matchDiv = document.getElementById('pwd-match');
+    if (!matchDiv) return;
+    var p = pwdEl.value, c = cfmEl.value;
+    if (!c) { matchDiv.innerHTML = ''; return; }
+    matchDiv.innerHTML = p === c
+      ? '<span class="text-success small"><i class="ph-fill ph-check-circle me-1"></i>Las contraseñas coinciden.</span>'
+      : '<span class="text-danger small"><i class="ph-fill ph-x-circle me-1"></i>Las contraseñas no coinciden.</span>';
+  }
+}());
+</script>
+JS;
+?>
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>

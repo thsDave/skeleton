@@ -73,6 +73,29 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <?php endif; ?>
 
+<?php
+$_swValidationErrors = isset($errors) && is_array($errors) && !empty($errors)
+    ? array_values(array_filter($errors))
+    : [];
+?>
+<?php if (!empty($_swValidationErrors)): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var msgs = <?= json_encode($_swValidationErrors, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+  var html = '<ul class="text-start ps-3 mb-0 mt-1">';
+  msgs.forEach(function(m) { html += '<li>' + m + '</li>'; });
+  html += '</ul>';
+  Swal.fire({
+    icon: 'error',
+    title: 'Revisa los datos ingresados',
+    html: html,
+    confirmButtonColor: '#4680ff',
+    customClass: { htmlContainer: 'text-start' }
+  });
+});
+</script>
+<?php endif; ?>
+
 <!-- Inicializar Select2 global -->
 <script>
 $(document).ready(function () {

@@ -58,7 +58,7 @@ class UsersController extends Controller
         $direccion = trim($this->input('direccion', ''));
         $email     = trim($this->input('email', ''));
         $password  = $this->input('password', '');
-        $confirm   = $this->input('confirm_password', '');
+        $confirm   = $this->input('password_confirmation', '');
         $roleId    = (int)$this->input('role_id', 0);
         $statusId  = (int)$this->input('status_id', 0);
 
@@ -74,7 +74,7 @@ class UsersController extends Controller
                   ->maxLength('email', $email, 150, 'Correo electrónico')
                   ->required('password', $password, 'Contraseña')
                   ->strongPassword('password', $password)
-                  ->matches('confirm_password', $password, $confirm)
+                  ->matches('password_confirmation', $password, $confirm)
                   ->required('role_id', $roleId ?: '', 'Rol')
                   ->required('status_id', $statusId ?: '', 'Estado');
 
@@ -177,7 +177,7 @@ class UsersController extends Controller
         $direccion = trim($this->input('direccion', ''));
         $email     = trim($this->input('email', ''));
         $password  = $this->input('password', '');
-        $confirm   = $this->input('confirm_password', '');
+        $confirm   = $this->input('password_confirmation', '');
         $roleId    = (int)$this->input('role_id', 0);
         $statusId  = (int)$this->input('status_id', 0);
 
@@ -196,7 +196,7 @@ class UsersController extends Controller
 
         if ($password !== '') {
             $validator->strongPassword('password', $password)
-                      ->matches('confirm_password', $password, $confirm);
+                      ->matches('password_confirmation', $password, $confirm);
         }
 
         if ($validator->fails()) {
