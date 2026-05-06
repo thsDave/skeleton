@@ -38,8 +38,39 @@ $_swError   = \Core\Session::getFlash('error');
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<?php $__ft = \Core\Auth::check() ? \Core\Auth::theme() : 'light'; ?>
 <script>
-  layout_change('<?= \Core\Auth::check() ? htmlspecialchars(\Core\Auth::theme(), ENT_QUOTES, 'UTF-8') : 'light' ?>');
+/**
+ * syncBsTheme — sincroniza data-bs-theme y data-pc-header-theme con el valor
+ * de DashboardKit (data-pc-theme). El CSS de la versión Free usa [data-bs-theme=dark]
+ * (Bootstrap 5.3) y [data-pc-header-theme=dark] para aplicar el modo oscuro visual.
+ */
+function syncBsTheme(pcTheme) {
+  var dark = (pcTheme === 'dark');
+  document.body.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
+  layout_header_change(dark ? 'dark' : 'light');
+}
+
+<?php if ($__ft === 'default'): ?>
+// Modo "Predeterminado": detectar preferencia del SO
+(function () {
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var t = prefersDark ? 'dark' : 'light';
+  layout_change(t);
+  syncBsTheme(t);
+  // Escuchar cambios del SO en tiempo real
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+      var nt = e.matches ? 'dark' : 'light';
+      layout_change(nt);
+      syncBsTheme(nt);
+    });
+  }
+})();
+<?php else: ?>
+layout_change('<?= htmlspecialchars($__ft, ENT_QUOTES, 'UTF-8') ?>');
+syncBsTheme('<?= htmlspecialchars($__ft, ENT_QUOTES, 'UTF-8') ?>');
+<?php endif; ?>
   layout_sidebar_change('dark');
   layout_caption_change('true');
   layout_rtl_change('false');

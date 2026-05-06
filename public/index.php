@@ -81,6 +81,7 @@ $router->get('/profile',                   [ProfileController::class, 'index']);
 $router->get('/profile/edit',              [ProfileController::class, 'edit']);
 $router->post('/profile/update',           [ProfileController::class, 'update']);
 $router->post('/profile/preferences',      [ProfileController::class, 'updatePreferences']);
+$router->post('/profile/theme',            [ProfileController::class, 'updateTheme']);
 
 // Account
 $router->get('/account',                  [AccountController::class, 'index']);

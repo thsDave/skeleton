@@ -127,10 +127,13 @@ $_prfStatus = $user['status_slug'] ?? $user['status'] ?? '';
               <label class="form-label fw-semibold"><?= __('profile.theme') ?></label>
               <select name="theme_preference" class="form-select">
                 <option value="light" <?= ($user['theme_preference'] ?? 'light') === 'light' ? 'selected' : '' ?>>
-                  ☀️ <?= __('profile.theme_light') ?>
+                  ☀️ <?= __('theme.light') ?>
                 </option>
                 <option value="dark" <?= ($user['theme_preference'] ?? 'light') === 'dark' ? 'selected' : '' ?>>
-                  🌙 <?= __('profile.theme_dark') ?>
+                  🌙 <?= __('theme.dark') ?>
+                </option>
+                <option value="default" <?= ($user['theme_preference'] ?? 'light') === 'default' ? 'selected' : '' ?>>
+                  ◑ <?= __('theme.default') ?>
                 </option>
               </select>
             </div>

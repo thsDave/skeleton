@@ -1,3 +1,10 @@
+<?php
+$_bodyTheme     = \Core\Auth::check() ? \Core\Auth::theme() : 'light'; // 'light'|'dark'|'default'
+$_isDark        = ($_bodyTheme === 'dark');
+// Para 'default', el server asume 'light'; JS corregirá según preferencia del SO
+$_bsTheme       = $_isDark ? 'dark' : 'light';
+$_headerTheme   = $_isDark ? 'dark' : 'light';
+?>
 <!doctype html>
 <html lang="es">
 <head>
@@ -5,6 +12,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="csrf-token" content="<?= htmlspecialchars(\Core\CSRF::token(), ENT_QUOTES, 'UTF-8') ?>" />
 
   <link rel="icon" href="<?= BASE_URL ?>/assets/images/favicon.svg" type="image/x-icon" />
   <link href="<?= BASE_URL ?>/assets/fonts/inter/inter.css" rel="stylesheet" />
@@ -26,7 +34,15 @@
 
   <?php if (isset($extraHead)) echo $extraHead; ?>
 </head>
-<body data-pc-preset="preset-1" data-pc-sidebar-theme="dark" data-pc-header-theme="light" data-pc-sidebar-caption="true" data-pc-direction="ltr" data-pc-theme="<?= \Core\Auth::check() ? htmlspecialchars(\Core\Auth::theme(), ENT_QUOTES, 'UTF-8') : 'light' ?>">
+<body
+  data-pc-preset="preset-1"
+  data-pc-sidebar-theme="dark"
+  data-pc-header-theme="<?= $_headerTheme ?>"
+  data-pc-sidebar-caption="true"
+  data-pc-direction="ltr"
+  data-pc-theme="<?= htmlspecialchars($_bodyTheme, ENT_QUOTES, 'UTF-8') ?>"
+  data-bs-theme="<?= $_bsTheme ?>"
+>
 
 <div class="loader-bg">
   <div class="pc-loader"><div class="loader-fill"></div></div>

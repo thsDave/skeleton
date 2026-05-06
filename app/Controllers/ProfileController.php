@@ -54,7 +54,7 @@ class ProfileController extends Controller
         $languageId = $this->input('language_id', null);
 
         // Validar tema
-        if (!in_array($theme, ['light', 'dark'], true)) {
+        if (!in_array($theme, ['light', 'dark', 'default'], true)) {
             $theme = 'light';
         }
 
@@ -164,6 +164,50 @@ class ProfileController extends Controller
         } else {
             Redirect::withError('/profile/edit', 'No se pudo actualizar el perfil. Intenta de nuevo.');
         }
+    }
+
+    public function updateTheme(): void
+    {
+        Auth::requireAuth();
+
+        if (!$this->isPost()) {
+            http_response_code(405);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false]);
+            exit;
+        }
+
+        // verify() sin rotación — seguro para AJAX (no regenera el token)
+        if (!CSRF::verify()) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'csrf']);
+            exit;
+        }
+
+        $theme = $this->input('theme', 'light');
+        if (!in_array($theme, ['light', 'dark', 'default'], true)) {
+            http_response_code(422);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'invalid']);
+            exit;
+        }
+
+        $id   = Auth::id();
+        $user = $this->userModel->findById($id);
+
+        try {
+            $this->userModel->updatePreferences($id, $theme, $user['language_id'] ?? null);
+            Auth::updateSession(['theme' => $theme]);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'theme' => $theme]);
+        } catch (\PDOException $e) {
+            Logger::error('ProfileController::updateTheme PDOException: ' . $e->getMessage());
+            http_response_code(500);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'db']);
+        }
+        exit;
     }
 
     // ─── Helpers de imagen ────────────────────────────────────────────────────

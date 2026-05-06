@@ -296,6 +296,14 @@ return [
     // ── Profile aliases ─────────────────────────────────────────────────────────
     'profile.edit_profile'       => 'Edit Profile',
     'profile.language_default'   => '— Select language —',
+    'profile.theme_default'      => 'Default (system)',
+
+    // ── Theme ────────────────────────────────────────────────────────────────────
+    'theme.light'                => 'Light',
+    'theme.dark'                 => 'Dark',
+    'theme.default'              => 'Default',
+    'theme.title'                => 'Theme',
+    'theme.updated'              => 'Theme updated.',
 
     // ── Button aliases ──────────────────────────────────────────────────────────
     'buttons.save_preferences'   => 'Save Preferences',

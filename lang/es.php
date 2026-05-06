@@ -296,6 +296,14 @@ return [
     // ── Alias de perfil ─────────────────────────────────────────────────────────
     'profile.edit_profile'       => 'Editar Perfil',
     'profile.language_default'   => '— Seleccionar idioma —',
+    'profile.theme_default'      => 'Predeterminado (sistema)',
+
+    // ── Tema ────────────────────────────────────────────────────────────────────
+    'theme.light'                => 'Claro',
+    'theme.dark'                 => 'Oscuro',
+    'theme.default'              => 'Predeterminado',
+    'theme.title'                => 'Tema',
+    'theme.updated'              => 'Tema actualizado.',
 
     // ── Alias de botones ────────────────────────────────────────────────────────
     'buttons.save_preferences'   => 'Guardar Preferencias',
