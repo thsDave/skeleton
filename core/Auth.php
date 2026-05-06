@@ -31,10 +31,89 @@ class Auth
 
     public static function requireAuth(): void
     {
+        // Capture last activity BEFORE check() updates it
+        $lastActivity = Session::get('_last_activity', time());
+
         if (!self::check()) {
             Redirect::to('/login');
             exit;
         }
+
+        self::checkSessionLock($lastActivity);
+    }
+
+    private static function checkSessionLock(int $lastActivity): void
+    {
+        if (Session::get('is_locked', false)) {
+            if (!Session::has('intended_url')) {
+                Session::set('intended_url', self::sanitizeIntendedUrl());
+            }
+            Redirect::to('/lock');
+            exit;
+        }
+
+        $settings = self::loadSecuritySettings();
+        if (!$settings['session_lock_enabled']) {
+            return;
+        }
+
+        $elapsed = time() - $lastActivity;
+        if ($elapsed > (int)$settings['session_inactivity_seconds']) {
+            Session::set('is_locked', true);
+            Session::set('locked_at', time());
+            Session::set('intended_url', self::sanitizeIntendedUrl());
+            Redirect::to('/lock');
+            exit;
+        }
+    }
+
+    public static function loadSecuritySettings(): array
+    {
+        $cached   = Session::get('_sec_settings');
+        $cachedAt = Session::get('_sec_settings_at', 0);
+
+        if ($cached !== null && (time() - $cachedAt) < 60) {
+            return $cached;
+        }
+
+        try {
+            $model    = new \App\Models\SecuritySetting();
+            $settings = $model->getSettings();
+        } catch (\Throwable $e) {
+            $settings = ['session_lock_enabled' => 1, 'session_inactivity_seconds' => 900];
+        }
+
+        Session::set('_sec_settings', $settings);
+        Session::set('_sec_settings_at', time());
+        return $settings;
+    }
+
+    private static function sanitizeIntendedUrl(): string
+    {
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (!$uri) {
+            return '/dashboard';
+        }
+
+        $uri = parse_url($uri, PHP_URL_PATH) ?: '';
+
+        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+        if ($scriptDir && $scriptDir !== '/' && str_starts_with($uri, $scriptDir)) {
+            $uri = substr($uri, strlen($scriptDir));
+        }
+
+        $uri = '/' . ltrim($uri, '/');
+        $uri = rtrim($uri, '/') ?: '/';
+
+        if (preg_match('#^//#', $uri) || str_contains($uri, '://')) {
+            return '/dashboard';
+        }
+
+        if (in_array(strtolower($uri), ['/lock', '/unlock'], true)) {
+            return '/dashboard';
+        }
+
+        return $uri;
     }
 
     public static function requireGuest(): void

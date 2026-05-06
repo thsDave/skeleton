@@ -65,6 +65,8 @@ use App\Controllers\AccountController;
 use App\Controllers\UsersController;
 use App\Controllers\LanguagesController;
 use App\Controllers\SystemInformationController;
+use App\Controllers\LockController;
+use App\Controllers\SecurityController;
 
 $router = new Router();
 
@@ -72,6 +74,10 @@ $router = new Router();
 $router->get('/login',  [AuthController::class, 'loginForm']);
 $router->post('/login', [AuthController::class, 'loginProcess']);
 $router->post('/logout',[AuthController::class, 'logout']);
+
+// Session lock
+$router->get('/lock',    [LockController::class, 'show']);
+$router->post('/unlock', [LockController::class, 'unlock']);
 
 // Dashboard
 $router->get('/dashboard', [DashboardController::class, 'index']);
@@ -116,6 +122,10 @@ $router->get('/manuals/create',              [SystemInformationController::class
 $router->post('/manuals/store',              [SystemInformationController::class, 'storeManual']);
 $router->post('/manuals/toggle/{id}',        [SystemInformationController::class, 'toggleManual']);
 $router->get('/manuals/download/{id}',       [SystemInformationController::class, 'downloadManual']);
+
+// Security (admin only)
+$router->get('/security/sessions',        [SecurityController::class, 'sessions']);
+$router->post('/security/sessions/update',[SecurityController::class, 'updateSessions']);
 
 // Raíz — redirigir a dashboard o login
 $router->get('/', [DashboardController::class, 'index']);

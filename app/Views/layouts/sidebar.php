@@ -66,6 +66,17 @@
             <span class="pc-mtext"><?= __('menu.languages') ?></span>
           </a>
         </li>
+
+        <li class="pc-item pc-caption">
+          <label><?= __('menu.security') ?></label>
+        </li>
+
+        <li class="pc-item <?= ($activeMenu ?? '') === 'security_sessions' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/security/sessions" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-lock-key"></i></span>
+            <span class="pc-mtext"><?= __('menu.security_sessions') ?></span>
+          </a>
+        </li>
         <?php endif; ?>
 
       </ul>

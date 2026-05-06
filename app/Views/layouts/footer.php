@@ -135,5 +135,63 @@ $(document).ready(function () {
 </script>
 
 <?php if (isset($extraScript)) echo $extraScript; ?>
+
+<?php
+$_secIsAuth   = \Core\Auth::check();
+$_secLocked   = \Core\Session::get('is_locked', false);
+$_secSettings = \Core\Session::get('_sec_settings');
+if ($_secIsAuth && !$_secLocked && !empty($_secSettings) && $_secSettings['session_lock_enabled']):
+    $_secMs      = (int)$_secSettings['session_inactivity_seconds'] * 1000;
+    $_warnMs     = min(30000, (int)$_secSettings['session_inactivity_seconds'] * 100); // 10% or 30s
+    $_lockTitle  = json_encode(__('lock.session_locked'),  JSON_UNESCAPED_UNICODE);
+    $_lockHtml   = json_encode(__('lock.warning_html'),    JSON_UNESCAPED_UNICODE);
+    $_lockBtn    = json_encode(__('lock.warning_confirm'), JSON_UNESCAPED_UNICODE);
+?>
+<script>
+(function () {
+  var TIMEOUT_MS = <?= $_secMs ?>;
+  var WARN_MS    = <?= $_warnMs ?>;
+  var last       = Date.now();
+  var warned     = false;
+
+  function resetTimer() {
+    last   = Date.now();
+    warned = false;
+    if (typeof Swal !== 'undefined') Swal.close();
+  }
+
+  ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function (ev) {
+    document.addEventListener(ev, resetTimer, { passive: true });
+  });
+
+  setInterval(function () {
+    var idle = Date.now() - last;
+
+    if (idle >= TIMEOUT_MS) {
+      window.location.replace('<?= BASE_URL ?>/lock');
+      return;
+    }
+
+    if (!warned && idle >= TIMEOUT_MS - WARN_MS) {
+      warned = true;
+      var secs = Math.ceil((TIMEOUT_MS - idle) / 1000);
+      var html = <?= $_lockHtml ?>.replace(':secs', secs);
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'warning',
+          title: <?= $_lockTitle ?>,
+          html: html,
+          timer: TIMEOUT_MS - idle,
+          timerProgressBar: true,
+          showConfirmButton: true,
+          confirmButtonText: <?= $_lockBtn ?>,
+          confirmButtonColor: '#4680ff'
+        }).then(function () { resetTimer(); });
+      }
+    }
+  }, 3000);
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>

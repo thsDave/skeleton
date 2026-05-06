@@ -325,4 +325,30 @@ return [
     'manuals.name_field'         => 'Título',
     'manuals.description_field'  => 'Descripción',
     'manuals.file_hint'          => 'Formatos permitidos: PDF, DOC, DOCX — máx. 10 MB',
+
+    // ── Bloqueo de sesión ────────────────────────────────────────────────────────
+    'lock.title'                 => 'Sesión Bloqueada',
+    'lock.message'               => 'Tu sesión ha sido bloqueada por inactividad. Ingresa tu contraseña para continuar.',
+    'lock.password'              => 'Contraseña',
+    'lock.unlock'                => 'Desbloquear',
+    'lock.logout'                => 'Cerrar Sesión',
+    'lock.invalid_password'      => 'Contraseña incorrecta. Inténtalo de nuevo.',
+    'lock.session_unlocked'      => 'Sesión desbloqueada correctamente.',
+    'lock.session_locked'        => 'Sesión bloqueada por inactividad',
+    'lock.warning_html'          => 'Sin actividad. Tu sesión se bloqueará en <b>:secs</b> segundos.',
+    'lock.warning_confirm'       => 'Estoy aquí',
+
+    // ── Seguridad – Sesiones ─────────────────────────────────────────────────────
+    'security.sessions.title'          => 'Seguridad – Sesiones',
+    'security.sessions.card_title'     => 'Bloqueo por Inactividad',
+    'security.sessions.inactivity_time'=> 'Tiempo de inactividad',
+    'security.sessions.seconds_hint'   => 'Segundos antes de bloquear la sesión (mín. 60, máx. 86400)',
+    'security.sessions.enabled'        => 'Bloqueo de sesión activo',
+    'security.sessions.disabled'       => 'Bloqueo de sesión desactivado',
+    'security.sessions.updated'        => 'Configuración de seguridad actualizada correctamente.',
+    'security.sessions.enable_label'   => 'Activar bloqueo automático por inactividad',
+
+    // ── Menú – Seguridad ─────────────────────────────────────────────────────────
+    'menu.security'              => 'Seguridad',
+    'menu.security_sessions'     => 'Sesiones',
 ];

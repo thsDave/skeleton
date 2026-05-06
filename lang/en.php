@@ -325,4 +325,30 @@ return [
     'manuals.name_field'         => 'Title',
     'manuals.description_field'  => 'Description',
     'manuals.file_hint'          => 'Allowed formats: PDF, DOC, DOCX — max 10 MB',
+
+    // ── Session lock ─────────────────────────────────────────────────────────────
+    'lock.title'                 => 'Session Locked',
+    'lock.message'               => 'Your session has been locked due to inactivity. Enter your password to continue.',
+    'lock.password'              => 'Password',
+    'lock.unlock'                => 'Unlock',
+    'lock.logout'                => 'Log Out',
+    'lock.invalid_password'      => 'Incorrect password. Please try again.',
+    'lock.session_unlocked'      => 'Session unlocked successfully.',
+    'lock.session_locked'        => 'Session locked due to inactivity',
+    'lock.warning_html'          => 'No activity detected. Your session will lock in <b>:secs</b> seconds.',
+    'lock.warning_confirm'       => 'I\'m here',
+
+    // ── Security – Sessions ──────────────────────────────────────────────────────
+    'security.sessions.title'          => 'Security – Sessions',
+    'security.sessions.card_title'     => 'Inactivity Lock',
+    'security.sessions.inactivity_time'=> 'Inactivity time',
+    'security.sessions.seconds_hint'   => 'Seconds before locking the session (min 60, max 86400)',
+    'security.sessions.enabled'        => 'Session lock active',
+    'security.sessions.disabled'       => 'Session lock disabled',
+    'security.sessions.updated'        => 'Security settings updated successfully.',
+    'security.sessions.enable_label'   => 'Enable automatic lock on inactivity',
+
+    // ── Menu – Security ──────────────────────────────────────────────────────────
+    'menu.security'              => 'Security',
+    'menu.security_sessions'     => 'Sessions',
 ];

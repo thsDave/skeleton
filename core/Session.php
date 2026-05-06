@@ -91,7 +91,9 @@ class Session
             }
         }
 
-        self::set('_last_activity', time());
+        if (!self::get('is_locked', false)) {
+            self::set('_last_activity', time());
+        }
         return true;
     }
 

@@ -2,7 +2,7 @@
 
 Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks externos. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
 
-**v3.0** agrega: modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema y manuales de usuario descargables.
+**v3.0** agrega: modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales de usuario descargables y **bloqueo de sesión por inactividad**.
 
 ---
 
@@ -47,7 +47,9 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 │   │   ├── AccountController.php           ← Mi Cuenta (email + password)
 │   │   ├── UsersController.php             ← CRUD de usuarios (solo admin)
 │   │   ├── LanguagesController.php         ← CRUD de idiomas (solo admin)
-│   │   └── SystemInformationController.php ← Info del sistema + manuales
+│   │   ├── SystemInformationController.php ← Info del sistema + manuales
+│   │   ├── LockController.php              ← Pantalla de bloqueo + desbloqueo
+│   │   └── SecurityController.php          ← Configuración de seguridad (solo admin)
 │   ├── Models/
 │   │   ├── User.php                        ← CRUD usuarios con JOINs
 │   │   ├── Language.php                    ← Idiomas del sistema
@@ -55,7 +57,8 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 │   │   ├── UserManual.php                  ← Manuales de usuario
 │   │   ├── Role.php                        ← Roles del sistema
 │   │   ├── Status.php                      ← Estados del sistema
-│   │   └── LoginLog.php                    ← Registro de intentos de login
+│   │   ├── LoginLog.php                    ← Registro de intentos de login
+│   │   └── SecuritySetting.php             ← Configuración de bloqueo de sesión
 │   └── Views/
 │       ├── auth/login.php
 │       ├── dashboard/index.php
@@ -79,6 +82,9 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 │       │   └── edit.php             ← Editar info (solo admin)
 │       ├── manuals/
 │       │   └── create.php           ← Subir manual (solo admin)
+│       ├── security/sessions/
+│       │   └── index.php            ← Configurar bloqueo por inactividad (solo admin)
+│       ├── lock.php                 ← Pantalla de bloqueo de sesión
 │       ├── layouts/
 │       │   ├── header.php           ← <head> + tema dinámico (light/dark)
 │       │   ├── sidebar.php          ← Menú con i18n + secciones por rol
@@ -95,7 +101,7 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 │   ├── Controller.php
 │   ├── Model.php
 │   ├── Database.php
-│   ├── Auth.php                     ← + theme(), lang(), updateSession()
+│   ├── Auth.php                     ← + theme(), lang(), updateSession(), bloqueo de sesión
 │   ├── Lang.php                     ← i18n: __($key), carga /lang/*.php
 │   ├── Session.php
 │   ├── CSRF.php
@@ -108,7 +114,8 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 ├── database/
 │   ├── db_skeleton.sql                                        ← Esquema base (001)
 │   ├── 002_update_users_roles_statuses_profile_image.sql      ← Migración (002)
-│   └── 003_add_preferences_languages_system_info_manuals.sql  ← Migración v3.0
+│   ├── 003_add_preferences_languages_system_info_manuals.sql  ← Migración v3.0
+│   └── 004_add_security_session_settings.sql                  ← Migración v3.0 (bloqueo)
 ├── logs/
 │   └── security.log
 ├── public/
@@ -182,6 +189,15 @@ Repite el proceso de importación con cada archivo SQL en orden:
    ```
 3. Haz clic en **Importar**.
 4. Verifica que existan `tbl_languages`, `tbl_system_settings`, `tbl_user_manuals` y que `tbl_users` tenga `theme_preference` y `language_id`.
+
+**Migración 004 (v3.0 — bloqueo de sesión):**
+1. Con `db_skeleton` seleccionada, ve a **Importar**.
+2. Selecciona:
+   ```
+   C:\laragon\www\template\database\004_add_security_session_settings.sql
+   ```
+3. Haz clic en **Importar**.
+4. Verifica que exista `tbl_security_settings` con un registro inicial (`id=1`, `session_lock_enabled=1`, `session_inactivity_seconds=900`).
 
 > **Alternativa rápida:** En el menú de Laragon, haz clic derecho → **Database** → **phpMyAdmin** para abrirlo directamente.
 
@@ -281,6 +297,10 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | GET | `/languages/edit/{id}` | Formulario editar idioma | Solo admin |
 | POST | `/languages/update/{id}` | Guardar cambios de idioma | Solo admin |
 | POST | `/languages/toggle/{id}` | Activar/Desactivar idioma | Solo admin |
+| GET | `/lock` | Pantalla de bloqueo de sesión | Autenticado + bloqueado |
+| POST | `/unlock` | Desbloquear sesión con contraseña | Autenticado + bloqueado |
+| GET | `/security/sessions` | Configurar bloqueo por inactividad | Solo admin |
+| POST | `/security/sessions/update` | Guardar configuración de seguridad | Solo admin |
 
 ---
 
@@ -313,6 +333,15 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 - Todos los usuarios autenticados pueden descargarlos.
 - El admin puede activar/desactivar manuales desde la misma vista.
 - Los archivos se almacenan con nombre único en `public/uploads/manuals/`.
+
+### Bloqueo de sesión por inactividad
+- La sesión se bloquea automáticamente tras un período de inactividad configurable (por defecto 15 min / 900 seg).
+- El bloqueo ocurre en el servidor: `Auth::requireAuth()` detecta el tiempo transcurrido y redirige a `/lock`.
+- El usuario ve una pantalla de bloqueo con su avatar y nombre, donde ingresa su contraseña para continuar.
+- Tras desbloquear, el sistema redirige automáticamente a la página donde estaba el usuario.
+- El admin puede configurar el tiempo de inactividad y activar/desactivar el bloqueo desde **Seguridad → Sesiones**.
+- La configuración se almacena en `tbl_security_settings` y se cachea 60 segundos en sesión.
+- El JS en el layout detecta inactividad del cliente y muestra una advertencia 30 segundos antes de bloquear.
 
 ---
 
@@ -350,6 +379,7 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | Fuerza bruta | Bloqueo automático por 15 min tras 5 intentos fallidos |
 | Session fixation | `session_regenerate_id(true)` tras login y cambios sensibles |
 | Sesión expirada | Timeout de 30 minutos de inactividad, redirección a login |
+| Sesión desatendida | Bloqueo automático por inactividad configurable (default 15 min), requiere contraseña para continuar |
 | Cookie insegura | `httponly=true`, `samesite=Lax`, `secure` en HTTPS |
 | Enumeración de usuarios | Mensaje genérico en login para email y contraseña incorrectos |
 | Acceso sin autenticación | `Auth::requireAuth()` en todas las rutas protegidas |
