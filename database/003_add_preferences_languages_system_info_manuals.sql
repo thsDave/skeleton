@@ -74,22 +74,22 @@ CREATE TABLE IF NOT EXISTS `tbl_user_manuals` (
 
 -- theme_preference (light/dark)
 ALTER TABLE `tbl_users`
-  ADD COLUMN IF NOT EXISTS `theme_preference` VARCHAR(20) NOT NULL DEFAULT 'light' AFTER `profile_image`;
+  ADD `theme_preference` VARCHAR(20) NOT NULL DEFAULT 'light' AFTER `profile_image`;
 
 -- language_id (relación con tbl_languages)
 ALTER TABLE `tbl_users`
-  ADD COLUMN IF NOT EXISTS `language_id` INT NULL DEFAULT NULL AFTER `theme_preference`;
+  ADD `language_id` INT NULL DEFAULT NULL AFTER `theme_preference`;
 
 -- Llave foránea language_id → tbl_languages
 ALTER TABLE `tbl_users`
   ADD CONSTRAINT `fk_users_language_id`
-    FOREIGN KEY IF NOT EXISTS (`language_id`) REFERENCES `tbl_languages` (`id`) ON UPDATE CASCADE ON DELETE SET NULL;
+    FOREIGN KEY (`language_id`) REFERENCES `tbl_languages` (`id`) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- Asignar idioma español por defecto al usuario administrador existente
 UPDATE `tbl_users` SET `language_id` = 1 WHERE `language_id` IS NULL;
 
 -- ============================================================
--- Nota: Si ADD COLUMN IF NOT EXISTS no es compatible con tu versión
+-- Nota: Si ADD no es compatible con tu versión
 -- de MySQL, ejecuta manualmente:
 --
 --   ALTER TABLE tbl_users ADD theme_preference VARCHAR(20) NOT NULL DEFAULT 'light';
