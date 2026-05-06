@@ -23,8 +23,9 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
-// Lang helper — must be loaded before views since it defines global __()
-require dirname(__DIR__) . '/core/Lang.php';
+// Helpers globales — define __() en el espacio global (sin namespace)
+// Core\Lang es cargado por el autoloader cuando __() lo necesite por primera vez
+require dirname(__DIR__) . '/core/helpers.php';
 
 // Configuración de errores según entorno
 $appConfig = require dirname(__DIR__) . '/config/app.php';
