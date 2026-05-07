@@ -67,6 +67,7 @@ use App\Controllers\RolesPermissionsController;
 use App\Controllers\AuditLogsController;
 use App\Controllers\PasswordResetController;
 use App\Controllers\SmtpSettingsController;
+use App\Controllers\MfaSettingsController;
 
 $router = new Router();
 
@@ -138,6 +139,11 @@ $router->post('/security/sessions/update',[SecurityController::class, 'updateSes
 $router->get('/security/smtp',            [SmtpSettingsController::class, 'index']);
 $router->post('/security/smtp/update',    [SmtpSettingsController::class, 'update']);
 $router->post('/security/smtp/test',      [SmtpSettingsController::class, 'test']);
+
+// MFA Settings
+$router->get('/security/mfa',             [MfaSettingsController::class, 'index']);
+$router->post('/security/mfa/update',     [MfaSettingsController::class, 'update']);
+$router->post('/security/mfa/test-sms',   [MfaSettingsController::class, 'testSms']);
 
 // Roles y Permisos
 $router->get('/roles-permissions',                    [RolesPermissionsController::class, 'index']);

@@ -2,7 +2,7 @@
 
 Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
 
-**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo y **configuración SMTP administrable desde la UI**.
+**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo, **configuración SMTP administrable** y **configuración global de MFA (Autenticación Multifactor)**.
 
 ---
 
@@ -202,6 +202,7 @@ DB_PASSWORD=
 | `006_add_audit_logs.sql` | Auditoría de acciones |
 | `007_add_password_resets.sql` | Recuperación de contraseña por correo |
 | `008_add_smtp_settings.sql` | Configuración SMTP administrable |
+| `009_add_mfa_settings.sql` | Configuración global MFA |
 
 ### Paso 5 — Acceder al sistema
 
@@ -332,6 +333,9 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | GET | `/security/smtp` | Ver/editar configuración SMTP | Solo admin |
 | POST | `/security/smtp/update` | Guardar configuración SMTP | Solo admin |
 | POST | `/security/smtp/test` | Enviar correo de prueba | Solo admin |
+| GET | `/security/mfa` | Ver/editar configuración MFA global | `security_mfa.view` |
+| POST | `/security/mfa/update` | Guardar configuración MFA | `security_mfa.edit` |
+| POST | `/security/mfa/test-sms` | Enviar SMS de prueba | `security_mfa.test` |
 
 ---
 
@@ -509,6 +513,72 @@ MAIL_USERNAME=tu_usuario_mailtrap
 MAIL_PASSWORD=tu_password_mailtrap
 MAIL_ENCRYPTION=tls
 ```
+
+---
+
+## Seguridad > MFA (Autenticación Multifactor)
+
+### Qué es este módulo
+Permite al administrador habilitar o deshabilitar globalmente los métodos de autenticación multifactor disponibles para los usuarios del sistema. La activación personal por usuario desde su perfil y el challenge de MFA en el login se implementan en una **fase posterior**.
+
+### Métodos disponibles
+
+| Método | Requiere | Estado en esta fase |
+|---|---|---|
+| Correo electrónico | SMTP activo y verificado | Configurable |
+| SMS | Proveedor SMS completo | Configurable (proveedor pendiente de implementar) |
+| Aplicación de autenticación | Nada externo | Configurable |
+
+### Cómo habilitar MFA por correo
+1. Primero configura y prueba SMTP desde **Seguridad → SMTP**.
+2. El test SMTP debe ser exitoso (`is_verified = 1`).
+3. Entra a **Seguridad → MFA** y activa el toggle de "MFA por Correo".
+4. Guarda los cambios.
+
+> Si SMTP no está verificado, el sistema rechaza la activación y muestra un mensaje explicativo.
+
+### Cómo habilitar MFA por SMS
+1. Completa todos los campos del proveedor SMS: proveedor, API Key, API Secret, remitente.
+2. Activa el toggle "MFA por SMS" y guarda.
+3. Usa "Probar configuración SMS" para verificar la integración.
+
+> **Nota:** los proveedores Twilio, Vonage y Custom tienen la estructura lista pero requieren integración concreta (ver `app/Services/SmsService.php`). Si el proveedor no tiene implementación activa, el sistema muestra un mensaje claro y no falla silenciosamente.
+
+### Credenciales SMS
+- El **API Secret** se almacena cifrado con **AES-256-CBC** usando `APP_KEY` (mismo mecanismo que la contraseña SMTP).
+- Dejar el campo vacío al guardar conserva el secreto anterior.
+- El secreto **nunca** aparece en auditoría ni en logs.
+
+### Cómo habilitar la Aplicación de Autenticación
+Simplemente activa el toggle "MFA por Aplicación de autenticación" y guarda. No requiere ningún proveedor externo.
+
+### Migración SQL
+```
+database/009_add_mfa_settings.sql
+```
+Crea `tbl_mfa_settings`, inserta el módulo `security_mfa`, sus 3 permisos (`view`, `edit`, `test`) y los asigna al rol Administrador.
+
+### Pasos manuales para aplicar la actualización
+
+1. **Importar SQL:** en phpMyAdmin abre `database/009_add_mfa_settings.sql` e impórtalo.
+2. **Cerrar sesión e iniciar nuevamente:** para que los nuevos permisos se carguen en la sesión activa.
+3. **Verificar permisos:** en **Seguridad → Roles y Permisos** → Administrador, deben aparecer `security_mfa.view`, `security_mfa.edit`, `security_mfa.test`.
+4. **Entrar al módulo:** menú lateral → Seguridad → MFA.
+5. **Activar correo:** asegúrate de que SMTP esté probado exitosamente antes de activar MFA por correo.
+6. **Guardar SMS:** completa todos los campos del proveedor antes de activar MFA por SMS.
+7. **Verificar menú:** la sección Seguridad debe mostrar: Sesiones, Roles y Permisos, SMTP, MFA, Auditoría.
+
+### Datos que debes configurar manualmente
+
+| Qué | Dónde |
+|---|---|
+| Importar `009_add_mfa_settings.sql` | phpMyAdmin |
+| Proveedor SMS (Twilio/Vonage/Custom) | `app/Services/SmsService.php` — implementar SDK |
+| API Key y API Secret del proveedor SMS | Seguridad → MFA (interfaz admin) |
+| SMTP activo y verificado (para email MFA) | Seguridad → SMTP (verificar con botón Probar) |
+| APP_KEY en `.env` (para cifrado de API Secret SMS) | `.env` (ya generado en SMTP, misma clave) |
+
+> Si no tienes proveedor SMS real, la configuración se guarda igualmente y el sistema muestra un mensaje claro indicando que el proveedor no tiene implementación activa.
 
 ---
 
