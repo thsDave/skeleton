@@ -3,9 +3,12 @@ $pageTitle  = __('smtp.title');
 $activeMenu = 'security_smtp';
 $errors     = \Core\Session::getFlash('errors', []);
 $old        = \Core\Session::getFlash('old', []);
+$testResult = \Core\Session::getFlash('smtp_test_result');   // ['success'=>bool,'message'=>string]
 
 $v = fn(string $k, string $default = '') =>
     htmlspecialchars((string) ($old[$k] ?? $settings[$k] ?? $default));
+
+$isConfigured = ($settings['host'] !== '' && $settings['username'] !== '');
 
 require dirname(dirname(__DIR__)) . '/layouts/main.php';
 ?>
@@ -30,6 +33,36 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   </div>
 </div>
 
+<?php if ($testResult !== null): ?>
+<div class="alert alert-<?= $testResult['success'] ? 'success' : 'danger' ?> alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+  <i class="ph-duotone <?= $testResult['success'] ? 'ph-check-circle' : 'ph-x-circle' ?> fs-5 flex-shrink-0"></i>
+  <div>
+    <strong><?= $testResult['success'] ? __('smtp.test.status_ok') : __('smtp.test.status_fail') ?>:</strong>
+    <?= htmlspecialchars($testResult['message']) ?>
+  </div>
+  <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+</div>
+<?php endif; ?>
+
+<?php if ($errors): ?>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="ph-duotone ph-warning-circle me-2"></i>
+  <ul class="mb-0 ps-3">
+    <?php foreach ($errors as $e): ?>
+      <li><?= htmlspecialchars($e) ?></li>
+    <?php endforeach; ?>
+  </ul>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<?php endif; ?>
+
+<?php if (!$isConfigured): ?>
+<div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+  <i class="ph-duotone ph-warning fs-5 flex-shrink-0"></i>
+  <div><?= __('smtp.alert.not_configured') ?></div>
+</div>
+<?php endif; ?>
+
 <div class="row">
 
   <!-- ── Formulario de configuración ─────────────────────────────────────── -->
@@ -49,18 +82,6 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
         <?php endif; ?>
       </div>
       <div class="card-body">
-
-        <?php if ($errors): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <i class="ph-duotone ph-warning-circle me-2"></i>
-          <ul class="mb-0 ps-3">
-            <?php foreach ($errors as $e): ?>
-              <li><?= htmlspecialchars($e) ?></li>
-            <?php endforeach; ?>
-          </ul>
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php endif; ?>
 
         <?php if (can('security_smtp.edit')): ?>
         <form action="<?= BASE_URL ?>/security/smtp/update" method="POST" novalidate>
@@ -120,7 +141,7 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
               <label for="password" class="form-label fw-semibold">
                 <?= __('smtp.password') ?>
                 <?php if ($settings['password_enc'] !== ''): ?>
-                  <span class="badge bg-success ms-1 fs-small">
+                  <span class="badge bg-success ms-1" style="font-size:0.7rem;">
                     <i class="ph-duotone ph-lock me-1"></i><?= __('smtp.password_saved') ?>
                   </span>
                 <?php else: ?>
@@ -137,15 +158,9 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
                   <i class="ph-duotone ph-eye" id="eyeIcon"></i>
                 </button>
               </div>
-              <?php if ($settings['password_enc'] !== ''): ?>
               <div class="form-text text-muted">
-                <i class="ph-duotone ph-lock-simple me-1"></i><?= __('smtp.password_hint_stored') ?>
+                <?= $settings['password_enc'] !== '' ? __('smtp.password_hint_stored') : __('smtp.password_hint_gmail') ?>
               </div>
-              <?php else: ?>
-              <div class="form-text text-muted">
-                <?= __('smtp.password_hint_gmail') ?>
-              </div>
-              <?php endif; ?>
             </div>
           </div>
 
@@ -171,11 +186,9 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
             </div>
           </div>
 
-          <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">
-              <i class="ph-duotone ph-floppy-disk me-1"></i> <?= __('buttons.save') ?>
-            </button>
-          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="ph-duotone ph-floppy-disk me-1"></i> <?= __('buttons.save') ?>
+          </button>
         </form>
         <?php else: ?>
           <div class="alert alert-info mb-0">
@@ -193,7 +206,9 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
     <!-- Estado del último test -->
     <div class="card mb-3">
       <div class="card-header">
-        <h6 class="mb-0"><i class="ph-duotone ph-activity me-2 text-info"></i><?= __('smtp.test.status_card') ?></h6>
+        <h6 class="mb-0">
+          <i class="ph-duotone ph-activity me-2 text-info"></i><?= __('smtp.test.status_card') ?>
+        </h6>
       </div>
       <div class="card-body small">
         <?php if ($settings['last_tested_at']): ?>
@@ -205,11 +220,13 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
             <strong><?= __('smtp.test.result') ?>:</strong><br>
             <?php if ($settings['is_verified']): ?>
               <span class="text-success">
-                <i class="ph-duotone ph-check-circle me-1"></i><?= htmlspecialchars((string) $settings['last_test_status']) ?>
+                <i class="ph-duotone ph-check-circle me-1"></i>
+                <?= htmlspecialchars((string) $settings['last_test_status']) ?>
               </span>
             <?php else: ?>
               <span class="text-danger">
-                <i class="ph-duotone ph-x-circle me-1"></i><?= htmlspecialchars((string) $settings['last_test_status']) ?>
+                <i class="ph-duotone ph-x-circle me-1"></i>
+                <?= htmlspecialchars((string) $settings['last_test_status']) ?>
               </span>
             <?php endif; ?>
           </p>
@@ -219,18 +236,28 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
       </div>
     </div>
 
-    <!-- Botón de prueba -->
+    <!-- Prueba de envío -->
     <?php if (can('security_smtp.test')): ?>
     <div class="card mb-3">
       <div class="card-header">
-        <h6 class="mb-0"><i class="ph-duotone ph-paper-plane-tilt me-2 text-primary"></i><?= __('smtp.test.card_title') ?></h6>
+        <h6 class="mb-0">
+          <i class="ph-duotone ph-paper-plane-tilt me-2 text-primary"></i>
+          <?= __('smtp.test.card_title') ?>
+        </h6>
       </div>
       <div class="card-body">
+        <?php if (!$isConfigured): ?>
+          <div class="alert alert-warning small mb-0 p-2">
+            <i class="ph-duotone ph-warning me-1"></i><?= __('smtp.alert.save_first') ?>
+          </div>
+        <?php else: ?>
         <form action="<?= BASE_URL ?>/security/smtp/test" method="POST" id="testForm">
           <?= \Core\CSRF::field() ?>
 
           <div class="mb-3">
-            <label for="test_email" class="form-label fw-semibold small"><?= __('smtp.test.email_label') ?></label>
+            <label for="test_email" class="form-label fw-semibold small">
+              <?= __('smtp.test.email_label') ?>
+            </label>
             <input type="email" name="test_email" id="test_email"
               class="form-control form-control-sm"
               placeholder="<?= htmlspecialchars(__('smtp.test.email_placeholder')) ?>"
@@ -238,11 +265,56 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
             <div class="form-text"><?= __('smtp.test.email_hint') ?></div>
           </div>
 
-          <button type="button" class="btn btn-outline-primary w-100" id="btnTest"
-            <?= ($settings['host'] === '' || $settings['username'] === '') ? 'disabled title="' . htmlspecialchars(__('smtp.test.not_configured')) . '"' : '' ?>>
-            <i class="ph-duotone ph-paper-plane-tilt me-1"></i> <?= __('smtp.test.button') ?>
+          <!-- type="submit" — funciona sin JavaScript -->
+          <button type="submit" class="btn btn-primary w-100" id="btnTest">
+            <i class="ph-duotone ph-paper-plane-tilt me-1"></i>
+            <?= __('smtp.test.button') ?>
           </button>
         </form>
+        <?php endif; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Configuración activa (debug visual) -->
+    <?php if ($isConfigured): ?>
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="mb-0">
+          <i class="ph-duotone ph-gear me-2 text-secondary"></i><?= __('smtp.active_config') ?>
+        </h6>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm table-borderless mb-0 small">
+          <tbody>
+            <tr>
+              <td class="text-muted ps-3 pe-2 py-1" style="width:40%"><?= __('smtp.host') ?></td>
+              <td class="fw-semibold py-1"><code><?= htmlspecialchars($settings['host']) ?></code></td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-3 pe-2 py-1"><?= __('smtp.port') ?></td>
+              <td class="fw-semibold py-1"><code><?= (int)$settings['port'] ?></code></td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-3 pe-2 py-1"><?= __('smtp.encryption') ?></td>
+              <td class="fw-semibold py-1"><code><?= htmlspecialchars(strtoupper($settings['encryption'])) ?></code></td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-3 pe-2 py-1"><?= __('smtp.username') ?></td>
+              <td class="fw-semibold py-1 text-break" style="font-size:0.78rem"><?= htmlspecialchars($settings['username']) ?></td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-3 pe-2 py-1"><?= __('smtp.password') ?></td>
+              <td class="fw-semibold py-1">
+                <?= $settings['password_enc'] !== '' ? '<span class="badge bg-success"><i class="ph-duotone ph-lock me-1"></i>' . __('smtp.password_saved') . '</span>' : '<span class="badge bg-danger">' . __('smtp.password_missing') . '</span>' ?>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-3 pe-2 py-1 pb-2"><?= __('smtp.from_address') ?></td>
+              <td class="fw-semibold py-1 pb-2 text-break" style="font-size:0.78rem"><?= htmlspecialchars($settings['from_address']) ?></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
     <?php endif; ?>
@@ -250,7 +322,9 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
     <!-- Información -->
     <div class="card">
       <div class="card-header">
-        <h6 class="mb-0"><i class="ph-duotone ph-info me-2 text-secondary"></i><?= __('smtp.info_card') ?></h6>
+        <h6 class="mb-0">
+          <i class="ph-duotone ph-info me-2 text-secondary"></i><?= __('smtp.info_card') ?>
+        </h6>
       </div>
       <div class="card-body">
         <ul class="list-unstyled mb-0 small text-muted">
@@ -269,51 +343,49 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
 
 <script>
 (function () {
-  // Toggle password visibility
+  // Toggle contraseña
   var toggleBtn = document.getElementById('togglePwd');
   var pwdInput  = document.getElementById('password');
   var eyeIcon   = document.getElementById('eyeIcon');
   if (toggleBtn && pwdInput) {
     toggleBtn.addEventListener('click', function () {
-      var isText = pwdInput.type === 'text';
-      pwdInput.type = isText ? 'password' : 'text';
-      eyeIcon.className = isText ? 'ph-duotone ph-eye' : 'ph-duotone ph-eye-slash';
+      var show = pwdInput.type === 'password';
+      pwdInput.type = show ? 'text' : 'password';
+      eyeIcon.className = show ? 'ph-duotone ph-eye-slash' : 'ph-duotone ph-eye';
     });
   }
 
-  // Test button — SweetAlert2 confirmation then submit
-  var btnTest  = document.getElementById('btnTest');
+  // Confirmación opcional con SweetAlert2 antes de enviar el test
   var testForm = document.getElementById('testForm');
-  if (btnTest && testForm && typeof Swal !== 'undefined') {
-    btnTest.addEventListener('click', function () {
-      var testEmailInput = document.getElementById('test_email');
-      var emailVal = testEmailInput ? testEmailInput.value.trim() : '';
-      var confirmText = emailVal !== ''
+  if (testForm && typeof Swal !== 'undefined') {
+    testForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var emailInput = document.getElementById('test_email');
+      var emailVal   = emailInput ? emailInput.value.trim() : '';
+      var msgText    = emailVal !== ''
         ? <?= json_encode(__('smtp.test.confirm_text_to')) ?>.replace(':email', emailVal)
         : <?= json_encode(__('smtp.test.confirm_text')) ?>;
 
       Swal.fire({
         title: <?= json_encode(__('smtp.test.confirm_title')) ?>,
-        text: confirmText,
+        text: msgText,
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: <?= json_encode(__('smtp.test.confirm_yes')) ?>,
         cancelButtonText: <?= json_encode(__('alerts.cancel')) ?>,
-        confirmButtonColor: '#0d6efd',
+        confirmButtonColor: '#0d6efd'
       }).then(function (result) {
         if (result.isConfirmed) {
-          btnTest.disabled = true;
-          btnTest.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> <?= __('smtp.test.sending') ?>';
+          var btn = document.getElementById('btnTest');
+          if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span><?= __('smtp.test.sending') ?>';
+          }
           testForm.submit();
         }
       });
     });
-  } else if (btnTest && testForm) {
-    // Fallback: submit directly without Swal if library not loaded
-    btnTest.addEventListener('click', function () {
-      btnTest.disabled = true;
-      testForm.submit();
-    });
   }
+  // Si no hay SweetAlert: el formulario se envía directamente con type="submit"
 })();
 </script>

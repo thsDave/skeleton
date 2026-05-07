@@ -572,6 +572,10 @@ return [
     'smtp.validation.username_required'     => 'The SMTP username is required.',
     'smtp.validation.from_address_required' => 'The sender email is required.',
     'smtp.validation.from_address_invalid'  => 'The sender email is not a valid format.',
+    'smtp.alert.not_configured'             => 'Complete the SMTP Host and Username and save the configuration before running a test.',
+    'smtp.alert.save_first'                 => 'Save SMTP Host and Username to enable the send test.',
+    'smtp.active_config'                    => 'Active configuration',
+    'smtp.password_missing'                 => 'No password',
 
     // ── Menu – SMTP ──────────────────────────────────────────────────────────────
     'menu.security_smtp'            => 'SMTP',

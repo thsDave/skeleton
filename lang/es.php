@@ -572,6 +572,10 @@ return [
     'smtp.validation.username_required'     => 'El usuario SMTP es obligatorio.',
     'smtp.validation.from_address_required' => 'El correo remitente es obligatorio.',
     'smtp.validation.from_address_invalid'  => 'El correo remitente no tiene un formato válido.',
+    'smtp.alert.not_configured'             => 'Completa el Host y Usuario SMTP y guarda la configuración antes de realizar una prueba.',
+    'smtp.alert.save_first'                 => 'Guarda Host y Usuario SMTP para habilitar la prueba de envío.',
+    'smtp.active_config'                    => 'Configuración activa',
+    'smtp.password_missing'                 => 'Sin contraseña',
 
     // ── Menú – SMTP ──────────────────────────────────────────────────────────────
     'menu.security_smtp'            => 'SMTP',

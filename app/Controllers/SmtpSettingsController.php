@@ -179,6 +179,12 @@ class SmtpSettingsController
                 'status'      => $sent ? 'success' : 'error',
             ]);
 
+            $resultMessage = $sent
+                ? __('smtp.test.sent_ok', ['email' => $testEmail])
+                : self::friendlyError(Mailer::$lastError);
+
+            Session::flash('smtp_test_result', ['success' => $sent, 'message' => $resultMessage]);
+
             if ($sent) {
                 Session::flash('success', __('smtp.test.sent_ok', ['email' => $testEmail]));
             } else {
