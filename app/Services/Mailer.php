@@ -10,6 +10,8 @@ use Core\Logger;
 
 class Mailer
 {
+    public static string $lastError = '';
+
     public static function send(
         string $to,
         string $toName,
@@ -17,7 +19,26 @@ class Mailer
         string $htmlBody,
         string $plainBody = ''
     ): bool {
-        $cfg  = self::config();
+        self::$lastError = '';
+
+        try {
+            $cfg = self::config();
+        } catch (\Throwable $e) {
+            self::$lastError = 'config_error: ' . $e->getMessage();
+            Logger::error('Mailer::config() error — ' . $e->getMessage());
+            return false;
+        }
+
+        if ($cfg['host'] === '' || $cfg['username'] === '') {
+            self::$lastError = 'not_configured';
+            return false;
+        }
+
+        if ($cfg['password'] === '') {
+            self::$lastError = 'password_empty';
+            return false;
+        }
+
         $mail = new PHPMailer(true);
 
         try {
@@ -29,6 +50,7 @@ class Mailer
             $mail->Port      = $cfg['port'];
             $mail->CharSet   = 'UTF-8';
             $mail->SMTPDebug = SMTP::DEBUG_OFF;
+            $mail->Timeout   = 15;
 
             $mail->SMTPSecure = match ($cfg['encryption']) {
                 'ssl'   => PHPMailer::ENCRYPTION_SMTPS,
@@ -54,30 +76,52 @@ class Mailer
             return true;
 
         } catch (MailerException $e) {
-            Logger::error('Mailer::send failed — ' . $mail->ErrorInfo);
+            $errorInfo = $mail->ErrorInfo ?: $e->getMessage();
+            self::$lastError = self::categorizeError($errorInfo);
+            Logger::error(sprintf(
+                'Mailer::send failed [host=%s port=%d enc=%s from=%s] — %s',
+                $cfg['host'],
+                $cfg['port'],
+                $cfg['encryption'],
+                $cfg['from_address'],
+                $errorInfo
+            ));
+            return false;
+        } catch (\Throwable $e) {
+            self::$lastError = 'internal_error';
+            Logger::error('Mailer::send unexpected error — ' . $e->getMessage());
             return false;
         }
     }
 
-    private static function config(): array
+    /**
+     * Returns SMTP configuration: DB record takes priority over .env.
+     * Falls back to .env if the DB record has no host or username configured.
+     */
+    public static function config(): array
     {
         try {
             $model    = new SmtpSettings();
             $settings = $model->getDecrypted();
 
             if ($settings['host'] !== '' && $settings['username'] !== '') {
+                $enc = $settings['encryption'] ?? 'tls';
                 return [
-                    'host'         => $settings['host'],
+                    'host'         => trim($settings['host']),
                     'port'         => (int) $settings['port'],
-                    'username'     => $settings['username'],
+                    'username'     => trim($settings['username']),
                     'password'     => $settings['password'],
-                    'encryption'   => $settings['encryption'] === 'none' ? '' : $settings['encryption'],
-                    'from_address' => $settings['from_address'] ?: (string) env('MAIL_FROM_ADDRESS', 'no-reply@example.com'),
-                    'from_name'    => $settings['from_name']    ?: (string) env('MAIL_FROM_NAME', 'Skeleton'),
+                    'encryption'   => $enc === 'none' ? '' : $enc,
+                    'from_address' => $settings['from_address'] !== ''
+                        ? $settings['from_address']
+                        : (string) env('MAIL_FROM_ADDRESS', 'no-reply@example.com'),
+                    'from_name'    => $settings['from_name'] !== ''
+                        ? $settings['from_name']
+                        : (string) env('MAIL_FROM_NAME', 'Skeleton'),
                 ];
             }
-        } catch (\Throwable) {
-            // DB unavailable — fall through to .env
+        } catch (\Throwable $e) {
+            Logger::error('Mailer::config() DB error — ' . $e->getMessage());
         }
 
         $encryption = strtolower((string) env('MAIL_ENCRYPTION', 'tls'));
@@ -90,5 +134,24 @@ class Mailer
             'from_address' => (string) env('MAIL_FROM_ADDRESS', 'no-reply@example.com'),
             'from_name'    => (string) env('MAIL_FROM_NAME', 'Skeleton'),
         ];
+    }
+
+    /**
+     * Returns a short category string for the PHPMailer error so the
+     * controller can display a targeted user-friendly message.
+     */
+    private static function categorizeError(string $errorInfo): string
+    {
+        $lower = strtolower($errorInfo);
+        if (str_contains($lower, 'authenticate') || str_contains($lower, 'username') || str_contains($lower, 'password')) {
+            return 'auth_failed';
+        }
+        if (str_contains($lower, 'could not connect') || str_contains($lower, 'connection') || str_contains($lower, 'timeout') || str_contains($lower, 'timed out')) {
+            return 'connect_failed';
+        }
+        if (str_contains($lower, 'invalid address') || str_contains($lower, 'from address') || str_contains($lower, 'invalid email')) {
+            return 'invalid_address';
+        }
+        return 'smtp_error';
     }
 }

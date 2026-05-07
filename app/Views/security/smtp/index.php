@@ -30,18 +30,6 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   </div>
 </div>
 
-<?php if ($errors): ?>
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-  <i class="ph-duotone ph-warning-circle me-2"></i>
-  <ul class="mb-0 ps-3">
-    <?php foreach ($errors as $e): ?>
-      <li><?= htmlspecialchars($e) ?></li>
-    <?php endforeach; ?>
-  </ul>
-  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-<?php endif; ?>
-
 <div class="row">
 
   <!-- ── Formulario de configuración ─────────────────────────────────────── -->
@@ -61,6 +49,18 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
         <?php endif; ?>
       </div>
       <div class="card-body">
+
+        <?php if ($errors): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <i class="ph-duotone ph-warning-circle me-2"></i>
+          <ul class="mb-0 ps-3">
+            <?php foreach ($errors as $e): ?>
+              <li><?= htmlspecialchars($e) ?></li>
+            <?php endforeach; ?>
+          </ul>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php endif; ?>
 
         <?php if (can('security_smtp.edit')): ?>
         <form action="<?= BASE_URL ?>/security/smtp/update" method="POST" novalidate>
@@ -96,7 +96,7 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
             <select name="encryption" id="encryption" class="form-select">
               <?php
               $enc = $old['encryption'] ?? $settings['encryption'] ?? 'tls';
-              foreach (['tls' => 'TLS (STARTTLS — port 587)', 'ssl' => 'SSL (port 465)', 'none' => __('smtp.encryption_none')] as $val => $label):
+              foreach (['tls' => 'TLS / STARTTLS (port 587)', 'ssl' => 'SSL / SMTPS (port 465)', 'none' => __('smtp.encryption_none')] as $val => $label):
               ?>
               <option value="<?= $val ?>" <?= $enc === $val ? 'selected' : '' ?>><?= $label ?></option>
               <?php endforeach; ?>
@@ -111,26 +111,39 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
               <input type="text" name="username" id="username"
                 class="form-control"
                 value="<?= $v('username') ?>"
-                placeholder="user@example.com"
+                placeholder="user@gmail.com"
                 autocomplete="username"
                 required
               />
             </div>
             <div class="col-md-6">
-              <label for="password" class="form-label fw-semibold"><?= __('smtp.password') ?></label>
+              <label for="password" class="form-label fw-semibold">
+                <?= __('smtp.password') ?>
+                <?php if ($settings['password_enc'] !== ''): ?>
+                  <span class="badge bg-success ms-1 fs-small">
+                    <i class="ph-duotone ph-lock me-1"></i><?= __('smtp.password_saved') ?>
+                  </span>
+                <?php else: ?>
+                  <span class="text-danger">*</span>
+                <?php endif; ?>
+              </label>
               <div class="input-group">
                 <input type="password" name="password" id="password"
                   class="form-control"
                   placeholder="<?= $settings['password_enc'] !== '' ? __('smtp.password_stored') : __('smtp.password_placeholder') ?>"
                   autocomplete="new-password"
                 />
-                <button class="btn btn-outline-secondary" type="button" id="togglePwd">
+                <button class="btn btn-outline-secondary" type="button" id="togglePwd" tabindex="-1">
                   <i class="ph-duotone ph-eye" id="eyeIcon"></i>
                 </button>
               </div>
               <?php if ($settings['password_enc'] !== ''): ?>
               <div class="form-text text-muted">
                 <i class="ph-duotone ph-lock-simple me-1"></i><?= __('smtp.password_hint_stored') ?>
+              </div>
+              <?php else: ?>
+              <div class="form-text text-muted">
+                <?= __('smtp.password_hint_gmail') ?>
               </div>
               <?php endif; ?>
             </div>
@@ -191,9 +204,13 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
           <p class="mb-0">
             <strong><?= __('smtp.test.result') ?>:</strong><br>
             <?php if ($settings['is_verified']): ?>
-              <span class="text-success"><i class="ph-duotone ph-check-circle me-1"></i><?= htmlspecialchars((string) $settings['last_test_status']) ?></span>
+              <span class="text-success">
+                <i class="ph-duotone ph-check-circle me-1"></i><?= htmlspecialchars((string) $settings['last_test_status']) ?>
+              </span>
             <?php else: ?>
-              <span class="text-danger"><i class="ph-duotone ph-x-circle me-1"></i><?= htmlspecialchars((string) $settings['last_test_status']) ?></span>
+              <span class="text-danger">
+                <i class="ph-duotone ph-x-circle me-1"></i><?= htmlspecialchars((string) $settings['last_test_status']) ?>
+              </span>
             <?php endif; ?>
           </p>
         <?php else: ?>
@@ -205,11 +222,24 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
     <!-- Botón de prueba -->
     <?php if (can('security_smtp.test')): ?>
     <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="ph-duotone ph-paper-plane-tilt me-2 text-primary"></i><?= __('smtp.test.card_title') ?></h6>
+      </div>
       <div class="card-body">
-        <p class="small text-muted mb-3"><?= __('smtp.test.description') ?></p>
         <form action="<?= BASE_URL ?>/security/smtp/test" method="POST" id="testForm">
           <?= \Core\CSRF::field() ?>
-          <button type="button" class="btn btn-outline-primary w-100" id="btnTest">
+
+          <div class="mb-3">
+            <label for="test_email" class="form-label fw-semibold small"><?= __('smtp.test.email_label') ?></label>
+            <input type="email" name="test_email" id="test_email"
+              class="form-control form-control-sm"
+              placeholder="<?= htmlspecialchars(__('smtp.test.email_placeholder')) ?>"
+            />
+            <div class="form-text"><?= __('smtp.test.email_hint') ?></div>
+          </div>
+
+          <button type="button" class="btn btn-outline-primary w-100" id="btnTest"
+            <?= ($settings['host'] === '' || $settings['username'] === '') ? 'disabled title="' . htmlspecialchars(__('smtp.test.not_configured')) . '"' : '' ?>>
             <i class="ph-duotone ph-paper-plane-tilt me-1"></i> <?= __('smtp.test.button') ?>
           </button>
         </form>
@@ -226,7 +256,7 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
         <ul class="list-unstyled mb-0 small text-muted">
           <li class="mb-2"><i class="ph-duotone ph-check-circle text-success me-1"></i><?= __('smtp.info.db_priority') ?></li>
           <li class="mb-2"><i class="ph-duotone ph-check-circle text-success me-1"></i><?= __('smtp.info.password_encrypted') ?></li>
-          <li class="mb-2"><i class="ph-duotone ph-check-circle text-success me-1"></i><?= __('smtp.info.test_sends_to_you') ?></li>
+          <li class="mb-2"><i class="ph-duotone ph-check-circle text-success me-1"></i><?= __('smtp.info.test_sends_to_field') ?></li>
           <li class="mb-0"><i class="ph-duotone ph-warning text-warning me-1"></i><?= __('smtp.info.env_fallback') ?></li>
         </ul>
       </div>
@@ -251,14 +281,20 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
     });
   }
 
-  // Test button with SweetAlert2 confirmation
+  // Test button — SweetAlert2 confirmation then submit
   var btnTest  = document.getElementById('btnTest');
   var testForm = document.getElementById('testForm');
-  if (btnTest && testForm) {
+  if (btnTest && testForm && typeof Swal !== 'undefined') {
     btnTest.addEventListener('click', function () {
+      var testEmailInput = document.getElementById('test_email');
+      var emailVal = testEmailInput ? testEmailInput.value.trim() : '';
+      var confirmText = emailVal !== ''
+        ? <?= json_encode(__('smtp.test.confirm_text_to')) ?>.replace(':email', emailVal)
+        : <?= json_encode(__('smtp.test.confirm_text')) ?>;
+
       Swal.fire({
         title: <?= json_encode(__('smtp.test.confirm_title')) ?>,
-        text:  <?= json_encode(__('smtp.test.confirm_text')) ?>,
+        text: confirmText,
         icon: 'question',
         showCancelButton: true,
         confirmButtonText: <?= json_encode(__('smtp.test.confirm_yes')) ?>,
@@ -266,9 +302,17 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
         confirmButtonColor: '#0d6efd',
       }).then(function (result) {
         if (result.isConfirmed) {
+          btnTest.disabled = true;
+          btnTest.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> <?= __('smtp.test.sending') ?>';
           testForm.submit();
         }
       });
+    });
+  } else if (btnTest && testForm) {
+    // Fallback: submit directly without Swal if library not loaded
+    btnTest.addEventListener('click', function () {
+      btnTest.disabled = true;
+      testForm.submit();
     });
   }
 })();
