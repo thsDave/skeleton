@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use Core\Audit;
 use Core\Controller;
 use Core\Auth;
 use Core\CSRF;
@@ -83,6 +84,8 @@ class SystemInformationController extends Controller
                 compact('year', 'leader', 'version'));
         }
 
+        $oldSetting = $this->settingModel->get();
+
         try {
             if ($this->settingModel->createOrUpdate([
                 'release_year'   => $yearInt,
@@ -90,6 +93,14 @@ class SystemInformationController extends Controller
                 'system_version' => $version,
             ])) {
                 Logger::security("Info del sistema actualizada por admin ID " . Auth::id());
+                Audit::log(['module' => 'system_information', 'action' => 'updated',
+                    'entity' => 'system_setting',
+                    'description' => 'Información del sistema actualizada',
+                    'old_values' => ['release_year' => $oldSetting['release_year'] ?? null,
+                        'project_leader' => $oldSetting['project_leader'] ?? null,
+                        'system_version' => $oldSetting['system_version'] ?? null],
+                    'new_values' => ['release_year' => $yearInt, 'project_leader' => $leader, 'system_version' => $version],
+                    'status' => 'success']);
                 Redirect::withSuccess('/system-information', __('system.updated_ok'));
             } else {
                 Redirect::withError('/system-information/edit', __('alerts.internal'));
@@ -157,6 +168,11 @@ class SystemInformationController extends Controller
 
             if ($newId) {
                 Logger::security("Manual subido ID {$newId} por admin ID " . Auth::id());
+                Audit::log(['module' => 'manuals', 'action' => 'uploaded',
+                    'entity' => 'manual', 'entity_id' => $newId,
+                    'description' => "Manual subido: {$title}",
+                    'new_values' => ['title' => $title, 'file_name' => $result['original_name'], 'file_size' => $result['size']],
+                    'status' => 'success']);
                 Redirect::withSuccess('/system-information', __('manuals.uploaded_ok'));
             } else {
                 Redirect::withError('/manuals/create', __('alerts.internal'));
@@ -196,7 +212,12 @@ class SystemInformationController extends Controller
 
         try {
             if ($this->manualModel->setStatus($manualId, $newStatus)) {
-                $msg = $isActive ? __('manuals.deactivated_ok') : __('manuals.activated_ok');
+                $action = $isActive ? 'deactivated' : 'activated';
+                $msg    = $isActive ? __('manuals.deactivated_ok') : __('manuals.activated_ok');
+                Audit::log(['module' => 'manuals', 'action' => $action,
+                    'entity' => 'manual', 'entity_id' => $manualId,
+                    'description' => "Manual ID {$manualId} " . ($isActive ? 'desactivado' : 'activado'),
+                    'status' => 'success']);
                 Redirect::withSuccess('/system-information', $msg);
             } else {
                 Redirect::withError('/system-information', __('alerts.internal'));
@@ -227,6 +248,11 @@ class SystemInformationController extends Controller
 
         $originalName = $manual['file_name'];
         $mimeType     = $manual['file_type'] ?: 'application/octet-stream';
+
+        Audit::log(['module' => 'manuals', 'action' => 'downloaded',
+            'entity' => 'manual', 'entity_id' => $manualId,
+            'description' => "Manual descargado: {$originalName}",
+            'status' => 'success']);
 
         header('Content-Type: ' . $mimeType);
         header('Content-Disposition: attachment; filename="' . addslashes($originalName) . '"');

@@ -68,6 +68,7 @@ use App\Controllers\SystemInformationController;
 use App\Controllers\LockController;
 use App\Controllers\SecurityController;
 use App\Controllers\RolesPermissionsController;
+use App\Controllers\AuditLogsController;
 
 $router = new Router();
 
@@ -133,6 +134,10 @@ $router->post('/security/sessions/update',[SecurityController::class, 'updateSes
 $router->get('/roles-permissions',                    [RolesPermissionsController::class, 'index']);
 $router->get('/roles-permissions/edit/{id}',          [RolesPermissionsController::class, 'edit']);
 $router->post('/roles-permissions/update/{id}',       [RolesPermissionsController::class, 'update']);
+
+// Audit Logs
+$router->get('/audit-logs',             [AuditLogsController::class, 'index']);
+$router->get('/audit-logs/show/{id}',   [AuditLogsController::class, 'show']);
 
 // Raíz — redirigir a dashboard o login
 $router->get('/', [DashboardController::class, 'index']);

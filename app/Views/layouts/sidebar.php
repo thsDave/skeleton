@@ -84,7 +84,7 @@
         <?php endif; ?>
 
         <?php
-        $showSecurity = can('security_sessions.view') || can('roles_permissions.view');
+        $showSecurity = can('security_sessions.view') || can('roles_permissions.view') || can('audit_logs.view');
         if ($showSecurity):
         ?>
         <li class="pc-item pc-caption">
@@ -106,6 +106,15 @@
           <a href="<?= BASE_URL ?>/roles-permissions" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-shield-check"></i></span>
             <span class="pc-mtext"><?= __('menu.roles_permissions') ?></span>
+          </a>
+        </li>
+        <?php endif; ?>
+
+        <?php if (can('audit_logs.view')): ?>
+        <li class="pc-item <?= ($activeMenu ?? '') === 'audit_logs' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/audit-logs" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-clipboard-text"></i></span>
+            <span class="pc-mtext"><?= __('menu.audit_logs') ?></span>
           </a>
         </li>
         <?php endif; ?>

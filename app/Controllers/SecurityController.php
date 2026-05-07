@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use Core\Audit;
 use Core\Auth;
 use Core\Session;
 use Core\CSRF;
@@ -33,9 +34,12 @@ class SecurityController
 
         $model = new SecuritySetting();
         if ($model->updateSettings((bool) $enabled, $seconds)) {
-            // Invalidate cached settings so all subsequent requests pick up the new values
             Session::delete('_sec_settings');
             Session::delete('_sec_settings_at');
+            Audit::log(['module' => 'security_sessions', 'action' => 'settings_updated',
+                'description' => 'Configuración de sesiones actualizada',
+                'new_values' => ['session_lock_enabled' => $enabled, 'session_inactivity_seconds' => $seconds],
+                'status' => 'success']);
             Session::flash('success', __('security.sessions.updated'));
         } else {
             Session::flash('error', __('alerts.internal'));

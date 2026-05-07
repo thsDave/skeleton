@@ -201,6 +201,17 @@ class Auth
                 . (self::id() ?? 'anon')
                 . ' IP ' . ($_SERVER['REMOTE_ADDR'] ?? '')
             );
+
+            // Audit: log denied access (catch-all to avoid loops)
+            try {
+                \Core\Audit::log([
+                    'module'      => explode('.', $permission)[0] ?? null,
+                    'action'      => 'access_denied',
+                    'description' => "Acceso denegado: permiso '{$permission}' requerido",
+                    'status'      => 'denied',
+                ]);
+            } catch (\Throwable) { /* never break the flow */ }
+
             http_response_code(403);
             $authUser   = self::user();
             $pageTitle  = '403 — Acceso Denegado';

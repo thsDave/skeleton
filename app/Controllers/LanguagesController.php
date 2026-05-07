@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use Core\Audit;
 use Core\Controller;
 use Core\Auth;
 use Core\CSRF;
@@ -81,6 +82,11 @@ class LanguagesController extends Controller
 
             if ($newId) {
                 Logger::security("Idioma creado ID {$newId} por admin ID " . Auth::id());
+                Audit::log(['module' => 'languages', 'action' => 'created',
+                    'entity' => 'language', 'entity_id' => $newId,
+                    'description' => "Idioma creado: {$name} ({$code})",
+                    'new_values' => ['name' => $name, 'native_name' => $nativeName, 'code' => $code, 'status_id' => $statusId],
+                    'status' => 'success']);
                 // Advertir si no existe el archivo de traducción
                 $langFile = dirname(__DIR__, 2) . '/lang/' . $code . '.php';
                 if (!file_exists($langFile)) {
@@ -163,6 +169,12 @@ class LanguagesController extends Controller
                 'status_id'   => $statusId,
             ])) {
                 Logger::security("Idioma ID {$langId} actualizado por admin ID " . Auth::id());
+                Audit::log(['module' => 'languages', 'action' => 'updated',
+                    'entity' => 'language', 'entity_id' => $langId,
+                    'description' => "Idioma ID {$langId} actualizado",
+                    'old_values' => ['name' => $language['name'], 'code' => $language['code'], 'status_id' => $language['status_id']],
+                    'new_values' => ['name' => $name, 'native_name' => $nativeName, 'code' => $code, 'status_id' => $statusId],
+                    'status' => 'success']);
                 // Advertir si no existe archivo de traducción
                 $langFile = dirname(__DIR__, 2) . '/lang/' . $code . '.php';
                 if (!file_exists($langFile)) {
@@ -196,6 +208,10 @@ class LanguagesController extends Controller
         }
 
         if ($language['is_default']) {
+            Audit::log(['module' => 'languages', 'action' => 'deactivated',
+                'entity' => 'language', 'entity_id' => $langId,
+                'description' => "Intento de desactivar idioma por defecto ID {$langId}",
+                'status' => 'denied']);
             Redirect::withError('/languages', __('languages.cannot_deact_def'));
         }
 
@@ -213,8 +229,13 @@ class LanguagesController extends Controller
 
         try {
             if ($this->langModel->setStatus($langId, $newStatus)) {
-                $msg = $isActive ? __('languages.deactivated_ok') : __('languages.activated_ok');
+                $action = $isActive ? 'deactivated' : 'activated';
+                $msg    = $isActive ? __('languages.deactivated_ok') : __('languages.activated_ok');
                 Logger::security("Idioma ID {$langId} " . ($isActive ? 'desactivado' : 'activado') . " por admin ID " . Auth::id());
+                Audit::log(['module' => 'languages', 'action' => $action,
+                    'entity' => 'language', 'entity_id' => $langId,
+                    'description' => "Idioma ID {$langId} " . ($isActive ? 'desactivado' : 'activado'),
+                    'status' => 'success']);
                 Redirect::withSuccess('/languages', $msg);
             } else {
                 Redirect::withError('/languages', __('alerts.internal'));

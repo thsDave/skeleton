@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use Core\Audit;
 use Core\Controller;
 use Core\Auth;
 use Core\CSRF;
@@ -78,6 +79,8 @@ class RolesPermissionsController extends Controller
             }
         }
 
+        $oldPermIds = $this->rpModel->getPermissionIdsByRoleId($roleId);
+
         try {
             $this->rpModel->syncPermissions($roleId, $validIds);
         } catch (\Throwable $e) {
@@ -93,6 +96,12 @@ class RolesPermissionsController extends Controller
         Logger::security(
             "Permisos del rol '{$role['name']}' (ID {$roleId}) actualizados por usuario ID " . Auth::id()
         );
+        Audit::log(['module' => 'roles_permissions', 'action' => 'permissions_updated',
+            'entity' => 'role', 'entity_id' => $roleId,
+            'description' => "Permisos del rol '{$role['name']}' actualizados",
+            'old_values' => ['permission_ids' => $oldPermIds],
+            'new_values' => ['permission_ids' => $validIds],
+            'status' => 'success']);
 
         Redirect::withSuccess('/roles-permissions', __('roles_permissions.updated'));
     }

@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use Core\Audit;
 use Core\Controller;
 use Core\Auth;
 use Core\CSRF;
@@ -132,8 +133,16 @@ class UsersController extends Controller
                 }
             }
             Logger::security("Usuario creado ID {$newId} por admin ID " . Auth::id());
+            Audit::log(['module' => 'users', 'action' => 'created',
+                'entity' => 'user', 'entity_id' => $newId,
+                'description' => "Usuario creado: {$email}",
+                'new_values' => ['nombres' => $nombres, 'apellidos' => $apellidos,
+                    'email' => $email, 'role_id' => $roleId, 'status_id' => $statusId],
+                'status' => 'success']);
             Redirect::withSuccess('/users', 'Usuario creado correctamente.');
         } else {
+            Audit::log(['module' => 'users', 'action' => 'created',
+                'description' => "Error al crear usuario: {$email}", 'status' => 'failed']);
             Redirect::withError('/users/create', 'No se pudo crear el usuario. Intenta de nuevo.');
         }
     }
@@ -250,8 +259,22 @@ class UsersController extends Controller
 
         if ($this->userModel->adminUpdate($userId, $data)) {
             Logger::security("Usuario ID {$userId} actualizado por admin ID " . Auth::id());
+            $oldAudit = ['nombres' => $user['nombres'], 'apellidos' => $user['apellidos'],
+                'email' => $user['email'], 'role_id' => $user['role_id'], 'status_id' => $user['status_id']];
+            $newAudit = ['nombres' => $nombres, 'apellidos' => $apellidos,
+                'email' => $email, 'role_id' => $roleId, 'status_id' => $statusId];
+            if ($password !== '') {
+                $newAudit['password_changed'] = true;
+            }
+            Audit::log(['module' => 'users', 'action' => 'updated',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => "Usuario ID {$userId} actualizado",
+                'old_values' => $oldAudit, 'new_values' => $newAudit, 'status' => 'success']);
             Redirect::withSuccess('/users', 'Usuario actualizado correctamente.');
         } else {
+            Audit::log(['module' => 'users', 'action' => 'updated',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => "Error al actualizar usuario ID {$userId}", 'status' => 'failed']);
             Redirect::withError("/users/edit/{$userId}", 'No se pudo actualizar el usuario.');
         }
     }
@@ -283,6 +306,9 @@ class UsersController extends Controller
 
         if ($this->userModel->inactivate($userId)) {
             Logger::security("Usuario ID {$userId} inactivado por admin ID " . Auth::id());
+            Audit::log(['module' => 'users', 'action' => 'inactivated',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => "Usuario ID {$userId} inactivado", 'status' => 'success']);
             Redirect::withSuccess('/users', 'Usuario inactivado correctamente.');
         } else {
             Redirect::withError('/users', 'No se pudo inactivar el usuario.');

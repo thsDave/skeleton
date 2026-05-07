@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use Core\Audit;
 use Core\Controller;
 use Core\Auth;
 use Core\CSRF;
@@ -83,6 +84,11 @@ class ProfileController extends Controller
             ]);
 
             Logger::info("Preferencias actualizadas - ID {$id} tema={$theme} lang={$langCode}");
+            Audit::log(['module' => 'profile', 'action' => 'preferences_updated',
+                'entity' => 'user', 'entity_id' => $id,
+                'description' => 'Preferencias de perfil actualizadas',
+                'new_values' => ['theme_preference' => $theme, 'language_id' => $langIdInt, 'lang_code' => $langCode],
+                'status' => 'success']);
             Redirect::withSuccess('/profile', __('profile.preferences_updated'));
         } catch (\PDOException $e) {
             Logger::error('ProfileController::updatePreferences PDOException: ' . $e->getMessage());
@@ -155,11 +161,21 @@ class ProfileController extends Controller
 
         if ($updated) {
             Auth::updateSession([
-                'nombres'      => $nombres,
-                'apellidos'    => $apellidos,
+                'nombres'       => $nombres,
+                'apellidos'     => $apellidos,
                 'profile_image' => $uploadedImage ?? Auth::user()['profile_image'],
             ]);
             Logger::info("Perfil actualizado - ID {$id}");
+            $newVals = ['nombres' => $nombres, 'apellidos' => $apellidos,
+                'telefono' => $telefono ?: null, 'direccion' => $direccion ?: null];
+            if ($uploadedImage) {
+                $newVals['profile_image_updated'] = true;
+            }
+            Audit::log(['module' => 'profile', 'action' => 'profile_updated',
+                'entity' => 'user', 'entity_id' => $id,
+                'description' => 'Perfil de usuario actualizado',
+                'new_values' => $newVals,
+                'status' => 'success']);
             Redirect::withSuccess('/profile', 'Perfil actualizado correctamente.');
         } else {
             Redirect::withError('/profile/edit', 'No se pudo actualizar el perfil. Intenta de nuevo.');
@@ -199,6 +215,11 @@ class ProfileController extends Controller
         try {
             $this->userModel->updatePreferences($id, $theme, $user['language_id'] ?? null);
             Auth::updateSession(['theme' => $theme]);
+            Audit::log(['module' => 'profile', 'action' => 'theme_updated',
+                'entity' => 'user', 'entity_id' => $id,
+                'description' => "Tema actualizado a '{$theme}'",
+                'new_values' => ['theme_preference' => $theme],
+                'status' => 'success']);
             header('Content-Type: application/json');
             echo json_encode(['success' => true, 'theme' => $theme]);
         } catch (\PDOException $e) {

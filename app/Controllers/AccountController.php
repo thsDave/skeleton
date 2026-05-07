@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use Core\Audit;
 use Core\Controller;
 use Core\Auth;
 use Core\CSRF;
@@ -65,6 +66,11 @@ class AccountController extends Controller
         if ($this->userModel->updateEmail($id, $email)) {
             Auth::updateSession(['email' => $email]);
             Logger::security("Email actualizado - ID {$id} nuevo: {$email}");
+            Audit::log(['module' => 'account', 'action' => 'email_updated',
+                'entity' => 'user', 'entity_id' => $id,
+                'description' => 'Correo electrónico actualizado',
+                'new_values' => ['email' => $email],
+                'status' => 'success']);
             Redirect::withSuccess('/account', 'Correo electrónico actualizado correctamente.');
         } else {
             Redirect::withError('/account/edit-email', 'No se pudo actualizar el correo. Intenta de nuevo.');
@@ -108,6 +114,10 @@ class AccountController extends Controller
         $user = $this->userModel->findById($id);
 
         if (!password_verify($currentPassword, $user['password'])) {
+            Audit::log(['module' => 'account', 'action' => 'password_change_failed',
+                'entity' => 'user', 'entity_id' => $id,
+                'description' => 'Intento de cambio de contraseña fallido: contraseña actual incorrecta',
+                'status' => 'failed']);
             Redirect::withErrors('/account/edit-password', ['current_password' => 'La contraseña actual es incorrecta.']);
         }
 
@@ -116,6 +126,10 @@ class AccountController extends Controller
         if ($this->userModel->updatePassword($id, $hashed)) {
             Session::regenerate();
             Logger::security("Contraseña actualizada - ID {$id}");
+            Audit::log(['module' => 'account', 'action' => 'password_changed',
+                'entity' => 'user', 'entity_id' => $id,
+                'description' => 'Contraseña de cuenta actualizada',
+                'status' => 'success']);
             Redirect::withSuccess('/account', 'Contraseña actualizada correctamente.');
         } else {
             Redirect::withError('/account/edit-password', 'No se pudo actualizar la contraseña. Intenta de nuevo.');

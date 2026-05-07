@@ -8,6 +8,7 @@ use Core\CSRF;
 use Core\Redirect;
 use Core\Session;
 use Core\Validator;
+use Core\Audit;
 use Core\Logger;
 use App\Models\User;
 use App\Models\LoginLog;
@@ -52,6 +53,9 @@ class AuthController extends Controller
         if (!$user) {
             $this->logModel->record(null, $email, 'failed', 'Email no encontrado');
             Logger::security("Login fallido - email no existe: {$email}");
+            Audit::log(['module' => 'auth', 'action' => 'login_failed',
+                'description' => "Intento de login con email desconocido: {$email}", 'status' => 'failed',
+                'user_id' => null]);
             Redirect::withErrors('/login', ['general' => 'Las credenciales ingresadas no son válidas.'], ['email' => $email]);
         }
 
@@ -59,6 +63,10 @@ class AuthController extends Controller
         if ($this->userModel->isLocked($user)) {
             $this->logModel->record($user['id'], $email, 'blocked', 'Cuenta bloqueada temporalmente');
             Logger::security("Login bloqueado para usuario ID {$user['id']}");
+            Audit::log(['module' => 'auth', 'action' => 'login_blocked',
+                'entity' => 'user', 'entity_id' => $user['id'],
+                'description' => 'Intento de login con cuenta bloqueada', 'status' => 'denied',
+                'user_id' => $user['id']]);
             Redirect::withErrors('/login', ['general' => 'La cuenta está bloqueada temporalmente. Intenta en 15 minutos.'], ['email' => $email]);
         }
 
@@ -66,6 +74,10 @@ class AuthController extends Controller
         if (($user['status_slug'] ?? '') !== 'active') {
             $this->logModel->record($user['id'], $email, 'failed', 'Cuenta inactiva o bloqueada');
             Logger::security("Login fallido - cuenta inactiva ID {$user['id']}");
+            Audit::log(['module' => 'auth', 'action' => 'login_failed',
+                'entity' => 'user', 'entity_id' => $user['id'],
+                'description' => 'Intento de login con cuenta inactiva', 'status' => 'failed',
+                'user_id' => $user['id']]);
             Redirect::withErrors('/login', ['general' => 'Las credenciales ingresadas no son válidas.'], ['email' => $email]);
         }
 
@@ -78,11 +90,19 @@ class AuthController extends Controller
                 $this->userModel->lockAccount($user['id'], $config['lockout_minutes']);
                 $this->logModel->record($user['id'], $email, 'blocked', 'Máximo de intentos alcanzado');
                 Logger::security("Cuenta bloqueada por intentos fallidos - ID {$user['id']}");
+                Audit::log(['module' => 'auth', 'action' => 'login_blocked',
+                    'entity' => 'user', 'entity_id' => $user['id'],
+                    'description' => 'Cuenta bloqueada por máximo de intentos fallidos', 'status' => 'warning',
+                    'user_id' => $user['id']]);
                 Redirect::withErrors('/login', ['general' => 'Demasiados intentos fallidos. Cuenta bloqueada por 15 minutos.'], ['email' => $email]);
             }
 
             $this->logModel->record($user['id'], $email, 'failed', 'Contraseña incorrecta');
             Logger::security("Login fallido - contraseña incorrecta ID {$user['id']}");
+            Audit::log(['module' => 'auth', 'action' => 'login_failed',
+                'entity' => 'user', 'entity_id' => $user['id'],
+                'description' => 'Login fallido: contraseña incorrecta', 'status' => 'failed',
+                'user_id' => $user['id']]);
             Redirect::withErrors('/login', ['general' => 'Las credenciales ingresadas no son válidas.'], ['email' => $email]);
         }
 
@@ -93,6 +113,11 @@ class AuthController extends Controller
         Logger::security("Login exitoso - ID {$user['id']} desde {$ip}");
 
         Auth::login($user);
+
+        Audit::log(['module' => 'auth', 'action' => 'login_success',
+            'entity' => 'user', 'entity_id' => $user['id'],
+            'description' => "Login exitoso desde {$ip}", 'status' => 'success']);
+
         Redirect::to('/dashboard');
     }
 
@@ -106,6 +131,9 @@ class AuthController extends Controller
 
         $userId = Auth::id();
         Logger::security("Logout - ID {$userId}");
+        Audit::log(['module' => 'auth', 'action' => 'logout',
+            'entity' => 'user', 'entity_id' => $userId,
+            'description' => 'Cierre de sesión', 'status' => 'success']);
         Auth::logout();
         Redirect::to('/login');
     }

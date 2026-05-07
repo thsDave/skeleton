@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use Core\Audit;
 use Core\Session;
 use Core\CSRF;
 use Core\Redirect;
@@ -63,6 +64,9 @@ class LockController
             Session::set('intended_url', $intendedUrl);
         }
 
+        Audit::log(['module' => 'auth', 'action' => 'session_locked',
+            'description' => 'Sesión bloqueada por inactividad', 'status' => 'warning']);
+
         echo json_encode(['ok' => true]);
         exit;
     }
@@ -84,10 +88,17 @@ class LockController
         $user      = $userModel->findById($userId);
 
         if (!$user || !password_verify($password, $user['password'])) {
+            Audit::log(['module' => 'auth', 'action' => 'unlock_failed',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Intento fallido de desbloqueo de sesión', 'status' => 'failed']);
             Session::flash('lock_error', __('lock.invalid_password'));
             Redirect::to('/lock');
             exit;
         }
+
+        Audit::log(['module' => 'auth', 'action' => 'session_unlocked',
+            'entity' => 'user', 'entity_id' => $userId,
+            'description' => 'Sesión desbloqueada correctamente', 'status' => 'success']);
 
         // Unlock: clear lock state, refresh activity timestamp, regenerate session
         Session::delete('is_locked');
