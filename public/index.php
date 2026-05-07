@@ -65,6 +65,7 @@ use App\Controllers\LockController;
 use App\Controllers\SecurityController;
 use App\Controllers\RolesPermissionsController;
 use App\Controllers\AuditLogsController;
+use App\Controllers\PasswordResetController;
 
 $router = new Router();
 
@@ -72,6 +73,12 @@ $router = new Router();
 $router->get('/login',  [AuthController::class, 'loginForm']);
 $router->post('/login', [AuthController::class, 'loginProcess']);
 $router->post('/logout',[AuthController::class, 'logout']);
+
+// Password reset
+$router->get('/forgot-password',         [PasswordResetController::class, 'showForgotForm']);
+$router->post('/forgot-password',        [PasswordResetController::class, 'sendResetLink']);
+$router->get('/reset-password/{token}',  [PasswordResetController::class, 'showResetForm']);
+$router->post('/reset-password',         [PasswordResetController::class, 'resetPassword']);
 
 // Session lock
 $router->get('/lock',          [LockController::class, 'show']);

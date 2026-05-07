@@ -7,7 +7,7 @@ return [
     'app.footer'             => 'Skeleton MVC &mdash; PHP 8.3 + DashboardKit',
 
     // ── Authentication ───────────────────────────────────────────────────────────
-    'auth.login'             => 'Login',
+    'auth.login'             => 'Log In',
     'auth.logout'            => 'Log Out',
     'auth.email'             => 'Email address',
     'auth.password'          => 'Password',
@@ -16,6 +16,32 @@ return [
     'auth.invalid'           => 'The entered credentials are not valid.',
     'auth.locked'            => 'Account is temporarily locked. Try again in 15 minutes.',
     'auth.too_many'          => 'Too many failed attempts. Account locked for 15 minutes.',
+
+    // ── Password recovery ────────────────────────────────────────────────────────
+    'auth.forgot_password'           => 'Forgot your password?',
+    'auth.forgot_password_title'     => 'Recover password',
+    'auth.forgot_password_message'   => 'Enter your email and we will send you instructions to reset your password.',
+    'auth.send_reset_link'           => 'Send recovery link',
+    'auth.back_to_login'             => 'Back to login',
+    'auth.reset_password_title'      => 'Reset password',
+    'auth.reset_password_subtitle'   => 'Enter and confirm your new password.',
+    'auth.new_password'              => 'New password',
+    'auth.confirm_new_password'      => 'Confirm new password',
+    'auth.reset_password_button'     => 'Reset password',
+    'auth.reset_link_generic_message'=> 'If the entered email exists in the system, you will receive instructions to reset your password.',
+    'auth.reset_token_invalid'       => 'The recovery link is invalid or has expired. Please request a new one.',
+    'auth.password_reset_success_title' => 'Password updated',
+    'auth.password_reset_success'    => 'Your password was updated successfully. You can now log in.',
+    'auth.too_many_reset_requests'   => 'Too many requests. Please try again in a few minutes.',
+
+    // ── Password recovery email ──────────────────────────────────────────────────
+    'mail.password_reset_subject'    => 'Reset your password',
+    'mail.password_reset_greeting'   => 'Hello',
+    'mail.password_reset_line_1'     => 'We received a request to reset the password for your account. Click the button below to continue.',
+    'mail.password_reset_button'     => 'Reset password',
+    'mail.password_reset_expiration' => 'This link is valid for :minutes minutes.',
+    'mail.password_reset_ignore'     => 'If you did not request a password change, you can ignore this email. Your password will not be changed.',
+    'mail.password_reset_plain_url'  => 'If the button does not work, copy and paste this link in your browser',
 
     // ── Menu ────────────────────────────────────────────────────────────────────
     'menu.navigation'        => 'Navigation',

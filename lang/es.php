@@ -17,6 +17,32 @@ return [
     'auth.locked'            => 'La cuenta está bloqueada temporalmente. Intenta en 15 minutos.',
     'auth.too_many'          => 'Demasiados intentos fallidos. Cuenta bloqueada por 15 minutos.',
 
+    // ── Recuperación de contraseña ──────────────────────────────────────────────
+    'auth.forgot_password'           => '¿Olvidaste tu contraseña?',
+    'auth.forgot_password_title'     => 'Recuperar contraseña',
+    'auth.forgot_password_message'   => 'Ingresa tu correo y te enviaremos instrucciones para restablecer tu contraseña.',
+    'auth.send_reset_link'           => 'Enviar enlace de recuperación',
+    'auth.back_to_login'             => 'Volver al inicio de sesión',
+    'auth.reset_password_title'      => 'Restablecer contraseña',
+    'auth.reset_password_subtitle'   => 'Ingresa y confirma tu nueva contraseña.',
+    'auth.new_password'              => 'Nueva contraseña',
+    'auth.confirm_new_password'      => 'Confirmar nueva contraseña',
+    'auth.reset_password_button'     => 'Restablecer contraseña',
+    'auth.reset_link_generic_message'=> 'Si el correo ingresado existe en el sistema, recibirás instrucciones para restablecer tu contraseña.',
+    'auth.reset_token_invalid'       => 'El enlace de recuperación no es válido o ha expirado. Solicita uno nuevo.',
+    'auth.password_reset_success_title' => 'Contraseña actualizada',
+    'auth.password_reset_success'    => 'Tu contraseña fue actualizada correctamente. Ya puedes iniciar sesión.',
+    'auth.too_many_reset_requests'   => 'Has realizado demasiadas solicitudes. Intenta de nuevo en unos minutos.',
+
+    // ── Correo de recuperación ──────────────────────────────────────────────────
+    'mail.password_reset_subject'    => 'Restablecer contraseña',
+    'mail.password_reset_greeting'   => 'Hola',
+    'mail.password_reset_line_1'     => 'Recibimos una solicitud para restablecer la contraseña de tu cuenta. Haz clic en el botón de abajo para continuar.',
+    'mail.password_reset_button'     => 'Restablecer contraseña',
+    'mail.password_reset_expiration' => 'Este enlace es válido por :minutes minutos.',
+    'mail.password_reset_ignore'     => 'Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña no será modificada.',
+    'mail.password_reset_plain_url'  => 'Si el botón no funciona, copia y pega este enlace en tu navegador',
+
     // ── Menú ────────────────────────────────────────────────────────────────────
     'menu.navigation'        => 'Navegación',
     'menu.my_account_section'=> 'Mi Cuenta',

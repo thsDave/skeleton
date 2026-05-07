@@ -99,9 +99,15 @@ $old    = Session::getFlash('old', []);
             </div>
 
             <button type="submit" class="btn btn-primary w-100 mb-3">
-              <i class="ph-duotone ph-sign-in me-2"></i> Iniciar Sesión
+              <i class="ph-duotone ph-sign-in me-2"></i> <?= __('auth.login') ?>
             </button>
           </form>
+
+          <div class="text-center mt-2">
+            <a href="<?= BASE_URL ?>/forgot-password" class="text-muted small">
+              <i class="ph-duotone ph-lock-open me-1"></i><?= __('auth.forgot_password') ?>
+            </a>
+          </div>
 
         </div>
       </div>

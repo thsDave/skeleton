@@ -13,6 +13,7 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla v
 | PHP 8.3 | Lenguaje principal, sin frameworks |
 | Composer 2 | Gestión de dependencias y autoload PSR-4 |
 | vlucas/phpdotenv | Variables de entorno desde `.env` |
+| phpmailer/phpmailer | Envío de correos SMTP |
 | MySQL 8 | Base de datos relacional |
 | PDO | Acceso a datos con consultas preparadas |
 | Bootstrap 5 | UI base (vía DashboardKit) |
@@ -419,6 +420,75 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
    $router->post('/mi-modulo/guardar', [MiModuloController::class, 'store']);
    ```
 5. Agrega el enlace al menú en `app/Views/layouts/sidebar.php`.
+
+---
+
+## Recuperación de contraseña
+
+### Flujo
+1. El usuario va a `/forgot-password` y escribe su correo.
+2. El sistema valida el formato, aplica rate limit (3 solicitudes / 15 min), y busca el usuario.
+3. Si el correo existe y el usuario está activo: genera un token seguro, lo guarda hasheado (SHA-256) en `tbl_password_resets` y envía un correo con el enlace.
+4. **Siempre se muestra el mismo mensaje genérico** — nunca se revela si el correo existe.
+5. El usuario abre el enlace (`/reset-password/{token}`), el sistema verifica el token.
+6. El usuario ingresa su nueva contraseña (mínimo 10 chars, mayúscula, minúscula, número, especial).
+7. La contraseña se actualiza con `password_hash()`, el token queda invalidado y se redirige a la vista de éxito.
+
+### Tabla tbl_password_resets
+Migración: `database/007_add_password_resets.sql`
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `token_hash` | VARCHAR(64) | SHA-256 del token (nunca el token plano) |
+| `expires_at` | DATETIME | Fecha de expiración |
+| `used_at` | DATETIME | NULL si activo, fecha si ya fue usado |
+| `ip_address` | VARCHAR(45) | IP que solicitó el reset |
+
+### Configuración SMTP en .env
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=mi_correo@gmail.com
+MAIL_PASSWORD=contraseña_de_aplicacion
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=mi_correo@gmail.com
+MAIL_FROM_NAME="Skeleton"
+
+PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES=60
+PASSWORD_RESET_MAX_REQUESTS=3
+PASSWORD_RESET_RATE_LIMIT_MINUTES=15
+```
+
+> **Gmail:** Activa la verificación en 2 pasos y genera una "Contraseña de aplicación" en tu cuenta Google. Usa esa contraseña (no tu contraseña normal) en `MAIL_PASSWORD`.
+
+### Cómo probar en local
+1. Configura las variables SMTP en `.env` con credenciales reales.
+2. Ve a `http://localhost/template/public/forgot-password`.
+3. Ingresa el correo del usuario administrador: `admin@skeleton.local`.
+4. Revisa la bandeja del correo configurado.
+5. Abre el enlace de recuperación.
+6. Establece la nueva contraseña.
+7. Inicia sesión con la nueva contraseña.
+
+### Si el correo no llega
+- Verifica `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` y `MAIL_ENCRYPTION` en `.env`.
+- Revisa la carpeta de **spam/correo no deseado**.
+- Comprueba los logs en `logs/security.log` para mensajes de error SMTP.
+- Gmail requiere contraseña de aplicación (no la contraseña normal).
+- Prueba con un servicio SMTP de prueba como [Mailtrap](https://mailtrap.io) o [Mailpit](https://github.com/axllent/mailpit) en local.
+
+### Mailtrap / Mailpit (pruebas locales sin SMTP real)
+Para probar sin enviar correos reales:
+
+```env
+MAIL_HOST=sandbox.smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=tu_usuario_mailtrap
+MAIL_PASSWORD=tu_password_mailtrap
+MAIL_ENCRYPTION=tls
+```
 
 ---
 
