@@ -5,20 +5,11 @@ namespace App\Services;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception as MailerException;
+use App\Models\SmtpSettings;
 use Core\Logger;
 
 class Mailer
 {
-    /**
-     * Envía un correo electrónico usando PHPMailer + SMTP configurado en .env.
-     *
-     * @param string $to        Dirección de correo del destinatario
-     * @param string $toName    Nombre visible del destinatario
-     * @param string $subject   Asunto del correo
-     * @param string $htmlBody  Cuerpo HTML
-     * @param string $plainBody Cuerpo en texto plano (opcional)
-     * @return bool             true si se envió, false si falló
-     */
     public static function send(
         string $to,
         string $toName,
@@ -26,22 +17,22 @@ class Mailer
         string $htmlBody,
         string $plainBody = ''
     ): bool {
+        $cfg  = self::config();
         $mail = new PHPMailer(true);
 
         try {
             $mail->isSMTP();
-            $mail->Host       = env('MAIL_HOST', 'smtp.example.com');
-            $mail->SMTPAuth   = true;
-            $mail->Username   = env('MAIL_USERNAME', '');
-            $mail->Password   = env('MAIL_PASSWORD', '');
-            $mail->Port       = (int) env('MAIL_PORT', 587);
-            $mail->CharSet    = 'UTF-8';
-            $mail->SMTPDebug  = SMTP::DEBUG_OFF;
+            $mail->Host      = $cfg['host'];
+            $mail->SMTPAuth  = true;
+            $mail->Username  = $cfg['username'];
+            $mail->Password  = $cfg['password'];
+            $mail->Port      = $cfg['port'];
+            $mail->CharSet   = 'UTF-8';
+            $mail->SMTPDebug = SMTP::DEBUG_OFF;
 
-            $encryption = strtolower((string) env('MAIL_ENCRYPTION', 'tls'));
-            $mail->SMTPSecure = match ($encryption) {
-                'ssl'  => PHPMailer::ENCRYPTION_SMTPS,
-                'tls'  => PHPMailer::ENCRYPTION_STARTTLS,
+            $mail->SMTPSecure = match ($cfg['encryption']) {
+                'ssl'   => PHPMailer::ENCRYPTION_SMTPS,
+                'tls'   => PHPMailer::ENCRYPTION_STARTTLS,
                 default => '',
             };
 
@@ -49,15 +40,11 @@ class Mailer
                 $mail->SMTPAutoTLS = false;
             }
 
-            $mail->setFrom(
-                (string) env('MAIL_FROM_ADDRESS', 'no-reply@example.com'),
-                (string) env('MAIL_FROM_NAME', 'Skeleton')
-            );
-
+            $mail->setFrom($cfg['from_address'], $cfg['from_name']);
             $mail->addAddress($to, $toName);
             $mail->isHTML(true);
-            $mail->Subject  = $subject;
-            $mail->Body     = $htmlBody;
+            $mail->Subject = $subject;
+            $mail->Body    = $htmlBody;
 
             if ($plainBody !== '') {
                 $mail->AltBody = $plainBody;
@@ -70,5 +57,38 @@ class Mailer
             Logger::error('Mailer::send failed — ' . $mail->ErrorInfo);
             return false;
         }
+    }
+
+    private static function config(): array
+    {
+        try {
+            $model    = new SmtpSettings();
+            $settings = $model->getDecrypted();
+
+            if ($settings['host'] !== '' && $settings['username'] !== '') {
+                return [
+                    'host'         => $settings['host'],
+                    'port'         => (int) $settings['port'],
+                    'username'     => $settings['username'],
+                    'password'     => $settings['password'],
+                    'encryption'   => $settings['encryption'] === 'none' ? '' : $settings['encryption'],
+                    'from_address' => $settings['from_address'] ?: (string) env('MAIL_FROM_ADDRESS', 'no-reply@example.com'),
+                    'from_name'    => $settings['from_name']    ?: (string) env('MAIL_FROM_NAME', 'Skeleton'),
+                ];
+            }
+        } catch (\Throwable) {
+            // DB unavailable — fall through to .env
+        }
+
+        $encryption = strtolower((string) env('MAIL_ENCRYPTION', 'tls'));
+        return [
+            'host'         => (string) env('MAIL_HOST', 'smtp.example.com'),
+            'port'         => (int)    env('MAIL_PORT', 587),
+            'username'     => (string) env('MAIL_USERNAME', ''),
+            'password'     => (string) env('MAIL_PASSWORD', ''),
+            'encryption'   => in_array($encryption, ['tls', 'ssl'], true) ? $encryption : '',
+            'from_address' => (string) env('MAIL_FROM_ADDRESS', 'no-reply@example.com'),
+            'from_name'    => (string) env('MAIL_FROM_NAME', 'Skeleton'),
+        ];
     }
 }

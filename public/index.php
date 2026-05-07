@@ -66,6 +66,7 @@ use App\Controllers\SecurityController;
 use App\Controllers\RolesPermissionsController;
 use App\Controllers\AuditLogsController;
 use App\Controllers\PasswordResetController;
+use App\Controllers\SmtpSettingsController;
 
 $router = new Router();
 
@@ -132,6 +133,11 @@ $router->get('/manuals/download/{id}',       [SystemInformationController::class
 // Security
 $router->get('/security/sessions',        [SecurityController::class, 'sessions']);
 $router->post('/security/sessions/update',[SecurityController::class, 'updateSessions']);
+
+// SMTP Settings
+$router->get('/security/smtp',            [SmtpSettingsController::class, 'index']);
+$router->post('/security/smtp/update',    [SmtpSettingsController::class, 'update']);
+$router->post('/security/smtp/test',      [SmtpSettingsController::class, 'test']);
 
 // Roles y Permisos
 $router->get('/roles-permissions',                    [RolesPermissionsController::class, 'index']);

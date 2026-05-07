@@ -2,7 +2,7 @@
 
 Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
 
-**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables y **bloqueo de sesión por inactividad**.
+**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo y **configuración SMTP administrable desde la UI**.
 
 ---
 
@@ -52,7 +52,9 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla v
 │   │   ├── LanguagesController.php         ← CRUD de idiomas (solo admin)
 │   │   ├── SystemInformationController.php ← Info del sistema + manuales
 │   │   ├── LockController.php              ← Pantalla de bloqueo + desbloqueo
-│   │   └── SecurityController.php          ← Configuración de seguridad (solo admin)
+│   │   ├── SecurityController.php          ← Configuración de seguridad (solo admin)
+│   │   ├── SmtpSettingsController.php      ← Configuración SMTP administrable
+│   │   └── PasswordResetController.php     ← Recuperación de contraseña
 │   ├── Models/
 │   │   ├── User.php                        ← CRUD usuarios con JOINs
 │   │   ├── Language.php                    ← Idiomas del sistema
@@ -61,7 +63,9 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla v
 │   │   ├── Role.php                        ← Roles del sistema
 │   │   ├── Status.php                      ← Estados del sistema
 │   │   ├── LoginLog.php                    ← Registro de intentos de login
-│   │   └── SecuritySetting.php             ← Configuración de bloqueo de sesión
+│   │   ├── SecuritySetting.php             ← Configuración de bloqueo de sesión
+│   │   ├── SmtpSettings.php               ← Configuración SMTP (cifrado AES-256)
+│   │   └── PasswordReset.php               ← Tokens de recuperación de contraseña
 │   └── Views/
 │       ├── auth/login.php
 │       ├── dashboard/index.php
@@ -72,6 +76,8 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla v
 │       ├── system_information/
 │       ├── manuals/
 │       ├── security/sessions/
+│       ├── security/smtp/
+│       ├── auth/
 │       ├── lock.php
 │       ├── layouts/
 │       └── errors/
@@ -91,6 +97,7 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla v
 │   ├── Redirect.php
 │   ├── Logger.php
 │   ├── Audit.php
+│   ├── Crypt.php                    ← Cifrado AES-256-CBC (APP_KEY)
 │   ├── ErrorHandler.php
 │   └── helpers.php                  ← env(), __(), can()
 ├── lang/
@@ -193,6 +200,8 @@ DB_PASSWORD=
 | `004_add_security_session_settings.sql` | Bloqueo de sesión |
 | `005_add_modules_permissions_role_permissions.sql` | Módulos y permisos por rol |
 | `006_add_audit_logs.sql` | Auditoría de acciones |
+| `007_add_password_resets.sql` | Recuperación de contraseña por correo |
+| `008_add_smtp_settings.sql` | Configuración SMTP administrable |
 
 ### Paso 5 — Acceder al sistema
 
@@ -250,6 +259,7 @@ Para detalle completo ver [docs/despliegue-hosting-compartido.md](docs/despliegu
 
 | Variable | Descripción | Ejemplo |
 |---|---|---|
+| `APP_KEY` | Clave para cifrado AES-256 (APP_KEY). Genera con `php -r "echo bin2hex(random_bytes(32));"` | *(64 hex chars)* |
 | `APP_NAME` | Nombre del sistema | `"Skeleton"` |
 | `APP_URL` | URL base pública (sin barra final) | `http://localhost/template/public` |
 | `APP_ENV` | Entorno: `local` o `production` | `local` |
@@ -319,6 +329,9 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | POST | `/unlock` | Desbloquear sesión con contraseña | Autenticado + bloqueado |
 | GET | `/security/sessions` | Configurar bloqueo por inactividad | Solo admin |
 | POST | `/security/sessions/update` | Guardar configuración de seguridad | Solo admin |
+| GET | `/security/smtp` | Ver/editar configuración SMTP | Solo admin |
+| POST | `/security/smtp/update` | Guardar configuración SMTP | Solo admin |
+| POST | `/security/smtp/test` | Enviar correo de prueba | Solo admin |
 
 ---
 
@@ -351,6 +364,13 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 - Todos los usuarios autenticados pueden descargarlos.
 - El admin puede activar/desactivar manuales desde la misma vista.
 - Los archivos se almacenan con nombre único en `public/uploads/manuals/`.
+
+### Configuración SMTP administrable
+- El administrador puede configurar el servidor de correo saliente desde **Seguridad → SMTP** sin editar archivos.
+- La configuración en BD tiene prioridad sobre las variables del `.env` (que sirven de respaldo).
+- La contraseña SMTP se almacena cifrada con **AES-256-CBC** usando la clave `APP_KEY` del `.env`.
+- El botón "Probar configuración" envía un correo de prueba al correo del admin autenticado y registra el resultado.
+- Requiere importar `database/008_add_smtp_settings.sql` y definir `APP_KEY` en `.env`.
 
 ### Bloqueo de sesión por inactividad
 - La sesión se bloquea automáticamente tras un período de inactividad configurable (por defecto 15 min / 900 seg).
