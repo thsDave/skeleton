@@ -125,9 +125,9 @@ function prettyJson(?string $raw): string
           </div>
         </div>
 
-        <?php if ($log['description']): ?>
+        <?php if (!empty($log['description'])): ?>
         <div class="row py-2 border-bottom">
-          <div class="col-5 text-muted fw-semibold"><?= __('audit_logs.description') ?></div>
+          <div class="col-5 text-muted fw-semibold"><?= __('audit_logs.description_text') ?></div>
           <div class="col-7"><?= htmlspecialchars($log['description'], ENT_QUOTES, 'UTF-8') ?></div>
         </div>
         <?php endif; ?>

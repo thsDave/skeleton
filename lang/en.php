@@ -307,6 +307,9 @@ return [
 
     // ── Button aliases ──────────────────────────────────────────────────────────
     'buttons.save_preferences'   => 'Save Preferences',
+    'buttons.filter'             => 'Filter',
+    'buttons.clear'              => 'Clear filters',
+    'buttons.view'               => 'View',
 
     // ── Language aliases ────────────────────────────────────────────────────────
     'languages.new'              => 'New Language',
@@ -430,7 +433,7 @@ return [
     'audit_logs.apply_filters'     => 'Apply filters',
     'audit_logs.clear_filters'     => 'Clear',
     'audit_logs.system_user'       => 'System',
-    'audit_logs.showing'           => 'Showing :count records',
+    'audit_logs.showing'           => 'Showing :n of :total records',
     'audit_logs.no_records'        => 'No records found.',
     'audit_logs.technical'         => 'Technical information',
     'audit_logs.main_info'         => 'Main information',

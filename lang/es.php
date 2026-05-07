@@ -307,6 +307,9 @@ return [
 
     // ── Alias de botones ────────────────────────────────────────────────────────
     'buttons.save_preferences'   => 'Guardar Preferencias',
+    'buttons.filter'             => 'Filtrar',
+    'buttons.clear'              => 'Limpiar filtros',
+    'buttons.view'               => 'Ver',
 
     // ── Alias de idiomas ────────────────────────────────────────────────────────
     'languages.new'              => 'Nuevo Idioma',
@@ -430,7 +433,7 @@ return [
     'audit_logs.apply_filters'     => 'Aplicar filtros',
     'audit_logs.clear_filters'     => 'Limpiar',
     'audit_logs.system_user'       => 'Sistema',
-    'audit_logs.showing'           => 'Mostrando :count registros',
+    'audit_logs.showing'           => 'Mostrando :n de :total registros',
     'audit_logs.no_records'        => 'No se encontraron registros.',
     'audit_logs.technical'         => 'Información técnica',
     'audit_logs.main_info'         => 'Información principal',
