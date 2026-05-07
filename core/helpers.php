@@ -2,6 +2,29 @@
 
 // Archivo sin namespace — define funciones globales del sistema
 
+if (!function_exists('env')) {
+    /**
+     * Lee una variable de entorno con soporte de valor por defecto.
+     * Convierte strings "true", "false" y "null" a sus tipos nativos.
+     */
+    function env(string $key, mixed $default = null): mixed
+    {
+        $value = $_ENV[$key] ?? getenv($key);
+
+        if ($value === false) {
+            return $default;
+        }
+
+        return match (strtolower((string) $value)) {
+            'true',  '(true)'  => true,
+            'false', '(false)' => false,
+            'null',  '(null)'  => null,
+            'empty', '(empty)' => '',
+            default            => $value,
+        };
+    }
+}
+
 if (!function_exists('__')) {
     /**
      * Helper global de traducción.

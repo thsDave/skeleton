@@ -1,0 +1,31 @@
+Options -Indexes
+
+# ─────────────────────────────────────────────────────────────────────────────
+# .htaccess raíz — protección cuando el hosting apunta al directorio raíz
+# del proyecto en lugar de a /public.
+#
+# Si tu servidor apunta directamente a /public, este archivo es opcional
+# pero recomendable para proteger archivos sensibles en caso de mala config.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─── Bloquear acceso directo a archivos sensibles ─────────────────────────
+<FilesMatch "\.(env|log|sql|json|lock|gitignore|gitattributes|phar|bak|backup)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # ─── Bloquear acceso directo a carpetas privadas ──────────────────────
+    RewriteRule ^(app|core|config|database|vendor|logs|lang|docs)(/|$) - [F,L]
+
+    # ─── Reenviar tráfico a /public/ ─────────────────────────────────────
+    # Descomenta estas líneas si tu hosting apunta a la raíz del proyecto
+    # y no permite cambiar el document root a /public.
+    #
+    # RewriteCond %{REQUEST_URI} !^/public/
+    # RewriteCond %{REQUEST_FILENAME} !-f
+    # RewriteCond %{REQUEST_FILENAME} !-d
+    # RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>

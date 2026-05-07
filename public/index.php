@@ -4,32 +4,28 @@ declare(strict_types=1);
 
 ob_start();
 
-// Autoloader
-spl_autoload_register(function (string $class): void {
-    $base = dirname(__DIR__);
-    $map  = [
-        'Core\\'      => $base . '/core/',
-        'App\\Controllers\\' => $base . '/app/Controllers/',
-        'App\\Models\\'      => $base . '/app/Models/',
-    ];
+// Cargar Composer — muestra error amigable si falta vendor/
+$autoload = dirname(__DIR__) . '/vendor/autoload.php';
+if (!file_exists($autoload)) {
+    http_response_code(500);
+    echo '<!doctype html><html><head><meta charset="utf-8"><title>Dependencias faltantes</title></head>'
+        . '<body style="font-family:sans-serif;padding:2rem;max-width:600px;margin:auto;">'
+        . '<h2 style="color:#c0392b;">Faltan dependencias del proyecto</h2>'
+        . '<p>Ejecuta el siguiente comando en la raíz del sistema y recarga esta página:</p>'
+        . '<pre style="background:#f4f4f4;padding:1rem;border-radius:4px;">composer install</pre>'
+        . '</body></html>';
+    exit;
+}
+require $autoload;
 
-    foreach ($map as $prefix => $dir) {
-        if (str_starts_with($class, $prefix)) {
-            $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
-            $file     = $dir . $relative . '.php';
-            if (file_exists($file)) {
-                require $file;
-                return;
-            }
-        }
-    }
-});
+// Cargar variables de entorno desde .env (safeLoad no falla si el archivo no existe)
+$dotenv = Dotenv\Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->safeLoad();
 
-// Helpers globales — define __() en el espacio global (sin namespace)
-// Core\Lang es cargado por el autoloader cuando __() lo necesite por primera vez
+// Helpers globales — define __(), can(), env() en el espacio global (sin namespace)
 require dirname(__DIR__) . '/core/helpers.php';
 
-// Configuración de errores según entorno
+// Configuración de la aplicación
 $appConfig = require dirname(__DIR__) . '/config/app.php';
 date_default_timezone_set($appConfig['timezone']);
 

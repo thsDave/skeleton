@@ -1,8 +1,8 @@
 # Skeleton MVC v3.0 — PHP 8.3 + MySQL + DashboardKit
 
-Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks externos. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
+Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
 
-**v3.0** agrega: modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales de usuario descargables y **bloqueo de sesión por inactividad**.
+**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables y **bloqueo de sesión por inactividad**.
 
 ---
 
@@ -11,6 +11,8 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 | Tecnología | Descripción |
 |---|---|
 | PHP 8.3 | Lenguaje principal, sin frameworks |
+| Composer 2 | Gestión de dependencias y autoload PSR-4 |
+| vlucas/phpdotenv | Variables de entorno desde `.env` |
 | MySQL 8 | Base de datos relacional |
 | PDO | Acceso a datos con consultas preparadas |
 | Bootstrap 5 | UI base (vía DashboardKit) |
@@ -63,68 +65,58 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 │       ├── auth/login.php
 │       ├── dashboard/index.php
 │       ├── profile/
-│       │   ├── index.php            ← Datos personales + preferencias (tema/idioma)
-│       │   └── edit.php             ← Editar info + foto de perfil
 │       ├── account/
-│       │   ├── index.php
-│       │   ├── edit_email.php
-│       │   └── edit_password.php
 │       ├── users/
-│       │   ├── index.php            ← DataTables + inactivar con SweetAlert2
-│       │   ├── create.php
-│       │   └── edit.php
 │       ├── languages/
-│       │   ├── index.php            ← Listado de idiomas (solo admin)
-│       │   ├── create.php
-│       │   └── edit.php
 │       ├── system_information/
-│       │   ├── index.php            ← Info del sistema + listado de manuales
-│       │   └── edit.php             ← Editar info (solo admin)
 │       ├── manuals/
-│       │   └── create.php           ← Subir manual (solo admin)
 │       ├── security/sessions/
-│       │   └── index.php            ← Configurar bloqueo por inactividad (solo admin)
-│       ├── lock.php                 ← Pantalla de bloqueo de sesión
+│       ├── lock.php
 │       ├── layouts/
-│       │   ├── header.php           ← <head> + tema dinámico (light/dark)
-│       │   ├── sidebar.php          ← Menú con i18n + secciones por rol
-│       │   ├── topbar.php           ← Avatar + dropdown con i18n
-│       │   ├── main.php             ← Incluye los 3 anteriores
-│       │   ├── footer.php           ← JS + SweetAlert2 + tema dinámico
-│       │   └── alerts.php
-│       └── errors/404.php
+│       └── errors/
 ├── config/
-│   ├── app.php                      ← URL, timezone, uploads (perfiles + manuales)
-│   └── database.php
+│   ├── app.php                      ← Configuración general (lee desde .env)
+│   └── database.php                 ← Conexión BD (lee desde .env)
 ├── core/
 │   ├── Router.php
 │   ├── Controller.php
 │   ├── Model.php
 │   ├── Database.php
-│   ├── Auth.php                     ← + theme(), lang(), updateSession(), bloqueo de sesión
-│   ├── Lang.php                     ← i18n: __($key), carga /lang/*.php
+│   ├── Auth.php
+│   ├── Lang.php
 │   ├── Session.php
 │   ├── CSRF.php
 │   ├── Validator.php
 │   ├── Redirect.php
-│   └── Logger.php
+│   ├── Logger.php
+│   ├── Audit.php
+│   ├── ErrorHandler.php
+│   └── helpers.php                  ← env(), __(), can()
 ├── lang/
 │   ├── es.php                       ← Español (idioma base)
 │   └── en.php                       ← English
 ├── database/
-│   ├── db_skeleton.sql                                        ← Esquema base (001)
-│   ├── 002_update_users_roles_statuses_profile_image.sql      ← Migración (002)
-│   ├── 003_add_preferences_languages_system_info_manuals.sql  ← Migración v3.0
-│   └── 004_add_security_session_settings.sql                  ← Migración v3.0 (bloqueo)
+│   ├── db_skeleton.sql              ← Esquema base (001)
+│   ├── 002_update_users_roles_statuses_profile_image.sql
+│   ├── 003_add_preferences_languages_system_info_manuals.sql
+│   ├── 004_add_security_session_settings.sql
+│   ├── 005_add_modules_permissions_role_permissions.sql
+│   └── 006_add_audit_logs.sql
+├── docs/
+│   └── despliegue-hosting-compartido.md
 ├── logs/
-│   └── security.log
+│   └── .gitkeep
+├── vendor/                          ← Generado por Composer (no subir a Git)
 ├── public/
-│   ├── index.php                    ← Front controller + todas las rutas
+│   ├── index.php                    ← Front controller + rutas
 │   ├── .htaccess
 │   ├── uploads/
-│   │   ├── profiles/                ← Fotos de perfil
-│   │   └── manuals/                 ← Archivos de manuales (PDF/DOC/DOCX)
 │   └── assets/
+├── .env.example                     ← Plantilla de variables de entorno (sí subir)
+├── .env                             ← Variables de entorno locales (NO subir)
+├── .htaccess                        ← Protección raíz del proyecto
+├── composer.json                    ← Dependencias (sí subir)
+├── composer.lock                    ← Versiones exactas (sí subir)
 └── README.md
 ```
 
@@ -132,16 +124,18 @@ Sistema web base (skeleton) con arquitectura MVC en PHP puro, sin frameworks ext
 
 ## Requisitos del entorno
 
-- **Laragon** (Windows) con:
-  - PHP 8.3
-  - MySQL 8.0
-  - Apache con `mod_rewrite` habilitado
-- Extensiones PHP requeridas: `pdo`, `pdo_mysql`, `mbstring`, `json`, `fileinfo`
-- No requiere Composer ni dependencias externas
+| Requisito | Versión mínima |
+|---|---|
+| PHP | 8.3 |
+| MySQL | 8.0 |
+| Composer | 2.x |
+| Apache / Laragon | con `mod_rewrite` habilitado |
+
+**Extensiones PHP requeridas:** `pdo`, `pdo_mysql`, `mbstring`, `json`, `fileinfo`
 
 ---
 
-## Instalación paso a paso
+## Instalación local (Laragon / Windows)
 
 ### Paso 1 — Copiar el proyecto
 
@@ -151,101 +145,124 @@ Coloca la carpeta `template` dentro de `C:\laragon\www\`:
 C:\laragon\www\template\
 ```
 
-### Paso 2 — Importar la base de datos desde phpMyAdmin
+### Paso 2 — Instalar dependencias con Composer
 
-1. Abre **Laragon** y haz clic en **Start All** para iniciar MySQL y Apache.
-2. Abre tu navegador y ve a: `http://localhost/phpmyadmin`
-3. Inicia sesión con usuario `root` y contraseña vacía (configuración por defecto de Laragon).
-4. En el panel izquierdo, haz clic en **Nueva** (o **New**) para crear una base de datos.
-   - Nombre: `db_skeleton`
-   - Cotejamiento: `utf8mb4_unicode_ci`
-   - Haz clic en **Crear**.
-5. Con la base de datos `db_skeleton` seleccionada, haz clic en la pestaña **Importar**.
-6. Haz clic en **Seleccionar archivo** y navega hasta:
-   ```
-   C:\laragon\www\template\database\db_skeleton.sql
-   ```
-7. Haz clic en **Importar** (o **Go**).
-8. Verifica que se hayan creado las tablas `tbl_users` y `tbl_login_logs`.
-
-### Paso 3 — Aplicar las migraciones
-
-Repite el proceso de importación con cada archivo SQL en orden:
-
-**Migración 002:**
-1. Con `db_skeleton` seleccionada, ve a **Importar**.
-2. Selecciona:
-   ```
-   C:\laragon\www\template\database\002_update_users_roles_statuses_profile_image.sql
-   ```
-3. Haz clic en **Importar**.
-4. Verifica que existan `tbl_roles`, `tbl_statuses` y que `tbl_users` tenga `role_id`, `status_id` y `profile_image`.
-
-**Migración 003 (v3.0 — nueva):**
-1. Con `db_skeleton` seleccionada, ve a **Importar**.
-2. Selecciona:
-   ```
-   C:\laragon\www\template\database\003_add_preferences_languages_system_info_manuals.sql
-   ```
-3. Haz clic en **Importar**.
-4. Verifica que existan `tbl_languages`, `tbl_system_settings`, `tbl_user_manuals` y que `tbl_users` tenga `theme_preference` y `language_id`.
-
-**Migración 004 (v3.0 — bloqueo de sesión):**
-1. Con `db_skeleton` seleccionada, ve a **Importar**.
-2. Selecciona:
-   ```
-   C:\laragon\www\template\database\004_add_security_session_settings.sql
-   ```
-3. Haz clic en **Importar**.
-4. Verifica que exista `tbl_security_settings` con un registro inicial (`id=1`, `session_lock_enabled=1`, `session_inactivity_seconds=900`).
-
-> **Alternativa rápida:** En el menú de Laragon, haz clic derecho → **Database** → **phpMyAdmin** para abrirlo directamente.
-
-### Paso 4 — Configurar la conexión a la base de datos
-
-Edita `config/database.php` si tu configuración de MySQL en Laragon es diferente:
-
-```php
-return [
-    'host'   => '127.0.0.1',
-    'port'   => '3306',
-    'dbname' => 'db_skeleton',
-    'user'   => 'root',
-    'pass'   => '',          // Vacío por defecto en Laragon
-];
+```bash
+cd C:\laragon\www\template
+composer install
 ```
 
-### Paso 5 — Configurar la URL base
+Esto crea la carpeta `vendor/` y habilita el autoloader PSR-4 y las variables de entorno.
 
-Edita `config/app.php` y ajusta la URL según tu entorno:
+### Paso 3 — Crear el archivo .env
 
-```php
-// Si accedes por subdominio (recomendado en Laragon):
-'url' => 'http://template.test/public',
-
-// O si accedes por subdirectorio:
-'url' => 'http://localhost/template/public',
+```cmd
+copy .env.example .env
 ```
 
-> **Recomendación con Laragon:** Crea un virtual host haciendo clic derecho en Laragon → **www** → **template** → **Create website**. Laragon creará automáticamente el dominio `template.test`.
+Edita `.env` y ajusta los valores a tu entorno local:
 
-### Paso 6 — Verificar permisos de los directorios de uploads
+```env
+APP_NAME="Skeleton"
+APP_URL="http://localhost/template/public"
+APP_ENV=local
+APP_DEBUG=true
 
-Los directorios `public/uploads/profiles/` y `public/uploads/manuals/` deben ser escribibles por PHP. En Laragon/Windows esto funciona por defecto.
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=db_skeleton
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-### Paso 7 — Acceder al sistema
+> Si usas virtual host en Laragon (recomendado), cambia `APP_URL` a `http://template.test/public`.
 
-Abre tu navegador y ve a:
+### Paso 4 — Importar la base de datos
+
+1. Inicia Laragon → **Start All**.
+2. Abre `http://localhost/phpmyadmin`.
+3. Crea la base de datos `db_skeleton` con cotejamiento `utf8mb4_unicode_ci`.
+4. Importa los archivos SQL en orden desde la carpeta `database/`:
+
+| Archivo | Descripción |
+|---|---|
+| `db_skeleton.sql` | Esquema base |
+| `002_update_users_roles_statuses_profile_image.sql` | Roles, estados, foto de perfil |
+| `003_add_preferences_languages_system_info_manuals.sql` | Idiomas, sistema, manuales |
+| `004_add_security_session_settings.sql` | Bloqueo de sesión |
+| `005_add_modules_permissions_role_permissions.sql` | Módulos y permisos por rol |
+| `006_add_audit_logs.sql` | Auditoría de acciones |
+
+### Paso 5 — Acceder al sistema
 
 ```
 http://localhost/template/public/login
 ```
 
-O si usas virtual host:
+O con virtual host:
 
 ```
 http://template.test/public/login
 ```
+
+---
+
+## Instalación en hosting compartido con SSH
+
+```bash
+# 1. Subir el proyecto al servidor (excluye vendor/, .env y logs/)
+# 2. Conectarse por SSH y ejecutar:
+cd /ruta/al/proyecto
+composer install --no-dev --optimize-autoloader
+
+# 3. Crear .env
+cp .env.example .env
+nano .env   # editar con los datos de producción
+
+# 4. Importar SQL desde phpMyAdmin del hosting
+
+# 5. Configurar dominio apuntando a /public
+```
+
+> **APP_DEBUG=false** en producción para no exponer detalles técnicos.
+
+Para detalle completo ver [docs/despliegue-hosting-compartido.md](docs/despliegue-hosting-compartido.md).
+
+---
+
+## Instalación en hosting compartido sin SSH
+
+1. Ejecuta `composer install --no-dev --optimize-autoloader` en tu computadora local.
+2. Sube el proyecto **incluyendo** la carpeta `vendor/` al hosting (por FTP o panel de archivos).
+3. Crea el archivo `.env` manualmente en el hosting y configura las variables.
+4. Importa los archivos SQL desde el phpMyAdmin del hosting.
+5. Apunta el dominio/subdominio a la carpeta `/public` si el hosting lo permite.
+6. Si no puedes cambiar el document root a `/public`, edita el `.htaccess` raíz y descomenta las líneas de reenvío a `/public`.
+
+> **Importante:** No subas `.env` ni `logs/` al repositorio. Solo súbelos manualmente al servidor.
+
+Para detalle completo ver [docs/despliegue-hosting-compartido.md](docs/despliegue-hosting-compartido.md).
+
+---
+
+## Variables de entorno (.env)
+
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `APP_NAME` | Nombre del sistema | `"Skeleton"` |
+| `APP_URL` | URL base pública (sin barra final) | `http://localhost/template/public` |
+| `APP_ENV` | Entorno: `local` o `production` | `local` |
+| `APP_DEBUG` | Muestra detalles de error: `true` o `false` | `true` |
+| `APP_TIMEZONE` | Zona horaria PHP | `America/El_Salvador` |
+| `DB_HOST` | Host de MySQL | `127.0.0.1` |
+| `DB_PORT` | Puerto de MySQL | `3306` |
+| `DB_DATABASE` | Nombre de la base de datos | `db_skeleton` |
+| `DB_USERNAME` | Usuario de MySQL | `root` |
+| `DB_PASSWORD` | Contraseña de MySQL | *(vacío en Laragon)* |
+| `SESSION_LIFETIME` | Tiempo de sesión en segundos | `1800` (30 min) |
+| `LOG_PATH` | Ruta relativa del log de errores | `logs/error.log` |
+
+> El archivo `.env.example` es la plantilla. Cópialo como `.env` y nunca lo subas al repositorio.
 
 ---
 
@@ -405,11 +422,13 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 
 ---
 
-## Notas para producción
+## Notas de seguridad para producción
 
-- Cambia `'env' => 'production'` en `config/app.php` para desactivar errores.
-- Activa HTTPS y el flag `secure` en cookies de sesión (`Session.php`).
-- Cambia las credenciales de base de datos en `config/database.php`.
-- Asegúrate de que `/logs/security.log` no sea accesible públicamente (el `.htaccess` ya lo bloquea).
+- En `.env` usa `APP_DEBUG=false` para no exponer trazas de error al usuario.
+- En `.env` usa `APP_ENV=production`.
+- Nunca subas el archivo `.env` al repositorio Git.
+- La carpeta `vendor/` no debe subirse a Git; en hosting sin SSH súbela directamente al servidor.
+- Activa HTTPS y el flag `secure` en cookies de sesión (`core/Session.php`).
+- La carpeta `logs/` está protegida por `.htaccess` y no debe ser accesible públicamente.
 - El directorio `dashboardkit-src/` (fuente del template) puede eliminarse en producción.
-- El directorio `public/uploads/` debe tener permisos de escritura para el proceso de PHP.
+- La carpeta `public/uploads/` debe tener permisos de escritura para el proceso PHP.
