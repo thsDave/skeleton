@@ -12,6 +12,8 @@ use Core\Audit;
 use Core\Logger;
 use App\Models\User;
 use App\Models\LoginLog;
+use App\Services\Mailer;
+use App\Services\SmsService;
 
 class AuthController extends Controller
 {
@@ -106,11 +108,53 @@ class AuthController extends Controller
             Redirect::withErrors('/login', ['general' => 'Las credenciales ingresadas no son válidas.'], ['email' => $email]);
         }
 
-        // Login exitoso
+        // Login exitoso — credenciales válidas
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
         $this->userModel->updateLastLogin($user['id'], $ip);
         $this->logModel->record($user['id'], $email, 'success', 'Login exitoso');
         Logger::security("Login exitoso - ID {$user['id']} desde {$ip}");
+
+        // 2FA check — si el usuario tiene 2FA activo y el método sigue habilitado globalmente
+        if (!empty($user['two_factor_enabled']) && !empty($user['two_factor_method'])) {
+            $mfaSettings = (new \App\Models\MfaSettings())->get();
+            $globalOn    = match ($user['two_factor_method']) {
+                'email'         => !empty($mfaSettings['email_enabled']),
+                'sms'           => !empty($mfaSettings['sms_enabled']),
+                'authenticator' => !empty($mfaSettings['authenticator_enabled']),
+                default         => false,
+            };
+
+            if ($globalOn) {
+                Session::set('pending_2fa_user_id', $user['id']);
+                Session::set('pending_2fa_method',  $user['two_factor_method']);
+
+                if (in_array($user['two_factor_method'], ['email', 'sms'], true)) {
+                    $tf     = new \App\Services\TwoFactorService();
+                    $codes  = new \App\Models\TwoFactorCode();
+                    $expiry = (int) env('TWO_FACTOR_CODE_EXPIRATION_MINUTES', 10);
+                    $code   = $tf->generateNumericCode();
+                    $codes->deleteForUser($user['id'], $user['two_factor_method']);
+                    $codes->create($user['id'], $tf->hashCode($code), $user['two_factor_method'], $expiry);
+
+                    if ($user['two_factor_method'] === 'email') {
+                        $html = self::build2faEmailHtml($user['nombres'], $code, $expiry);
+                        \App\Services\Mailer::send($user['email'], $user['nombres'], __('2fa.email_subject'), $html);
+                    } else {
+                        $phone = $user['two_factor_phone'] ?? '';
+                        if ($phone !== '') {
+                            $msg = __('2fa.sms_body', ['code' => $code, 'minutes' => $expiry]);
+                            \App\Services\SmsService::send($phone, $msg);
+                        }
+                    }
+                }
+
+                Audit::log(['module' => 'auth', 'action' => 'login_2fa_required',
+                    'entity' => 'user', 'entity_id' => $user['id'],
+                    'description' => "2FA requerido ({$user['two_factor_method']}) desde {$ip}",
+                    'status' => 'pending']);
+                Redirect::to('/two-factor/challenge');
+            }
+        }
 
         Auth::login($user);
 
@@ -119,6 +163,20 @@ class AuthController extends Controller
             'description' => "Login exitoso desde {$ip}", 'status' => 'success']);
 
         Redirect::to('/dashboard');
+    }
+
+    private static function build2faEmailHtml(string $nombre, string $code, int $expiry): string
+    {
+        return '<div style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px;">'
+             . '<h2 style="color:#1a1a2e;">' . __('2fa.email_subject') . '</h2>'
+             . '<p>Hola <strong>' . htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
+             . '<p>' . __('2fa.email_intro') . '</p>'
+             . '<div style="text-align:center;margin:24px 0;padding:20px;background:#f0f4ff;border-radius:10px;border:2px dashed #0d6efd;">'
+             . '<span style="font-size:40px;font-weight:800;letter-spacing:12px;color:#0d6efd;">' . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . '</span>'
+             . '</div>'
+             . '<p style="color:#666;font-size:13px;">' . __('2fa.email_expiry', ['minutes' => $expiry]) . '</p>'
+             . '<p style="color:#999;font-size:12px;">' . __('2fa.email_no_request') . '</p>'
+             . '</div>';
     }
 
     public function logout(): void

@@ -161,4 +161,32 @@ $_prfStatus = $user['status_slug'] ?? $user['status'] ?? '';
   </div>
 </div>
 
+<!-- Verificación en 2 pasos -->
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <?php $tf_on = !empty($user['two_factor_enabled']); ?>
+        <div class="avtar avtar-s bg-light-<?= $tf_on ? 'success' : 'secondary' ?>">
+          <i class="ph-duotone ph-shield-<?= $tf_on ? 'check' : 'warning' ?> text-<?= $tf_on ? 'success' : 'secondary' ?>" style="font-size:1.4rem;"></i>
+        </div>
+        <div>
+          <h6 class="mb-0"><?= __('2fa.title') ?></h6>
+          <small class="text-muted">
+            <?php if ($tf_on): ?>
+              <span class="text-success"><?= __('2fa.status_enabled') ?></span>
+              &mdash; <?= __("2fa.method_{$user['two_factor_method']}") ?>
+            <?php else: ?>
+              <?= __('2fa.status_disabled') ?>
+            <?php endif; ?>
+          </small>
+        </div>
+        <a href="<?= BASE_URL ?>/profile/two-factor" class="btn btn-sm btn-outline-primary ms-auto">
+          <i class="ph-duotone ph-shield-check me-1"></i><?= $tf_on ? __('2fa.disable') : __('2fa.title') ?>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>

@@ -32,6 +32,12 @@ class Auth
 
     public static function requireAuth(): void
     {
+        // Pending 2FA state: partially authenticated — redirect to challenge, not login
+        if (Session::has('pending_2fa_user_id') && !Session::has('user_id')) {
+            Redirect::to('/two-factor/challenge');
+            exit;
+        }
+
         // Capture last activity BEFORE check() updates it
         $lastActivity = Session::get('_last_activity', time());
 
@@ -121,6 +127,11 @@ class Auth
     {
         if (self::check()) {
             Redirect::to('/dashboard');
+            exit;
+        }
+        // Prevent navigating back to login while 2FA challenge is pending
+        if (Session::has('pending_2fa_user_id')) {
+            Redirect::to('/two-factor/challenge');
             exit;
         }
     }

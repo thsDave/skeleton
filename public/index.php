@@ -68,6 +68,8 @@ use App\Controllers\AuditLogsController;
 use App\Controllers\PasswordResetController;
 use App\Controllers\SmtpSettingsController;
 use App\Controllers\MfaSettingsController;
+use App\Controllers\TwoFactorController;
+use App\Controllers\TwoFactorChallengeController;
 
 $router = new Router();
 
@@ -153,6 +155,22 @@ $router->post('/roles-permissions/update/{id}',       [RolesPermissionsControlle
 // Audit Logs
 $router->get('/audit-logs',             [AuditLogsController::class, 'index']);
 $router->get('/audit-logs/show/{id}',   [AuditLogsController::class, 'show']);
+
+// Two-Factor Authentication — profile management
+$router->get('/profile/two-factor',                        [TwoFactorController::class, 'show']);
+$router->post('/profile/two-factor/enable-email',          [TwoFactorController::class, 'enableEmail']);
+$router->post('/profile/two-factor/enable-sms',            [TwoFactorController::class, 'enableSms']);
+$router->get('/profile/two-factor/confirm',                [TwoFactorController::class, 'confirmForm']);
+$router->post('/profile/two-factor/confirm',               [TwoFactorController::class, 'confirm']);
+$router->post('/profile/two-factor/resend',                [TwoFactorController::class, 'resend']);
+$router->get('/profile/two-factor/setup-authenticator',    [TwoFactorController::class, 'setupAuthenticator']);
+$router->post('/profile/two-factor/confirm-authenticator', [TwoFactorController::class, 'confirmAuthenticator']);
+$router->post('/profile/two-factor/disable',               [TwoFactorController::class, 'disable']);
+
+// Two-Factor Authentication — login challenge
+$router->get('/two-factor/challenge',  [TwoFactorChallengeController::class, 'show']);
+$router->post('/two-factor/challenge', [TwoFactorChallengeController::class, 'verify']);
+$router->post('/two-factor/resend',    [TwoFactorChallengeController::class, 'resend']);
 
 // Raíz — redirigir a dashboard o login
 $router->get('/', [DashboardController::class, 'index']);

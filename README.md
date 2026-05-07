@@ -2,7 +2,7 @@
 
 Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
 
-**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo, **configuración SMTP administrable** y **configuración global de MFA (Autenticación Multifactor)**.
+**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo, **configuración SMTP administrable**, **configuración global de MFA** y **verificación en 2 pasos por usuario (email, SMS, TOTP)**.
 
 ---
 
@@ -203,6 +203,7 @@ DB_PASSWORD=
 | `007_add_password_resets.sql` | Recuperación de contraseña por correo |
 | `008_add_smtp_settings.sql` | Configuración SMTP administrable |
 | `009_add_mfa_settings.sql` | Configuración global MFA |
+| `010_add_user_two_factor_authentication.sql` | Verificación en 2 pasos por usuario |
 
 ### Paso 5 — Acceder al sistema
 
@@ -579,6 +580,73 @@ Crea `tbl_mfa_settings`, inserta el módulo `security_mfa`, sus 3 permisos (`vie
 | APP_KEY en `.env` (para cifrado de API Secret SMS) | `.env` (ya generado en SMTP, misma clave) |
 
 > Si no tienes proveedor SMS real, la configuración se guarda igualmente y el sistema muestra un mensaje claro indicando que el proveedor no tiene implementación activa.
+
+---
+
+## Verificación en 2 pasos por usuario (2FA)
+
+Cada usuario puede configurar su propio segundo factor desde **Mi Perfil → Verificación en 2 pasos**. El administrador decide qué métodos están disponibles globalmente desde **Seguridad → MFA**.
+
+### Métodos soportados
+
+| Método | Descripción | Requisito global |
+|---|---|---|
+| Correo electrónico | Código de 6 dígitos enviado al email | SMTP activo y verificado |
+| SMS | Código de 6 dígitos enviado al teléfono | Proveedor SMS configurado |
+| Aplicación autenticadora | TOTP con Google Authenticator / Authy | Ninguno |
+
+### Flujo de login con 2FA
+
+1. Usuario ingresa email + contraseña → credenciales válidas.
+2. Si tiene 2FA activo y el método sigue habilitado globalmente → código OTP enviado (email/SMS) o se pide TOTP.
+3. Usuario ingresa el código en `/two-factor/challenge`.
+4. Código correcto → sesión creada, redirige al dashboard.
+
+### Comportamiento de seguridad
+
+- El `user_id` **no** se escribe en sesión hasta que el código 2FA es correcto. La sesión intermedia solo contiene `pending_2fa_user_id`.
+- Los códigos OTP se almacenan en `tbl_two_factor_codes` como **SHA-256** — nunca en texto plano.
+- El secreto TOTP del autenticador se almacena **cifrado con AES-256-CBC** via `Crypt::encrypt()`.
+- Brute-force: máximo de intentos configurable (`TWO_FACTOR_MAX_ATTEMPTS`), código invalidado al superar el límite.
+- Rate-limit de reenvío: mínimo configurable entre reenvíos (`TWO_FACTOR_RESEND_SECONDS`).
+- Si el método global se deshabilita por el admin, el usuario pasa sin 2FA (comportamiento silencioso seguro).
+
+### Migración SQL
+
+```
+database/010_add_user_two_factor_authentication.sql
+```
+Agrega columnas a `tbl_users` (`two_factor_enabled`, `two_factor_method`, `two_factor_secret_enc`, `two_factor_phone`) y crea `tbl_two_factor_codes`.
+
+### Pasos manuales para aplicar la actualización
+
+1. **Importar SQL:** en phpMyAdmin abre `database/010_add_user_two_factor_authentication.sql` e impórtalo.
+2. **Instalar dependencias Composer:** `composer install` (ya incluidas en `composer.json`: `pragmarx/google2fa` v9 y `bacon/bacon-qr-code` v3).
+3. **Agregar variables al `.env`:**
+   ```
+   TWO_FACTOR_CODE_EXPIRATION_MINUTES=10
+   TWO_FACTOR_MAX_ATTEMPTS=5
+   TWO_FACTOR_RESEND_SECONDS=60
+   ```
+4. **Habilitar métodos globalmente:** Seguridad → MFA → activar los métodos deseados.
+5. **Probar desde Mi Perfil:** Mi Perfil → Verificación en 2 pasos → elegir método.
+
+### Rutas 2FA
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/profile/two-factor` | Estado y opciones de 2FA |
+| POST | `/profile/two-factor/enable-email` | Inicia activación por email |
+| POST | `/profile/two-factor/enable-sms` | Inicia activación por SMS |
+| GET | `/profile/two-factor/confirm` | Formulario de confirmación de código |
+| POST | `/profile/two-factor/confirm` | Verifica código y activa 2FA |
+| POST | `/profile/two-factor/resend` | Reenvía código OTP |
+| GET | `/profile/two-factor/setup-authenticator` | Muestra QR para TOTP |
+| POST | `/profile/two-factor/confirm-authenticator` | Confirma TOTP y activa |
+| POST | `/profile/two-factor/disable` | Deshabilita 2FA |
+| GET | `/two-factor/challenge` | Challenge de login |
+| POST | `/two-factor/challenge` | Verifica código en login |
+| POST | `/two-factor/resend` | Reenvía código durante login |
 
 ---
 

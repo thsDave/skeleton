@@ -236,4 +236,28 @@ class User extends Model
         }
         return $this->countActiveAdmins() <= 1;
     }
+
+    // ─── 2FA ──────────────────────────────────────────────────────────────────
+
+    public function enableTwoFactor(int $id, string $method, ?string $secretEnc = null, ?string $phone = null): bool
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . '
+             SET two_factor_enabled = 1, two_factor_method = ?,
+                 two_factor_secret_enc = ?, two_factor_phone = ?, updated_at = NOW()
+             WHERE id = ?'
+        );
+        return $stmt->execute([$method, $secretEnc, $phone, $id]);
+    }
+
+    public function disableTwoFactor(int $id): bool
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . '
+             SET two_factor_enabled = 0, two_factor_method = NULL,
+                 two_factor_secret_enc = NULL, two_factor_phone = NULL, updated_at = NOW()
+             WHERE id = ?'
+        );
+        return $stmt->execute([$id]);
+    }
 }
