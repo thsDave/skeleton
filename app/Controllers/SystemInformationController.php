@@ -29,16 +29,17 @@ class SystemInformationController extends Controller
 
     public function index(): void
     {
-        Auth::requireAuth();
-        $authUser = Auth::user();
-        $setting  = $this->settingModel->get();
-        $manuals  = Auth::isAdmin() ? $this->manualModel->getAll() : $this->manualModel->getActive();
+        Auth::requirePermission('system_information.view');
+        $authUser    = Auth::user();
+        $setting     = $this->settingModel->get();
+        $canManage   = can('manuals.upload') || can('manuals.edit') || can('manuals.activate') || can('manuals.deactivate');
+        $manuals     = $canManage ? $this->manualModel->getAll() : $this->manualModel->getActive();
         $this->view('system_information.index', compact('authUser', 'setting', 'manuals'));
     }
 
     public function edit(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('system_information.edit');
         $authUser = Auth::user();
         $setting  = $this->settingModel->get();
         $this->view('system_information.edit', compact('authUser', 'setting'));
@@ -46,7 +47,7 @@ class SystemInformationController extends Controller
 
     public function update(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('system_information.edit');
 
         if (!$this->isPost()) {
             Redirect::to('/system-information');
@@ -103,7 +104,7 @@ class SystemInformationController extends Controller
 
     public function createManual(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('manuals.upload');
         $authUser = Auth::user();
         $statuses = $this->statusModel->getAll();
         $this->view('manuals.create', compact('authUser', 'statuses'));
@@ -111,7 +112,7 @@ class SystemInformationController extends Controller
 
     public function storeManual(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('manuals.upload');
 
         if (!$this->isPost()) {
             Redirect::to('/system-information');
@@ -168,7 +169,7 @@ class SystemInformationController extends Controller
 
     public function toggleManual(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requireAuth();
 
         if (!$this->isPost()) {
             Redirect::to('/system-information');
@@ -183,7 +184,9 @@ class SystemInformationController extends Controller
             Redirect::withError('/system-information', __('manuals.not_found'));
         }
 
-        $isActive  = ($manual['status_slug'] ?? '') === 'active';
+        $isActive          = ($manual['status_slug'] ?? '') === 'active';
+        $requiredPermission = $isActive ? 'manuals.deactivate' : 'manuals.activate';
+        Auth::requirePermission($requiredPermission);
         $statuses  = $this->statusModel->getAll();
         $newStatus = 1;
         foreach ($statuses as $s) {
@@ -206,7 +209,7 @@ class SystemInformationController extends Controller
 
     public function downloadManual(string $id): void
     {
-        Auth::requireAuth();
+        Auth::requirePermission('manuals.view');
 
         $manualId = (int)$id;
         $manual   = $this->manualModel->findById($manualId);

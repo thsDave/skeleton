@@ -19,6 +19,7 @@ class Auth
         Session::set('user_lang',          $user['lang_code'] ?? 'es');
         Session::set('user_lang_id',       $user['language_id'] ?? null);
         Session::set('_last_activity',     time());
+        self::loadPermissions();
     }
 
     public static function check(): bool
@@ -135,6 +136,76 @@ class Auth
         if (!self::isAdmin()) {
             Session::flash('error', 'Acceso denegado. No tienes permisos para acceder a esa sección.');
             Redirect::to('/dashboard');
+            exit;
+        }
+    }
+
+    // ── Sistema de permisos ───────────────────────────────────────────────────
+
+    /**
+     * Checks whether the authenticated user has the given permission slug.
+     * If the permissions cache is absent (existing session pre-migration),
+     * they are loaded automatically on first call.
+     */
+    public static function can(string $permission): bool
+    {
+        $permissions = Session::get('user_permissions');
+        if ($permissions === null) {
+            self::loadPermissions();
+            $permissions = Session::get('user_permissions', []);
+        }
+        return in_array($permission, (array)$permissions, true);
+    }
+
+    /**
+     * Loads permission slugs for the current user's role into the session.
+     * Silently sets an empty array on any DB failure (tables may not exist yet).
+     */
+    public static function loadPermissions(): void
+    {
+        $roleSlug = Session::get('user_role_slug');
+        if (!$roleSlug) {
+            Session::set('user_permissions', []);
+            return;
+        }
+        try {
+            $model = new \App\Models\RolePermission();
+            $slugs = $model->getPermissionSlugsByRoleSlug($roleSlug);
+            Session::set('user_permissions', $slugs);
+        } catch (\Throwable) {
+            Session::set('user_permissions', []);
+        }
+    }
+
+    /**
+     * Forces a fresh permissions load from the DB.
+     * Call this after updating role permissions to reflect changes immediately.
+     */
+    public static function refreshPermissions(): void
+    {
+        Session::delete('user_permissions');
+        self::loadPermissions();
+    }
+
+    /**
+     * Requires the user to be authenticated AND to have the given permission.
+     * On failure: sets HTTP 403, renders the 403 view, and exits.
+     */
+    public static function requirePermission(string $permission): void
+    {
+        self::requireAuth();
+
+        if (!self::can($permission)) {
+            \Core\Logger::security(
+                "Acceso denegado: permiso '{$permission}' requerido — usuario ID "
+                . (self::id() ?? 'anon')
+                . ' IP ' . ($_SERVER['REMOTE_ADDR'] ?? '')
+            );
+            http_response_code(403);
+            $authUser   = self::user();
+            $pageTitle  = '403 — Acceso Denegado';
+            $activeMenu = '';
+            require dirname(__DIR__) . '/app/Views/errors/403.php';
             exit;
         }
     }

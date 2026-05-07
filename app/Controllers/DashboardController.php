@@ -10,7 +10,7 @@ class DashboardController extends Controller
 {
     public function index(): void
     {
-        Auth::requireAuth();
+        Auth::requirePermission('dashboard.view');
         $authUser = Auth::user();
         $this->view('dashboard.index', compact('authUser'));
     }

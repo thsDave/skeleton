@@ -67,6 +67,7 @@ use App\Controllers\LanguagesController;
 use App\Controllers\SystemInformationController;
 use App\Controllers\LockController;
 use App\Controllers\SecurityController;
+use App\Controllers\RolesPermissionsController;
 
 $router = new Router();
 
@@ -124,9 +125,14 @@ $router->post('/manuals/store',              [SystemInformationController::class
 $router->post('/manuals/toggle/{id}',        [SystemInformationController::class, 'toggleManual']);
 $router->get('/manuals/download/{id}',       [SystemInformationController::class, 'downloadManual']);
 
-// Security (admin only)
+// Security
 $router->get('/security/sessions',        [SecurityController::class, 'sessions']);
 $router->post('/security/sessions/update',[SecurityController::class, 'updateSessions']);
+
+// Roles y Permisos
+$router->get('/roles-permissions',                    [RolesPermissionsController::class, 'index']);
+$router->get('/roles-permissions/edit/{id}',          [RolesPermissionsController::class, 'edit']);
+$router->post('/roles-permissions/update/{id}',       [RolesPermissionsController::class, 'update']);
 
 // Raíz — redirigir a dashboard o login
 $router->get('/', [DashboardController::class, 'index']);

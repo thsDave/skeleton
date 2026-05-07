@@ -13,3 +13,14 @@ if (!function_exists('__')) {
         return \Core\Lang::get($key, $replace);
     }
 }
+
+if (!function_exists('can')) {
+    /**
+     * Verifica si el usuario autenticado posee el permiso indicado.
+     * Uso en vistas: can('users.view'), can('roles_permissions.edit')
+     */
+    function can(string $permission): bool
+    {
+        return \Core\Auth::can($permission);
+    }
+}

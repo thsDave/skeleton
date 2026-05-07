@@ -32,7 +32,7 @@ require dirname(__DIR__) . '/layouts/main.php';
     <div class="card h-100">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="ph-duotone ph-info me-2 text-primary"></i><?= __('system.info_card') ?></h5>
-        <?php if (\Core\Auth::isAdmin()): ?>
+        <?php if (can('system_information.edit')): ?>
         <a href="<?= BASE_URL ?>/system-information/edit" class="btn btn-sm btn-outline-primary">
           <i class="ph-duotone ph-pencil me-1"></i><?= __('buttons.edit') ?>
         </a>
@@ -66,7 +66,7 @@ require dirname(__DIR__) . '/layouts/main.php';
     <div class="card h-100">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="ph-duotone ph-files me-2 text-primary"></i><?= __('manuals.title') ?></h5>
-        <?php if (\Core\Auth::isAdmin()): ?>
+        <?php if (can('manuals.upload')): ?>
         <a href="<?= BASE_URL ?>/manuals/create" class="btn btn-sm btn-primary">
           <i class="ph-duotone ph-upload me-1"></i><?= __('manuals.upload') ?>
         </a>
@@ -83,7 +83,7 @@ require dirname(__DIR__) . '/layouts/main.php';
                 <th><?= __('manuals.name_field') ?></th>
                 <th><?= __('common.type') ?></th>
                 <th><?= __('common.size') ?></th>
-                <?php if (\Core\Auth::isAdmin()): ?><th><?= __('common.status') ?></th><?php endif; ?>
+                <?php if (can('manuals.activate') || can('manuals.deactivate')): ?><th><?= __('common.status') ?></th><?php endif; ?>
                 <th><?= __('common.actions') ?></th>
               </tr>
             </thead>
@@ -104,7 +104,7 @@ require dirname(__DIR__) . '/layouts/main.php';
                   <span class="badge bg-<?= $badgeClass ?>"><?= $ext ?></span>
                 </td>
                 <td><?= number_format($manual['file_size'] / 1024, 1) ?> KB</td>
-                <?php if (\Core\Auth::isAdmin()): ?>
+                <?php if (can('manuals.activate') || can('manuals.deactivate')): ?>
                 <td>
                   <span class="badge bg-<?= ($manual['status_slug'] ?? '') === 'active' ? 'success' : 'secondary' ?>">
                     <?= ($manual['status_slug'] ?? '') === 'active' ? __('common.active') : __('common.inactive') ?>
@@ -115,11 +115,14 @@ require dirname(__DIR__) . '/layouts/main.php';
                   <a href="<?= BASE_URL ?>/manuals/download/<?= $manual['id'] ?>" class="btn btn-sm btn-outline-success me-1">
                     <i class="ph-duotone ph-download-simple"></i>
                   </a>
-                  <?php if (\Core\Auth::isAdmin()): ?>
+                  <?php
+                  $manIsActive = ($manual['status_slug'] ?? '') === 'active';
+                  if (($manIsActive && can('manuals.deactivate')) || (!$manIsActive && can('manuals.activate'))):
+                  ?>
                   <form action="<?= BASE_URL ?>/manuals/toggle/<?= $manual['id'] ?>" method="POST" class="d-inline">
                     <?= CSRF::field() ?>
-                    <button type="submit" class="btn btn-sm btn-outline-<?= ($manual['status_slug'] ?? '') === 'active' ? 'warning' : 'secondary' ?>">
-                      <i class="ph-duotone ph-<?= ($manual['status_slug'] ?? '') === 'active' ? 'eye-slash' : 'eye' ?>"></i>
+                    <button type="submit" class="btn btn-sm btn-outline-<?= $manIsActive ? 'warning' : 'secondary' ?>">
+                      <i class="ph-duotone ph-<?= $manIsActive ? 'eye-slash' : 'eye' ?>"></i>
                     </button>
                   </form>
                   <?php endif; ?>

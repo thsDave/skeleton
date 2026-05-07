@@ -24,7 +24,7 @@ class LanguagesController extends Controller
 
     public function index(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('languages.view');
         $authUser  = Auth::user();
         $languages = $this->langModel->getAll();
         $this->view('languages.index', compact('authUser', 'languages'));
@@ -32,7 +32,7 @@ class LanguagesController extends Controller
 
     public function create(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('languages.create');
         $authUser = Auth::user();
         $statuses = $this->statusModel->getAll();
         $this->view('languages.create', compact('authUser', 'statuses'));
@@ -40,7 +40,7 @@ class LanguagesController extends Controller
 
     public function store(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('languages.create');
 
         if (!$this->isPost()) {
             Redirect::to('/languages');
@@ -99,7 +99,7 @@ class LanguagesController extends Controller
 
     public function edit(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('languages.edit');
         $authUser = Auth::user();
         $langId   = (int)$id;
         $language = $this->langModel->findById($langId);
@@ -114,7 +114,7 @@ class LanguagesController extends Controller
 
     public function update(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('languages.edit');
 
         if (!$this->isPost()) {
             Redirect::to('/languages');
@@ -180,7 +180,7 @@ class LanguagesController extends Controller
 
     public function toggle(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requireAuth();
 
         if (!$this->isPost()) {
             Redirect::to('/languages');
@@ -200,6 +200,8 @@ class LanguagesController extends Controller
         }
 
         $isActive  = ($language['status_slug'] ?? '') === 'active';
+        $requiredPermission = $isActive ? 'languages.deactivate' : 'languages.activate';
+        Auth::requirePermission($requiredPermission);
         $newStatus = $isActive ? 2 : 1; // 1=active, 2=inactive (según tbl_statuses)
 
         // Buscar el status_id correcto por slug

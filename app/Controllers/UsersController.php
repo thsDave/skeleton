@@ -27,7 +27,7 @@ class UsersController extends Controller
 
     public function index(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('users.view');
         $authUser = Auth::user();
         $users    = $this->userModel->getAll();
         $this->view('users.index', compact('authUser', 'users'));
@@ -35,7 +35,7 @@ class UsersController extends Controller
 
     public function create(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('users.create');
         $authUser = Auth::user();
         $roles    = $this->roleModel->getAll();
         $statuses = $this->statusModel->getAll();
@@ -44,7 +44,7 @@ class UsersController extends Controller
 
     public function store(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('users.create');
 
         if (!$this->isPost()) {
             Redirect::to('/users');
@@ -140,7 +140,7 @@ class UsersController extends Controller
 
     public function edit(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('users.edit');
         $authUser = Auth::user();
         $userId   = (int)$id;
         $user     = $this->userModel->findById($userId);
@@ -156,7 +156,7 @@ class UsersController extends Controller
 
     public function update(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('users.edit');
 
         if (!$this->isPost()) {
             Redirect::to('/users');
@@ -258,7 +258,7 @@ class UsersController extends Controller
 
     public function delete(string $id): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('users.delete');
 
         if (!$this->isPost()) {
             Redirect::to('/users');

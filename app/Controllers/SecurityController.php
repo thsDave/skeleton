@@ -12,7 +12,7 @@ class SecurityController
 {
     public function sessions(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('security_sessions.view');
 
         $model    = new SecuritySetting();
         $settings = $model->getSettings();
@@ -22,7 +22,7 @@ class SecurityController
 
     public function updateSessions(): void
     {
-        Auth::requireAdmin();
+        Auth::requirePermission('security_sessions.edit');
         CSRF::validateOrFail();
 
         $enabled = isset($_POST['session_lock_enabled']) ? 1 : 0;
