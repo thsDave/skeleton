@@ -475,7 +475,19 @@ return [
     'statuses.warning'             => 'Advertencia',
 
     // ── Errores ──────────────────────────────────────────────────────────────────
-    'errors.403_title'   => 'Acceso Denegado',
-    'errors.403_message' => 'No tienes permisos para acceder a esta sección.',
-    'errors.go_dashboard'=> 'Volver al Dashboard',
+    'errors.403_title'    => 'Acceso Denegado',
+    'errors.403_message'  => 'No tienes permisos para acceder a esta sección.',
+    'errors.404_title'    => 'Página No Encontrada',
+    'errors.404_message'  => 'La ruta que buscas no existe en el sistema.',
+    'errors.500_title'    => 'Error Interno del Servidor',
+    'errors.500_message'  => 'Ocurrió un error inesperado. Por favor intenta de nuevo más tarde.',
+    'errors.general_title'=> 'Error del Sistema',
+    'errors.go_dashboard' => 'Volver al Dashboard',
+    'errors.go_back'      => 'Volver',
+    'errors.debug_details'=> 'Detalles técnicos',
+    'errors.debug_type'   => 'Tipo',
+    'errors.debug_message'=> 'Mensaje',
+    'errors.debug_file'   => 'Archivo',
+    'errors.debug_line'   => 'Línea',
+    'errors.debug_trace'  => 'Traza de pila',
 ];

@@ -13,7 +13,7 @@ try {
 $_base = defined('BASE_URL') ? BASE_URL : '';
 
 if ($_useLayout) {
-    $pageTitle  = __('errors.404_title');
+    $pageTitle  = __('errors.500_title');
     $activeMenu = '';
     require dirname(__DIR__) . '/layouts/main.php';
 } else { ?>
@@ -21,7 +21,7 @@ if ($_useLayout) {
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <title>404 | <?= __('errors.404_title') ?></title>
+  <title>500 | <?= __('errors.500_title') ?></title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
   <link rel="icon" href="<?= $_base ?>/assets/images/favicon.svg" type="image/x-icon" />
   <link href="<?= $_base ?>/assets/fonts/inter/inter.css" rel="stylesheet" />
@@ -41,12 +41,12 @@ if ($_useLayout) {
       <div class="card-body py-5 px-4">
 
         <div class="mb-3">
-          <i class="ph-duotone ph-magnifying-glass text-primary" style="font-size:4.5rem;"></i>
+          <i class="ph-duotone ph-warning-circle text-danger" style="font-size:4.5rem;"></i>
         </div>
 
-        <h1 class="display-2 fw-bold text-primary mb-2">404</h1>
-        <h4 class="mb-3"><?= __('errors.404_title') ?></h4>
-        <p class="text-muted mb-4"><?= __('errors.404_message') ?></p>
+        <h1 class="display-2 fw-bold text-danger mb-2">500</h1>
+        <h4 class="mb-3"><?= __('errors.500_title') ?></h4>
+        <p class="text-muted mb-4"><?= __('errors.500_message') ?></p>
 
         <div class="d-flex justify-content-center gap-2 flex-wrap">
           <a href="javascript:history.back()" class="btn btn-outline-secondary">

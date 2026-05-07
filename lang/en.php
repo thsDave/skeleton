@@ -475,7 +475,19 @@ return [
     'statuses.warning'             => 'Warning',
 
     // ── Errors ────────────────────────────────────────────────────────────────────
-    'errors.403_title'   => 'Access Denied',
-    'errors.403_message' => 'You do not have permission to access this section.',
-    'errors.go_dashboard'=> 'Back to Dashboard',
+    'errors.403_title'    => 'Access Denied',
+    'errors.403_message'  => 'You do not have permission to access this section.',
+    'errors.404_title'    => 'Page Not Found',
+    'errors.404_message'  => 'The route you are looking for does not exist in the system.',
+    'errors.500_title'    => 'Internal Server Error',
+    'errors.500_message'  => 'An unexpected error occurred. Please try again later.',
+    'errors.general_title'=> 'System Error',
+    'errors.go_dashboard' => 'Back to Dashboard',
+    'errors.go_back'      => 'Go Back',
+    'errors.debug_details'=> 'Technical details',
+    'errors.debug_type'   => 'Type',
+    'errors.debug_message'=> 'Message',
+    'errors.debug_file'   => 'File',
+    'errors.debug_line'   => 'Line',
+    'errors.debug_trace'  => 'Stack trace',
 ];

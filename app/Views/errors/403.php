@@ -18,10 +18,16 @@ require dirname(__DIR__) . '/layouts/main.php';
         <h4 class="mb-3"><?= __('errors.403_title') ?></h4>
         <p class="text-muted mb-4"><?= __('errors.403_message') ?></p>
 
-        <a href="<?= BASE_URL ?>/dashboard" class="btn btn-primary">
-          <i class="ph-duotone ph-house me-1"></i>
-          <?= __('errors.go_dashboard') ?>
-        </a>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+          <a href="javascript:history.back()" class="btn btn-outline-secondary">
+            <i class="ph-duotone ph-arrow-left me-1"></i>
+            <?= __('errors.go_back') ?>
+          </a>
+          <a href="<?= BASE_URL ?>/dashboard" class="btn btn-primary">
+            <i class="ph-duotone ph-house me-1"></i>
+            <?= __('errors.go_dashboard') ?>
+          </a>
+        </div>
 
       </div>
     </div>

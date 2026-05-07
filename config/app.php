@@ -8,6 +8,7 @@ return [
     'timezone'        => 'America/El_Salvador',
     'session_timeout' => 1800,
     'log_path'        => dirname(__DIR__) . '/logs/security.log',
+    'error_log_path'  => dirname(__DIR__) . '/logs/error.log',
     'max_login_attempts' => 5,
     'lockout_minutes'    => 15,
 

@@ -36,23 +36,12 @@ class Router
             }
         }
 
-        http_response_code(404);
-        $this->show404();
+        \Core\ErrorHandler::render404();
     }
 
     private function pathToRegex(string $path): string
     {
         $pattern = preg_replace('/\{([a-zA-Z_]+)\}/', '([^/]+)', $path);
         return '#^' . $pattern . '$#';
-    }
-
-    private function show404(): void
-    {
-        $page404 = dirname(__DIR__) . '/app/Views/errors/404.php';
-        if (file_exists($page404)) {
-            require $page404;
-        } else {
-            echo '<h1>404 - Página no encontrada</h1>';
-        }
     }
 }

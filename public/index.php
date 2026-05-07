@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+ob_start();
+
 // Autoloader
 spl_autoload_register(function (string $class): void {
     $base = dirname(__DIR__);
@@ -31,13 +33,11 @@ require dirname(__DIR__) . '/core/helpers.php';
 $appConfig = require dirname(__DIR__) . '/config/app.php';
 date_default_timezone_set($appConfig['timezone']);
 
-if ($appConfig['env'] === 'production') {
-    ini_set('display_errors', '0');
-    error_reporting(0);
-} else {
-    ini_set('display_errors', '1');
-    error_reporting(E_ALL);
-}
+// ErrorHandler manages all output; never display raw PHP errors
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+\Core\ErrorHandler::register();
 
 // Headers de seguridad
 header('X-Frame-Options: SAMEORIGIN');
