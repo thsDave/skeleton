@@ -160,10 +160,11 @@ if ($_secIsAuth && !$_secLocked && !empty($_secSettings) && $_secSettings['sessi
   var locking     = false; // guard against double-call
 
   function resetTimer() {
+    var wasWarned = warned;
     last    = Date.now();
     warned  = false;
     locking = false;
-    if (typeof Swal !== 'undefined') Swal.close();
+    if (wasWarned && typeof Swal !== 'undefined') Swal.close();
   }
 
   ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function (ev) {
