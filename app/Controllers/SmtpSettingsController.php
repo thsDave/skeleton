@@ -17,6 +17,7 @@ class SmtpSettingsController
     {
         Auth::requirePermission('security_smtp.view');
 
+        $authUser = Auth::user();
         $model    = new SmtpSettings();
         $settings = $model->getDecrypted();
 
@@ -178,12 +179,6 @@ class SmtpSettingsController
                     : 'Prueba SMTP fallida — ' . Mailer::$lastError,
                 'status'      => $sent ? 'success' : 'error',
             ]);
-
-            $resultMessage = $sent
-                ? __('smtp.test.sent_ok', ['email' => $testEmail])
-                : self::friendlyError(Mailer::$lastError);
-
-            Session::flash('smtp_test_result', ['success' => $sent, 'message' => $resultMessage]);
 
             if ($sent) {
                 Session::flash('success', __('smtp.test.sent_ok', ['email' => $testEmail]));

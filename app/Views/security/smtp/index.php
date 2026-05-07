@@ -1,9 +1,8 @@
 <?php
-$pageTitle  = __('smtp.title');
-$activeMenu = 'security_smtp';
-$errors     = \Core\Session::getFlash('errors', []);
-$old        = \Core\Session::getFlash('old', []);
-$testResult = \Core\Session::getFlash('smtp_test_result');   // ['success'=>bool,'message'=>string]
+$pageTitle    = __('smtp.title');
+$activeMenu   = 'security_smtp';
+$errors       = \Core\Session::getFlash('errors', []);   // leído para footer Swal
+$old          = \Core\Session::getFlash('old', []);
 
 $v = fn(string $k, string $default = '') =>
     htmlspecialchars((string) ($old[$k] ?? $settings[$k] ?? $default));
@@ -33,37 +32,16 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   </div>
 </div>
 
-<?php if ($testResult !== null): ?>
-<div class="alert alert-<?= $testResult['success'] ? 'success' : 'danger' ?> alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
-  <i class="ph-duotone <?= $testResult['success'] ? 'ph-check-circle' : 'ph-x-circle' ?> fs-5 flex-shrink-0"></i>
-  <div>
-    <strong><?= $testResult['success'] ? __('smtp.test.status_ok') : __('smtp.test.status_fail') ?>:</strong>
-    <?= htmlspecialchars($testResult['message']) ?>
-  </div>
-  <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-</div>
-<?php endif; ?>
-
-<?php if ($errors): ?>
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-  <i class="ph-duotone ph-warning-circle me-2"></i>
-  <ul class="mb-0 ps-3">
-    <?php foreach ($errors as $e): ?>
-      <li><?= htmlspecialchars($e) ?></li>
-    <?php endforeach; ?>
-  </ul>
-  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-<?php endif; ?>
-
-<?php if (!$isConfigured): ?>
-<div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
-  <i class="ph-duotone ph-warning fs-5 flex-shrink-0"></i>
-  <div><?= __('smtp.alert.not_configured') ?></div>
-</div>
-<?php endif; ?>
-
 <div class="row">
+
+  <?php if (!$isConfigured): ?>
+  <div class="col-12 mb-2">
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-0" role="alert">
+      <i class="ph-duotone ph-warning fs-5 flex-shrink-0"></i>
+      <div><?= __('smtp.alert.not_configured') ?></div>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <!-- ── Formulario de configuración ─────────────────────────────────────── -->
   <div class="col-lg-8">

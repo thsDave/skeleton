@@ -15,6 +15,7 @@ class SecurityController
     {
         Auth::requirePermission('security_sessions.view');
 
+        $authUser = Auth::user();
         $model    = new SecuritySetting();
         $settings = $model->getSettings();
 
