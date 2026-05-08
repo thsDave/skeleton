@@ -42,7 +42,7 @@ $tf_method  = $user['two_factor_method'] ?? null;
           <span class="badge bg-<?= $tf_enabled ? 'success' : 'secondary' ?>">
             <?= $tf_enabled ? __('2fa.status_enabled') : __('2fa.status_disabled') ?>
           </span>
-          <?php if ($tf_enabled && $tf_method): ?>
+          <?php if ($tf_enabled && $tf_method && $tf_method !== 'sms'): ?>
             <span class="ms-2 text-muted small"><?= __("2fa.method_{$tf_method}") ?></span>
           <?php endif; ?>
         </div>
@@ -73,7 +73,7 @@ $tf_method  = $user['two_factor_method'] ?? null;
 <div class="row g-4">
 
   <?php if (!empty($mfaSettings['email_enabled'])): ?>
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="card h-100">
       <div class="card-header">
         <h6 class="mb-0"><i class="ph-duotone ph-envelope me-2 text-primary"></i><?= __('2fa.method_email') ?></h6>
@@ -91,32 +91,8 @@ $tf_method  = $user['two_factor_method'] ?? null;
   </div>
   <?php endif; ?>
 
-  <?php if (!empty($mfaSettings['sms_enabled'])): ?>
-  <div class="col-md-4">
-    <div class="card h-100">
-      <div class="card-header">
-        <h6 class="mb-0"><i class="ph-duotone ph-device-mobile me-2 text-success"></i><?= __('2fa.method_sms') ?></h6>
-      </div>
-      <div class="card-body d-flex flex-column">
-        <p class="text-muted small mb-3"><?= __('2fa.method_sms_desc') ?></p>
-        <form action="<?= BASE_URL ?>/profile/two-factor/enable-sms" method="POST" class="mt-auto">
-          <?= \Core\CSRF::field() ?>
-          <div class="mb-2">
-            <label class="form-label small fw-semibold"><?= __('2fa.phone_label') ?></label>
-            <input type="tel" name="phone" class="form-control form-control-sm" placeholder="+50212345678" required>
-            <div class="form-text"><?= __('2fa.phone_hint') ?></div>
-          </div>
-          <button type="submit" class="btn btn-success btn-sm w-100">
-            <i class="ph-duotone ph-device-mobile me-1"></i><?= __('2fa.enable_sms') ?>
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-  <?php endif; ?>
-
   <?php if (!empty($mfaSettings['authenticator_enabled'])): ?>
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="card h-100">
       <div class="card-header">
         <h6 class="mb-0"><i class="ph-duotone ph-qr-code me-2 text-warning"></i><?= __('2fa.method_authenticator') ?></h6>
@@ -131,7 +107,7 @@ $tf_method  = $user['two_factor_method'] ?? null;
   </div>
   <?php endif; ?>
 
-  <?php if (empty($mfaSettings['email_enabled']) && empty($mfaSettings['sms_enabled']) && empty($mfaSettings['authenticator_enabled'])): ?>
+  <?php if (empty($mfaSettings['email_enabled']) && empty($mfaSettings['authenticator_enabled'])): ?>
   <div class="col-12">
     <div class="alert alert-warning">
       <i class="ph-duotone ph-warning me-2"></i><?= __('2fa.no_methods_available') ?>

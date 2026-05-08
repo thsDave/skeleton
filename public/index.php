@@ -143,9 +143,8 @@ $router->post('/security/smtp/update',    [SmtpSettingsController::class, 'updat
 $router->post('/security/smtp/test',      [SmtpSettingsController::class, 'test']);
 
 // MFA Settings
-$router->get('/security/mfa',             [MfaSettingsController::class, 'index']);
-$router->post('/security/mfa/update',     [MfaSettingsController::class, 'update']);
-$router->post('/security/mfa/test-sms',   [MfaSettingsController::class, 'testSms']);
+$router->get('/security/mfa',         [MfaSettingsController::class, 'index']);
+$router->post('/security/mfa/update', [MfaSettingsController::class, 'update']);
 
 // Roles y Permisos
 $router->get('/roles-permissions',                    [RolesPermissionsController::class, 'index']);
@@ -159,7 +158,6 @@ $router->get('/audit-logs/show/{id}',   [AuditLogsController::class, 'show']);
 // Two-Factor Authentication — profile management
 $router->get('/profile/two-factor',                        [TwoFactorController::class, 'show']);
 $router->post('/profile/two-factor/enable-email',          [TwoFactorController::class, 'enableEmail']);
-$router->post('/profile/two-factor/enable-sms',            [TwoFactorController::class, 'enableSms']);
 $router->get('/profile/two-factor/confirm',                [TwoFactorController::class, 'confirmForm']);
 $router->post('/profile/two-factor/confirm',               [TwoFactorController::class, 'confirm']);
 $router->post('/profile/two-factor/resend',                [TwoFactorController::class, 'resend']);

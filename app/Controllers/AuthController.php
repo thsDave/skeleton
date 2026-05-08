@@ -13,7 +13,6 @@ use Core\Logger;
 use App\Models\User;
 use App\Models\LoginLog;
 use App\Services\Mailer;
-use App\Services\SmsService;
 
 class AuthController extends Controller
 {
@@ -116,10 +115,20 @@ class AuthController extends Controller
 
         // 2FA check — si el usuario tiene 2FA activo y el método sigue habilitado globalmente
         if (!empty($user['two_factor_enabled']) && !empty($user['two_factor_method'])) {
+            // SMS ya no es un método soportado
+            if ($user['two_factor_method'] === 'sms') {
+                Audit::log(['module' => 'auth', 'action' => 'login_2fa_method_unavailable',
+                    'entity' => 'user', 'entity_id' => $user['id'],
+                    'description' => "Login bloqueado — método 2FA 'sms' ya no disponible desde {$ip}",
+                    'status' => 'denied']);
+                Redirect::withErrors('/login',
+                    ['general' => 'Tu método de verificación en 2 pasos ya no está disponible. Contacta al administrador.'],
+                    ['email' => $email]);
+            }
+
             $mfaSettings = (new \App\Models\MfaSettings())->get();
             $globalOn    = match ($user['two_factor_method']) {
                 'email'         => !empty($mfaSettings['email_enabled']),
-                'sms'           => !empty($mfaSettings['sms_enabled']),
                 'authenticator' => !empty($mfaSettings['authenticator_enabled']),
                 default         => false,
             };
@@ -128,24 +137,15 @@ class AuthController extends Controller
                 Session::set('pending_2fa_user_id', $user['id']);
                 Session::set('pending_2fa_method',  $user['two_factor_method']);
 
-                if (in_array($user['two_factor_method'], ['email', 'sms'], true)) {
+                if ($user['two_factor_method'] === 'email') {
                     $tf     = new \App\Services\TwoFactorService();
                     $codes  = new \App\Models\TwoFactorCode();
                     $expiry = (int) env('TWO_FACTOR_CODE_EXPIRATION_MINUTES', 10);
                     $code   = $tf->generateNumericCode();
-                    $codes->deleteForUser($user['id'], $user['two_factor_method']);
-                    $codes->create($user['id'], $tf->hashCode($code), $user['two_factor_method'], $expiry);
-
-                    if ($user['two_factor_method'] === 'email') {
-                        $html = self::build2faEmailHtml($user['nombres'], $code, $expiry);
-                        \App\Services\Mailer::send($user['email'], $user['nombres'], __('2fa.email_subject'), $html);
-                    } else {
-                        $phone = $user['two_factor_phone'] ?? '';
-                        if ($phone !== '') {
-                            $msg = __('2fa.sms_body', ['code' => $code, 'minutes' => $expiry]);
-                            \App\Services\SmsService::send($phone, $msg);
-                        }
-                    }
+                    $codes->deleteForUser($user['id'], 'email');
+                    $codes->create($user['id'], $tf->hashCode($code), 'email', $expiry);
+                    $html = self::build2faEmailHtml($user['nombres'], $code, $expiry);
+                    Mailer::send($user['email'], $user['nombres'], __('2fa.email_subject'), $html);
                 }
 
                 Audit::log(['module' => 'auth', 'action' => 'login_2fa_required',

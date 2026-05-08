@@ -99,7 +99,7 @@ if ($error && empty($errors)) {
             </button>
           </form>
 
-          <?php if (in_array($method, ['email', 'sms'], true)): ?>
+          <?php if ($method === 'email'): ?>
           <div class="text-center mb-2">
             <form action="<?= BASE_URL ?>/two-factor/resend" method="POST" class="d-inline">
               <?= CSRF::field() ?>

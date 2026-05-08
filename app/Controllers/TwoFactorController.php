@@ -14,7 +14,6 @@ use App\Models\TwoFactorCode;
 use App\Models\MfaSettings;
 use App\Services\TwoFactorService;
 use App\Services\Mailer;
-use App\Services\SmsService;
 
 class TwoFactorController extends Controller
 {
@@ -69,44 +68,12 @@ class TwoFactorController extends Controller
         Redirect::to('/profile/two-factor/confirm');
     }
 
-    // POST /profile/two-factor/enable-sms
-    public function enableSms(): void
-    {
-        Auth::requireAuth();
-        CSRF::validateOrFail();
-
-        $mfaSettings = $this->mfaModel->get();
-        if (empty($mfaSettings['sms_enabled'])) {
-            Session::flash('error', __('2fa.method_not_available'));
-            Redirect::to('/profile/two-factor');
-        }
-
-        $phone = trim($this->input('phone', ''));
-        if ($phone === '' || !preg_match('/^\+?[0-9]{7,15}$/', $phone)) {
-            Session::flash('error', __('2fa.phone_invalid'));
-            Redirect::to('/profile/two-factor');
-        }
-
-        $authUser = Auth::user();
-
-        if (!$this->sendSmsCode($authUser['id'], $phone)) {
-            Session::flash('error', __('2fa.code_send_failed'));
-            Redirect::to('/profile/two-factor');
-        }
-
-        Session::set('tf_pending_method', 'sms');
-        Session::set('tf_pending_action', 'enable');
-        Session::set('tf_pending_phone', $phone);
-        Session::flash('success', __('2fa.code_sent_sms'));
-        Redirect::to('/profile/two-factor/confirm');
-    }
-
     // GET /profile/two-factor/confirm
     public function confirmForm(): void
     {
         Auth::requireAuth();
         $method = Session::get('tf_pending_method');
-        if (!$method) {
+        if ($method !== 'email') {
             Redirect::to('/profile/two-factor');
         }
         $authUser   = Auth::user();
@@ -125,12 +92,13 @@ class TwoFactorController extends Controller
         $code     = trim($this->input('code', ''));
         $method   = Session::get('tf_pending_method');
 
-        if (!$method || !in_array($method, ['email', 'sms'], true)) {
+        // Only 'email' is supported
+        if ($method !== 'email') {
             Session::flash('error', __('2fa.session_expired'));
             Redirect::to('/profile/two-factor');
         }
 
-        $row = $this->codeModel->findValid($authUser['id'], $method);
+        $row = $this->codeModel->findValid($authUser['id'], 'email');
         if (!$row) {
             Session::delete('tf_pending_method');
             Session::delete('tf_pending_action');
@@ -154,20 +122,17 @@ class TwoFactorController extends Controller
         }
 
         $this->codeModel->markUsed((int) $row['id']);
-
-        $phone = $method === 'sms' ? Session::get('tf_pending_phone') : null;
-        $this->userModel->enableTwoFactor($authUser['id'], $method, null, $phone);
+        $this->userModel->enableTwoFactor($authUser['id'], 'email');
 
         Session::delete('tf_pending_method');
         Session::delete('tf_pending_action');
-        Session::delete('tf_pending_phone');
 
         Audit::log([
             'module'      => 'profile',
             'action'      => '2fa_enabled',
             'entity'      => 'user',
             'entity_id'   => $authUser['id'],
-            'description' => "2FA habilitado ({$method})",
+            'description' => '2FA habilitado (email)',
             'status'      => 'success',
         ]);
 
@@ -184,12 +149,12 @@ class TwoFactorController extends Controller
         $authUser = Auth::user();
         $method   = Session::get('tf_pending_method');
 
-        if (!$method || !in_array($method, ['email', 'sms'], true)) {
+        if ($method !== 'email') {
             Session::flash('error', __('2fa.session_expired'));
             Redirect::to('/profile/two-factor');
         }
 
-        $lastSent   = $this->codeModel->getLastCreatedAt($authUser['id'], $method);
+        $lastSent   = $this->codeModel->getLastCreatedAt($authUser['id'], 'email');
         $resendSecs = (int) ($_ENV['TWO_FACTOR_RESEND_SECONDS'] ?? 60);
         if ($lastSent && (time() - strtotime($lastSent)) < $resendSecs) {
             Session::flash('error', __('2fa.resend_too_soon', ['seconds' => $resendSecs]));
@@ -197,14 +162,7 @@ class TwoFactorController extends Controller
         }
 
         $user = $this->userModel->findById($authUser['id']);
-        $sent = false;
-
-        if ($method === 'email') {
-            $sent = $this->sendEmailCode($authUser['id'], $user['email'], $user['nombres']);
-        } elseif ($method === 'sms') {
-            $phone = Session::get('tf_pending_phone') ?? $user['two_factor_phone'] ?? '';
-            $sent  = $phone !== '' && $this->sendSmsCode($authUser['id'], $phone);
-        }
+        $sent = $this->sendEmailCode($authUser['id'], $user['email'], $user['nombres']);
 
         Session::flash($sent ? 'success' : 'error', $sent ? __('2fa.code_resent') : __('2fa.code_send_failed'));
         Redirect::to('/profile/two-factor/confirm');
@@ -308,18 +266,5 @@ class TwoFactorController extends Controller
         $html = (string) ob_get_clean();
 
         return Mailer::send($email, $nombre, __('2fa.email_subject'), $html);
-    }
-
-    private function sendSmsCode(int $userId, string $phone): bool
-    {
-        $expiry  = (int) ($_ENV['TWO_FACTOR_CODE_EXPIRATION_MINUTES'] ?? 10);
-        $code    = $this->tf->generateNumericCode();
-        $hash    = $this->tf->hashCode($code);
-
-        $this->codeModel->deleteForUser($userId, 'sms');
-        $this->codeModel->create($userId, $hash, 'sms', $expiry);
-
-        $message = __('2fa.sms_body', ['code' => $code, 'minutes' => $expiry]);
-        return SmsService::send($phone, $message);
     }
 }

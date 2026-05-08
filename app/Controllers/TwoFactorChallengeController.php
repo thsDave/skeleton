@@ -13,7 +13,6 @@ use App\Models\User;
 use App\Models\TwoFactorCode;
 use App\Services\TwoFactorService;
 use App\Services\Mailer;
-use App\Services\SmsService;
 
 class TwoFactorChallengeController extends Controller
 {
@@ -42,6 +41,14 @@ class TwoFactorChallengeController extends Controller
             Redirect::to('/login');
         }
 
+        // Block legacy SMS method
+        if ($method === 'sms') {
+            $this->clearPendingState();
+            Redirect::withErrors('/login',
+                ['general' => 'Tu método de verificación en 2 pasos ya no está disponible. Contacta al administrador.'],
+                []);
+        }
+
         $pageTitle = __('2fa.challenge_title');
         require dirname(__DIR__) . '/Views/auth/two_factor_challenge.php';
     }
@@ -57,6 +64,12 @@ class TwoFactorChallengeController extends Controller
         $method = Session::get('pending_2fa_method');
 
         if (!$userId || !$method) {
+            Redirect::to('/login');
+        }
+
+        // Block legacy SMS method
+        if ($method === 'sms') {
+            $this->clearPendingState();
             Redirect::to('/login');
         }
 
@@ -83,13 +96,14 @@ class TwoFactorChallengeController extends Controller
         $userId = Session::get('pending_2fa_user_id');
         $method = Session::get('pending_2fa_method');
 
-        if (!$userId || !in_array($method, ['email', 'sms'], true)) {
+        // Only email supports resend
+        if (!$userId || $method !== 'email') {
             Redirect::to('/login');
         }
 
         CSRF::validateOrFail();
 
-        $lastSent   = $this->codeModel->getLastCreatedAt((int) $userId, $method);
+        $lastSent   = $this->codeModel->getLastCreatedAt((int) $userId, 'email');
         $resendSecs = (int) ($_ENV['TWO_FACTOR_RESEND_SECONDS'] ?? 60);
         if ($lastSent && (time() - strtotime($lastSent)) < $resendSecs) {
             Session::flash('error', __('2fa.resend_too_soon', ['seconds' => $resendSecs]));
@@ -97,14 +111,7 @@ class TwoFactorChallengeController extends Controller
         }
 
         $user = $this->userModel->findById((int) $userId);
-        $sent = false;
-
-        if ($method === 'email') {
-            $sent = $this->sendEmailCode((int) $userId, $user['email'], $user['nombres']);
-        } elseif ($method === 'sms') {
-            $phone = $user['two_factor_phone'] ?? '';
-            $sent  = $phone !== '' && $this->sendSmsCode((int) $userId, $phone);
-        }
+        $sent = $this->sendEmailCode((int) $userId, $user['email'], $user['nombres']);
 
         Session::flash($sent ? 'success' : 'error', $sent ? __('2fa.code_resent') : __('2fa.code_send_failed'));
         Redirect::to('/two-factor/challenge');
@@ -192,18 +199,5 @@ class TwoFactorChallengeController extends Controller
         $html = (string) ob_get_clean();
 
         return Mailer::send($email, $nombre, __('2fa.email_subject'), $html);
-    }
-
-    private function sendSmsCode(int $userId, string $phone): bool
-    {
-        $expiry  = (int) ($_ENV['TWO_FACTOR_CODE_EXPIRATION_MINUTES'] ?? 10);
-        $code    = $this->tf->generateNumericCode();
-        $hash    = $this->tf->hashCode($code);
-
-        $this->codeModel->deleteForUser($userId, 'sms');
-        $this->codeModel->create($userId, $hash, 'sms', $expiry);
-
-        $message = __('2fa.sms_body', ['code' => $code, 'minutes' => $expiry]);
-        return SmsService::send($phone, $message);
     }
 }
