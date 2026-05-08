@@ -113,6 +113,28 @@ class AuditLog extends Model
         return $stmt->fetchAll(\PDO::FETCH_COLUMN);
     }
 
+    public function getRecent(int $limit = 10): array
+    {
+        try {
+            $limit = max(1, min(50, $limit));
+            $stmt  = $this->db->prepare(
+                'SELECT a.id, a.module, a.action, a.description, a.status,
+                        a.ip_address, a.created_at,
+                        CONCAT(u.nombres, \' \', u.apellidos) AS user_name,
+                        u.email AS user_email
+                 FROM ' . self::TABLE . ' a
+                 LEFT JOIN tbl_users u ON u.id = a.user_id
+                 ORDER BY a.created_at DESC
+                 LIMIT ?'
+            );
+            $stmt->execute([$limit]);
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
+            error_log('AuditLog::getRecent: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function countAll(array $filters = []): int
     {
         $sql    = "SELECT COUNT(*) FROM " . self::TABLE . " WHERE 1=1";

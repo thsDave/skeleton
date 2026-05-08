@@ -260,4 +260,83 @@ class User extends Model
         );
         return $stmt->execute([$id]);
     }
+
+    // ─── Dashboard stats ──────────────────────────────────────────────────────
+
+    public function getDashboardStats(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                'SELECT
+                   COUNT(*)                                                                    AS total,
+                   SUM(CASE WHEN s.slug = \'active\' THEN 1 ELSE 0 END)                       AS active,
+                   SUM(CASE WHEN s.slug != \'active\' THEN 1 ELSE 0 END)                      AS inactive,
+                   SUM(CASE WHEN u.two_factor_enabled = 1 THEN 1 ELSE 0 END)                  AS with_mfa,
+                   SUM(CASE WHEN COALESCE(u.two_factor_enabled, 0) = 0 THEN 1 ELSE 0 END)     AS without_mfa,
+                   SUM(CASE WHEN u.profile_image IS NOT NULL AND u.profile_image != \'\'
+                             THEN 1 ELSE 0 END)                                               AS with_image,
+                   SUM(CASE WHEN u.profile_image IS NULL OR u.profile_image = \'\'
+                             THEN 1 ELSE 0 END)                                               AS without_image,
+                   SUM(CASE WHEN (u.telefono IS NULL OR u.telefono = \'\')
+                               OR (u.direccion IS NULL OR u.direccion = \'\')
+                             THEN 1 ELSE 0 END)                                               AS incomplete
+                 FROM ' . self::TABLE . ' u
+                 LEFT JOIN tbl_statuses s ON u.status_id = s.id'
+            );
+            return $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            error_log('User::getDashboardStats: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getStatsByRole(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                'SELECT r.name AS role_name, r.slug AS role_slug, COUNT(u.id) AS user_count
+                 FROM ' . self::TABLE . ' u
+                 LEFT JOIN tbl_roles r ON u.role_id = r.id
+                 GROUP BY r.id, r.name, r.slug
+                 ORDER BY user_count DESC'
+            );
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
+            error_log('User::getStatsByRole: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getMfaMethodStats(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                'SELECT two_factor_method, COUNT(*) AS count
+                 FROM ' . self::TABLE . '
+                 WHERE two_factor_enabled = 1 AND two_factor_method IS NOT NULL AND two_factor_method != \'sms\'
+                 GROUP BY two_factor_method'
+            );
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
+            error_log('User::getMfaMethodStats: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getLastRegistered(): array|false
+    {
+        try {
+            $stmt = $this->db->query(
+                'SELECT u.*, CONCAT(u.nombres, \' \', u.apellidos) AS full_name, r.name AS role_name
+                 FROM ' . self::TABLE . ' u
+                 LEFT JOIN tbl_roles r ON u.role_id = r.id
+                 ORDER BY u.created_at DESC
+                 LIMIT 1'
+            );
+            return $stmt->fetch(\PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
+            error_log('User::getLastRegistered: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

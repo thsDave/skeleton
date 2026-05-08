@@ -23,4 +23,17 @@ class Module extends Model
         );
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
+
+    public function getActiveCount(): int
+    {
+        try {
+            $stmt = $this->db->query(
+                'SELECT COUNT(*) FROM ' . self::TABLE . ' WHERE status_id = 1'
+            );
+            return (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {
+            error_log('Module::getActiveCount: ' . $e->getMessage());
+            return 0;
+        }
+    }
 }

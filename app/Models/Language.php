@@ -131,4 +131,38 @@ class Language extends Model
         $stmt->execute([$id]);
         return (int)$stmt->fetchColumn();
     }
+
+    public function getActiveCount(): int
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT COUNT(*) FROM ' . self::TABLE . ' l
+                 JOIN tbl_statuses s ON l.status_id = s.id
+                 WHERE s.slug = ?'
+            );
+            $stmt->execute(['active']);
+            return (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {
+            error_log('Language::getActiveCount: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getDefaultLanguage(): array|false
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT l.* FROM ' . self::TABLE . ' l
+                 JOIN tbl_statuses s ON l.status_id = s.id
+                 WHERE s.slug = ?
+                 ORDER BY l.is_default DESC, l.id ASC
+                 LIMIT 1'
+            );
+            $stmt->execute(['active']);
+            return $stmt->fetch(\PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
+            error_log('Language::getDefaultLanguage: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

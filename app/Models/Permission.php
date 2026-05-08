@@ -63,4 +63,15 @@ class Permission extends Model
         $id = $stmt->fetchColumn();
         return $id !== false ? (int)$id : null;
     }
+
+    public function getCount(): int
+    {
+        try {
+            $stmt = $this->db->query('SELECT COUNT(*) FROM ' . self::TABLE);
+            return (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {
+            error_log('Permission::getCount: ' . $e->getMessage());
+            return 0;
+        }
+    }
 }

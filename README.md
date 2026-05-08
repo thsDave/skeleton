@@ -340,6 +340,43 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 
 ---
 
+## Dashboard principal
+
+El dashboard muestra información diferente según el rol del usuario.
+
+### Qué ve el administrador (o usuario con `users.view`)
+- **KPIs** (8 tarjetas): total usuarios, activos, inactivos, con 2FA, sin 2FA, perfil incompleto, idiomas activos, estado SMTP.
+- **Gráficas** (Chart.js 4): usuarios por rol (doughnut), estado 2FA (doughnut), métodos 2FA activos (doughnut), estado de usuarios (barra).
+- **Seguridad del sistema**: estado SMTP, MFA por correo y autenticador, conteo de usuarios con/sin 2FA, tiempo de bloqueo por inactividad.
+- **Estado del sistema**: versión, año, líder, idioma base, módulos activos, permisos registrados.
+- **Usuarios y perfiles**: último usuario registrado, conteos de foto de perfil y perfil completo.
+- **Actividad reciente**: últimas 10 entradas de auditoría (requiere `audit_logs.view`).
+
+### Qué ve un usuario normal (Consultor, Usuario, etc.)
+- Tarjetas rápidas: Mi Perfil, Mi Cuenta, Seguridad (con tiempo real de bloqueo).
+- Estado personal de 2FA, tema e idioma actual.
+- Rol y estado de la cuenta.
+
+### Origen de los datos
+| Métrica | Fuente |
+|---|---|
+| KPIs de usuarios | `tbl_users` + `tbl_statuses` |
+| Gráfica por roles | `tbl_users` + `tbl_roles` |
+| Métodos 2FA | `tbl_users.two_factor_method` |
+| Estado SMTP | `tbl_smtp_settings.is_verified` |
+| Configuración MFA | `tbl_mfa_settings` |
+| Bloqueo de sesión | `tbl_security_settings` |
+| Estado del sistema | `tbl_system_settings` |
+| Auditoría reciente | `tbl_audit_logs` |
+
+### Si no hay datos suficientes
+- Las gráficas muestran un mensaje amigable en lugar de un canvas vacío.
+- Si la información del sistema no está configurada, la tarjeta muestra "No configurada".
+- Si no hay actividad de auditoría, se muestra "No hay actividad reciente disponible."
+- No se inventan datos: todo viene de la base de datos real.
+
+---
+
 ## Novedades v3.0
 
 ### Modo oscuro y preferencias de usuario
