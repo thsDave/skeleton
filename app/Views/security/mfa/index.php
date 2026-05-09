@@ -1,6 +1,17 @@
 <?php
-$pageTitle  = __('authentication.title');
-$activeMenu = 'security_mfa';
+$pageTitle     = __('authentication.title');
+$activeMenu    = 'security_mfa';
+$activeTab     = $activeTab ?? 'mfa';
+$loginSecurity = $loginSecurity ?? [
+    'failed_login_protection_enabled' => 1,
+    'max_failed_attempts_user'        => 5,
+    'user_attempt_window_minutes'     => 15,
+    'user_lockout_minutes'            => 15,
+    'ip_protection_enabled'           => 1,
+    'max_failed_attempts_ip'          => 20,
+    'ip_attempt_window_minutes'       => 15,
+    'ip_lockout_minutes'              => 30,
+];
 
 require dirname(dirname(__DIR__)) . '/layouts/main.php';
 ?>
@@ -28,27 +39,27 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
 <!-- Pestañas de navegación -->
 <ul class="nav nav-tabs mb-4" role="tablist">
   <li class="nav-item" role="presentation">
-    <button class="nav-link <?= ($activeTab ?? 'mfa') === 'mfa' ? 'active' : '' ?>"
+    <button class="nav-link <?= $activeTab === 'mfa' ? 'active' : '' ?>"
             id="btn-tab-mfa"
             data-bs-toggle="tab"
             data-bs-target="#tab-mfa"
             type="button"
             role="tab"
             aria-controls="tab-mfa"
-            aria-selected="<?= ($activeTab ?? 'mfa') === 'mfa' ? 'true' : 'false' ?>">
+            aria-selected="<?= $activeTab === 'mfa' ? 'true' : 'false' ?>">
       <i class="ph-duotone ph-shield-plus me-1"></i>
       <?= __('authentication.tab_mfa') ?>
     </button>
   </li>
   <li class="nav-item" role="presentation">
-    <button class="nav-link <?= ($activeTab ?? 'mfa') === 'failed-attempts' ? 'active' : '' ?>"
+    <button class="nav-link <?= $activeTab === 'failed-attempts' ? 'active' : '' ?>"
             id="btn-tab-failed"
             data-bs-toggle="tab"
             data-bs-target="#tab-failed"
             type="button"
             role="tab"
             aria-controls="tab-failed"
-            aria-selected="<?= ($activeTab ?? 'mfa') === 'failed-attempts' ? 'true' : 'false' ?>">
+            aria-selected="<?= $activeTab === 'failed-attempts' ? 'true' : 'false' ?>">
       <i class="ph-duotone ph-lock me-1"></i>
       <?= __('authentication.tab_failed_attempts') ?>
     </button>
@@ -60,7 +71,7 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   <!-- ══════════════════════════════════════════════════════════════════════════
        PESTAÑA 1: MFA
   ══════════════════════════════════════════════════════════════════════════ -->
-  <div class="tab-pane fade <?= ($activeTab ?? 'mfa') === 'mfa' ? 'show active' : '' ?>"
+  <div class="tab-pane <?= $activeTab === 'mfa' ? 'active' : '' ?>"
        id="tab-mfa" role="tabpanel" aria-labelledby="btn-tab-mfa">
 
     <div class="row">
@@ -205,7 +216,7 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   <!-- ══════════════════════════════════════════════════════════════════════════
        PESTAÑA 2: INTENTOS FALLIDOS
   ══════════════════════════════════════════════════════════════════════════ -->
-  <div class="tab-pane fade <?= ($activeTab ?? 'mfa') === 'failed-attempts' ? 'show active' : '' ?>"
+  <div class="tab-pane <?= $activeTab === 'failed-attempts' ? 'active' : '' ?>"
        id="tab-failed" role="tabpanel" aria-labelledby="btn-tab-failed">
 
     <div class="row">
@@ -435,4 +446,18 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
 
 </div>
 
+<?php
+$extraScript = <<<'SCRIPT'
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            bootstrap.Tab.getOrCreateInstance(btn).show();
+        });
+    });
+});
+</script>
+SCRIPT;
+?>
 <?php require dirname(dirname(__DIR__)) . '/layouts/footer.php'; ?>

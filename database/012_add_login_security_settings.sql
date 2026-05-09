@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `tbl_login_attempts` (
 
 -- 4. Agregar last_failed_login_at a tbl_users si no existe
 ALTER TABLE `tbl_users`
-    ADD COLUMN IF NOT EXISTS `last_failed_login_at` DATETIME NULL DEFAULT NULL;
+    ADD COLUMN `last_failed_login_at` DATETIME NULL DEFAULT NULL;
 
 -- 5. Permiso users.unlock
 INSERT IGNORE INTO `tbl_permissions`
