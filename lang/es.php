@@ -644,6 +644,9 @@ return [
     'authentication.failed_attempts.error_max_ip_attempts'   => 'El máximo de intentos por IP debe estar entre 1 y 200.',
     'authentication.failed_attempts.error_ip_window'         => 'La ventana de tiempo por IP debe estar entre 1 y 1440 minutos.',
     'authentication.failed_attempts.error_ip_lockout'        => 'El tiempo de bloqueo por IP debe estar entre 1 y 1440 minutos.',
+    'authentication.failed_attempts.save'               => 'Guardar configuración',
+    'authentication.failed_attempts.info'               => 'Información',
+    'authentication.failed_attempts.recommended_values' => 'Valores recomendados: 5 intentos / 15 min ventana / 15 min bloqueo (usuario); 20 intentos / 15 min ventana / 30 min bloqueo (IP).',
 
     // ── MFA (Autenticación Multifactor — pestaña dentro del módulo Autenticación) ──
     'mfa.title'                     => 'Autenticación Multifactor (MFA)',

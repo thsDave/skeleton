@@ -644,6 +644,9 @@ return [
     'authentication.failed_attempts.error_max_ip_attempts'   => 'Max IP attempts must be between 1 and 200.',
     'authentication.failed_attempts.error_ip_window'         => 'IP time window must be between 1 and 1440 minutes.',
     'authentication.failed_attempts.error_ip_lockout'        => 'IP lockout duration must be between 1 and 1440 minutes.',
+    'authentication.failed_attempts.save'               => 'Save configuration',
+    'authentication.failed_attempts.info'               => 'Information',
+    'authentication.failed_attempts.recommended_values' => 'Recommended values: 5 attempts / 15 min window / 15 min lockout (user); 20 attempts / 15 min window / 30 min lockout (IP).',
 
     // ── MFA (Multi-Factor Authentication — tab within Authentication module) ───────
     'mfa.title'                     => 'Multi-Factor Authentication (MFA)',

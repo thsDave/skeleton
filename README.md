@@ -335,9 +335,10 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | GET | `/security/smtp` | Ver/editar configuración SMTP | Solo admin |
 | POST | `/security/smtp/update` | Guardar configuración SMTP | Solo admin |
 | POST | `/security/smtp/test` | Enviar correo de prueba | Solo admin |
-| GET | `/security/mfa` | Módulo Autenticación (pestañas MFA e Intentos fallidos) | `security_mfa.view` |
-| POST | `/security/mfa/update` | Guardar configuración MFA | `security_mfa.edit` |
-| POST | `/security/mfa/update-login-security` | Guardar configuración de intentos fallidos | `security_mfa.edit` |
+| GET | `/security/authconfig` | Módulo Autenticación (pestañas MFA e Intentos fallidos) | `security_mfa.view` |
+| POST | `/security/authconfig/mfa/update` | Guardar configuración MFA | `security_mfa.edit` |
+| POST | `/security/authconfig/login-security/update` | Guardar configuración de intentos fallidos | `security_mfa.edit` |
+| GET | `/security/mfa` | Redirige a `/security/authconfig` (compatibilidad) | — |
 | POST | `/users/unlock/{id}` | Desbloquear usuario | `users.unlock` |
 
 ---
@@ -556,9 +557,9 @@ MAIL_ENCRYPTION=tls
 
 ---
 
-## Seguridad > Autenticación (antes MFA)
+## Seguridad > Autenticación
 
-El módulo **Seguridad > Autenticación** reemplaza visualmente al antiguo módulo **Seguridad > MFA**. La ruta, los permisos y toda la lógica interna se mantienen iguales (`/security/mfa`, `security_mfa.view`, `security_mfa.edit`). El cambio es únicamente visual en el menú, título, breadcrumbs y traducciones.
+El módulo **Seguridad > Autenticación** está en la ruta `/security/authconfig` (la antigua `/security/mfa` redirige automáticamente). Los permisos internos se mantienen como `security_mfa.view` y `security_mfa.edit`. El controlador principal es `AuthConfigController`.
 
 El módulo ahora agrupa dos configuraciones de seguridad relacionadas con el acceso al sistema:
 

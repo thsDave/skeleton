@@ -12,28 +12,28 @@ use App\Models\MfaSettings;
 use App\Models\SmtpSettings;
 use App\Models\LoginSecuritySetting;
 
-class MfaSettingsController
+class AuthConfigController
 {
     public function index(): void
     {
         Auth::requirePermission('security_mfa.view');
 
         $authUser      = Auth::user();
-        $mfaModel      = new MfaSettings();
-        $settings      = $mfaModel->get();
+        $settings      = (new MfaSettings())->get();
         $smtpReady     = $this->isSmtpReady();
+        $loginSecurity = (new LoginSecuritySetting())->get();
 
-        $lsModel       = new LoginSecuritySetting();
-        $loginSecurity = $lsModel->get();
+        $errors    = Session::getFlash('errors', []);
+        $old       = Session::getFlash('old', []);
+        $activeTab = $_GET['tab'] ?? 'mfa';
+        if (!in_array($activeTab, ['mfa', 'failed-attempts'], true)) {
+            $activeTab = 'mfa';
+        }
 
-        $errors        = Session::getFlash('errors', []);
-        $old           = Session::getFlash('old', []);
-        $activeTab     = $_GET['tab'] ?? 'mfa';
-
-        require dirname(__DIR__) . '/Views/security/mfa/index.php';
+        require dirname(__DIR__) . '/Views/security/authconfig/index.php';
     }
 
-    public function update(): void
+    public function updateMfa(): void
     {
         Auth::requirePermission('security_mfa.edit');
         CSRF::validateOrFail();
@@ -42,7 +42,6 @@ class MfaSettingsController
         $authenticatorEnabled = isset($_POST['authenticator_enabled']) ? 1 : 0;
 
         $errors = [];
-
         if ($emailEnabled && !$this->isSmtpReady()) {
             $errors[] = __('mfa.error.email_requires_smtp');
         }
@@ -52,8 +51,7 @@ class MfaSettingsController
             exit;
         }
 
-        $model = new MfaSettings();
-        $saved = $model->update([
+        $saved = (new MfaSettings())->update([
             'email_enabled'         => $emailEnabled,
             'authenticator_enabled' => $authenticatorEnabled,
         ]);
@@ -71,7 +69,7 @@ class MfaSettingsController
                     'status' => 'success',
                 ]);
             } catch (\Throwable $e) {
-                Logger::error('MfaSettingsController::update audit error — ' . $e->getMessage());
+                Logger::error('AuthConfigController::updateMfa audit — ' . $e->getMessage());
             }
             Session::flash('success', __('mfa.updated'));
         } else {
@@ -106,8 +104,7 @@ class MfaSettingsController
             exit;
         }
 
-        $model = new LoginSecuritySetting();
-        $saved = $model->save($data);
+        $saved = (new LoginSecuritySetting())->save($data);
 
         if ($saved) {
             try {
@@ -119,7 +116,7 @@ class MfaSettingsController
                     'status'      => 'success',
                 ]);
             } catch (\Throwable $e) {
-                Logger::error('MfaSettingsController::updateLoginSecurity audit — ' . $e->getMessage());
+                Logger::error('AuthConfigController::updateLoginSecurity audit — ' . $e->getMessage());
             }
             Session::flash('success', __('authentication.failed_attempts.updated'));
         } else {
@@ -127,6 +124,12 @@ class MfaSettingsController
         }
 
         Redirect::to('/security/authconfig?tab=failed-attempts');
+        exit;
+    }
+
+    public function redirectFromLegacy(): void
+    {
+        Redirect::to('/security/authconfig');
         exit;
     }
 
@@ -142,10 +145,10 @@ class MfaSettingsController
                 !empty($smtp['username']) &&
                 !empty($smtp['password_enc']) &&
                 !empty($smtp['from_address']) &&
-                (int) $smtp['is_verified'] === 1
+                (int)$smtp['is_verified'] === 1
             );
         } catch (\Throwable $e) {
-            Logger::error('MfaSettingsController::isSmtpReady error — ' . $e->getMessage());
+            Logger::error('AuthConfigController::isSmtpReady — ' . $e->getMessage());
             return false;
         }
     }
@@ -153,26 +156,18 @@ class MfaSettingsController
     private function validateLoginSecurityData(array $data): array
     {
         $errors = [];
-
-        if ($data['max_failed_attempts_user'] < 1 || $data['max_failed_attempts_user'] > 20) {
+        if ($data['max_failed_attempts_user'] < 1 || $data['max_failed_attempts_user'] > 20)
             $errors[] = __('authentication.failed_attempts.error_max_user_attempts');
-        }
-        if ($data['user_attempt_window_minutes'] < 1 || $data['user_attempt_window_minutes'] > 1440) {
+        if ($data['user_attempt_window_minutes'] < 1 || $data['user_attempt_window_minutes'] > 1440)
             $errors[] = __('authentication.failed_attempts.error_user_window');
-        }
-        if ($data['user_lockout_minutes'] < 1 || $data['user_lockout_minutes'] > 1440) {
+        if ($data['user_lockout_minutes'] < 1 || $data['user_lockout_minutes'] > 1440)
             $errors[] = __('authentication.failed_attempts.error_user_lockout');
-        }
-        if ($data['max_failed_attempts_ip'] < 1 || $data['max_failed_attempts_ip'] > 200) {
+        if ($data['max_failed_attempts_ip'] < 1 || $data['max_failed_attempts_ip'] > 200)
             $errors[] = __('authentication.failed_attempts.error_max_ip_attempts');
-        }
-        if ($data['ip_attempt_window_minutes'] < 1 || $data['ip_attempt_window_minutes'] > 1440) {
+        if ($data['ip_attempt_window_minutes'] < 1 || $data['ip_attempt_window_minutes'] > 1440)
             $errors[] = __('authentication.failed_attempts.error_ip_window');
-        }
-        if ($data['ip_lockout_minutes'] < 1 || $data['ip_lockout_minutes'] > 1440) {
+        if ($data['ip_lockout_minutes'] < 1 || $data['ip_lockout_minutes'] > 1440)
             $errors[] = __('authentication.failed_attempts.error_ip_lockout');
-        }
-
         return $errors;
     }
 }
