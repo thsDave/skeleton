@@ -68,7 +68,7 @@ use App\Controllers\AuditLogsController;
 use App\Controllers\PasswordResetController;
 use App\Controllers\SmtpSettingsController;
 use App\Controllers\MfaSettingsController;
-use App\Controllers\AuthConfigController;
+use App\Controllers\LoginAttemptsSettingsController;
 use App\Controllers\TwoFactorController;
 use App\Controllers\TwoFactorChallengeController;
 
@@ -144,15 +144,13 @@ $router->get('/security/smtp',            [SmtpSettingsController::class, 'index
 $router->post('/security/smtp/update',    [SmtpSettingsController::class, 'update']);
 $router->post('/security/smtp/test',      [SmtpSettingsController::class, 'test']);
 
-// Autenticación — ruta principal nueva
-$router->get('/security/authconfig',                              [AuthConfigController::class, 'index']);
-$router->post('/security/authconfig/mfa/update',                 [AuthConfigController::class, 'updateMfa']);
-$router->post('/security/authconfig/login-security/update',      [AuthConfigController::class, 'updateLoginSecurity']);
+// MFA (módulo separado, sin cambios)
+$router->get('/security/mfa',         [MfaSettingsController::class, 'index']);
+$router->post('/security/mfa/update', [MfaSettingsController::class, 'update']);
 
-// Compatibilidad: /security/mfa redirige a /security/authconfig
-$router->get('/security/mfa',                             [AuthConfigController::class, 'redirectFromLegacy']);
-$router->post('/security/mfa/update',                     [MfaSettingsController::class, 'update']);
-$router->post('/security/mfa/update-login-security',      [MfaSettingsController::class, 'updateLoginSecurity']);
+// Intentos fallidos (módulo nuevo independiente)
+$router->get('/security/attempts',         [LoginAttemptsSettingsController::class, 'index']);
+$router->post('/security/attempts/update', [LoginAttemptsSettingsController::class, 'update']);
 
 // Roles y Permisos
 $router->get('/roles-permissions',                    [RolesPermissionsController::class, 'index']);

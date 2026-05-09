@@ -84,7 +84,7 @@
         <?php endif; ?>
 
         <?php
-        $showSecurity = can('security_sessions.view') || can('roles_permissions.view') || can('audit_logs.view') || can('security_smtp.view') || can('security_mfa.view');
+        $showSecurity = can('security_sessions.view') || can('roles_permissions.view') || can('audit_logs.view') || can('security_smtp.view') || can('security_mfa.view') || can('security_attempts.view');
         if ($showSecurity):
         ?>
         <li class="pc-item pc-caption">
@@ -121,9 +121,18 @@
 
         <?php if (can('security_mfa.view')): ?>
         <li class="pc-item <?= ($activeMenu ?? '') === 'security_mfa' ? 'active' : '' ?>">
-          <a href="<?= BASE_URL ?>/security/authconfig" class="pc-link">
+          <a href="<?= BASE_URL ?>/security/mfa" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-shield-plus"></i></span>
-            <span class="pc-mtext"><?= __('menu.authentication') ?></span>
+            <span class="pc-mtext"><?= __('menu.security_mfa') ?></span>
+          </a>
+        </li>
+        <?php endif; ?>
+
+        <?php if (can('security_attempts.view')): ?>
+        <li class="pc-item <?= ($activeMenu ?? '') === 'security_attempts' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/security/attempts" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-shield-warning"></i></span>
+            <span class="pc-mtext"><?= __('menu.security_attempts') ?></span>
           </a>
         </li>
         <?php endif; ?>
