@@ -12,12 +12,13 @@ use Core\Audit;
 use Core\Logger;
 use App\Models\User;
 use App\Models\LoginLog;
+use App\Services\LoginSecurityService;
 use App\Services\Mailer;
 
 class AuthController extends Controller
 {
-    private User $userModel;
-    private LoginLog $logModel;
+    private User                 $userModel;
+    private LoginLog             $logModel;
 
     public function __construct()
     {
@@ -39,7 +40,42 @@ class AuthController extends Controller
         $email    = trim($this->input('email', ''));
         $password = $this->input('password', '');
         $config   = require dirname(__DIR__, 2) . '/config/app.php';
+        $ip       = $_SERVER['REMOTE_ADDR'] ?? '';
+        $ua       = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
+        // Inicializar servicio de seguridad (falla gracefully si la tabla no existe aún)
+        $secSvc      = null;
+        $secSettings = null;
+        try {
+            $secSvc      = new LoginSecurityService();
+            $secSettings = $secSvc->getSettings();
+        } catch (\Throwable $e) {
+            Logger::error('AuthController: LoginSecurityService init failed — ' . $e->getMessage());
+        }
+
+        // ── Bloqueo por IP ────────────────────────────────────────────────────────
+        if ($secSvc !== null && $secSvc->isIpBlocked($ip)) {
+            $secSvc->recordAttempt([
+                'user_id'        => null,
+                'email'          => $email,
+                'ip_address'     => $ip,
+                'user_agent'     => $ua,
+                'status'         => 'blocked_ip',
+                'failure_reason' => 'IP bloqueada por exceso de intentos',
+            ]);
+            try {
+                Audit::log([
+                    'module'      => 'auth',
+                    'action'      => 'login_blocked_ip',
+                    'description' => "Login bloqueado por IP: {$ip}",
+                    'status'      => 'denied',
+                    'user_id'     => null,
+                ]);
+            } catch (\Throwable) {}
+            Redirect::withErrors('/login', ['general' => __('auth.login_temporarily_blocked')], ['email' => $email]);
+        }
+
+        // ── Validación básica de campos ───────────────────────────────────────────
         $validator = new Validator();
         $validator->required('email', $email, 'Correo electrónico')
                   ->email('email', $email)
@@ -49,53 +85,83 @@ class AuthController extends Controller
             Redirect::withErrors('/login', $validator->errors(), ['email' => $email]);
         }
 
+        // ── Buscar usuario ────────────────────────────────────────────────────────
         $user = $this->userModel->findByEmail($email);
 
         if (!$user) {
             $this->logModel->record(null, $email, 'failed', 'Email no encontrado');
+            if ($secSvc) {
+                $secSvc->recordAttempt([
+                    'email' => $email, 'ip_address' => $ip, 'user_agent' => $ua,
+                    'status' => 'failed', 'failure_reason' => 'Email no encontrado',
+                ]);
+            }
             Logger::security("Login fallido - email no existe: {$email}");
             Audit::log(['module' => 'auth', 'action' => 'login_failed',
                 'description' => "Intento de login con email desconocido: {$email}", 'status' => 'failed',
                 'user_id' => null]);
-            Redirect::withErrors('/login', ['general' => 'Las credenciales ingresadas no son válidas.'], ['email' => $email]);
+            Redirect::withErrors('/login', ['general' => __('auth.login_invalid_credentials')], ['email' => $email]);
         }
 
-        // Verificar bloqueo
+        // ── Verificar bloqueo ─────────────────────────────────────────────────────
         if ($this->userModel->isLocked($user)) {
             $this->logModel->record($user['id'], $email, 'blocked', 'Cuenta bloqueada temporalmente');
+            if ($secSvc) {
+                $secSvc->recordAttempt([
+                    'user_id' => $user['id'], 'email' => $email, 'ip_address' => $ip, 'user_agent' => $ua,
+                    'status' => 'locked_user', 'failure_reason' => 'Cuenta bloqueada temporalmente',
+                ]);
+            }
             Logger::security("Login bloqueado para usuario ID {$user['id']}");
             Audit::log(['module' => 'auth', 'action' => 'login_blocked',
                 'entity' => 'user', 'entity_id' => $user['id'],
                 'description' => 'Intento de login con cuenta bloqueada', 'status' => 'denied',
                 'user_id' => $user['id']]);
-            Redirect::withErrors('/login', ['general' => 'La cuenta está bloqueada temporalmente. Intenta en 15 minutos.'], ['email' => $email]);
+            Redirect::withErrors('/login', ['general' => __('auth.login_temporarily_blocked')], ['email' => $email]);
         }
 
-        // Verificar status (usa status_slug del JOIN con tbl_statuses)
+        // ── Verificar estado ──────────────────────────────────────────────────────
         if (($user['status_slug'] ?? '') !== 'active') {
             $this->logModel->record($user['id'], $email, 'failed', 'Cuenta inactiva o bloqueada');
+            if ($secSvc) {
+                $secSvc->recordAttempt([
+                    'user_id' => $user['id'], 'email' => $email, 'ip_address' => $ip, 'user_agent' => $ua,
+                    'status' => 'failed', 'failure_reason' => 'Cuenta inactiva',
+                ]);
+            }
             Logger::security("Login fallido - cuenta inactiva ID {$user['id']}");
             Audit::log(['module' => 'auth', 'action' => 'login_failed',
                 'entity' => 'user', 'entity_id' => $user['id'],
                 'description' => 'Intento de login con cuenta inactiva', 'status' => 'failed',
                 'user_id' => $user['id']]);
-            Redirect::withErrors('/login', ['general' => 'Las credenciales ingresadas no son válidas.'], ['email' => $email]);
+            Redirect::withErrors('/login', ['general' => __('auth.login_invalid_credentials')], ['email' => $email]);
         }
 
-        // Verificar contraseña
+        // ── Verificar contraseña ──────────────────────────────────────────────────
         if (!password_verify($password, $user['password'])) {
             $this->userModel->incrementFailedAttempts($user['id']);
 
-            $newAttempts = $user['failed_login_attempts'] + 1;
-            if ($newAttempts >= $config['max_login_attempts']) {
-                $this->userModel->lockAccount($user['id'], $config['lockout_minutes']);
+            $newAttempts    = $user['failed_login_attempts'] + 1;
+            $maxAttempts    = $secSvc  ? $secSvc->getMaxUserAttempts()      : $config['max_login_attempts'];
+            $lockoutMinutes = $secSvc  ? $secSvc->getUserLockoutMinutes()   : $config['lockout_minutes'];
+            $protectionOn   = $secSvc === null || $secSvc->isUserProtectionEnabled();
+
+            if ($secSvc) {
+                $secSvc->recordAttempt([
+                    'user_id' => $user['id'], 'email' => $email, 'ip_address' => $ip, 'user_agent' => $ua,
+                    'status' => 'failed', 'failure_reason' => 'Contraseña incorrecta',
+                ]);
+            }
+
+            if ($protectionOn && $newAttempts >= $maxAttempts) {
+                $this->userModel->lockAccount($user['id'], $lockoutMinutes);
                 $this->logModel->record($user['id'], $email, 'blocked', 'Máximo de intentos alcanzado');
                 Logger::security("Cuenta bloqueada por intentos fallidos - ID {$user['id']}");
                 Audit::log(['module' => 'auth', 'action' => 'login_blocked',
                     'entity' => 'user', 'entity_id' => $user['id'],
                     'description' => 'Cuenta bloqueada por máximo de intentos fallidos', 'status' => 'warning',
                     'user_id' => $user['id']]);
-                Redirect::withErrors('/login', ['general' => 'Demasiados intentos fallidos. Cuenta bloqueada por 15 minutos.'], ['email' => $email]);
+                Redirect::withErrors('/login', ['general' => __('auth.login_temporarily_blocked')], ['email' => $email]);
             }
 
             $this->logModel->record($user['id'], $email, 'failed', 'Contraseña incorrecta');
@@ -104,18 +170,22 @@ class AuthController extends Controller
                 'entity' => 'user', 'entity_id' => $user['id'],
                 'description' => 'Login fallido: contraseña incorrecta', 'status' => 'failed',
                 'user_id' => $user['id']]);
-            Redirect::withErrors('/login', ['general' => 'Las credenciales ingresadas no son válidas.'], ['email' => $email]);
+            Redirect::withErrors('/login', ['general' => __('auth.login_invalid_credentials')], ['email' => $email]);
         }
 
-        // Login exitoso — credenciales válidas
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        // ── Login exitoso — credenciales válidas ──────────────────────────────────
         $this->userModel->updateLastLogin($user['id'], $ip);
         $this->logModel->record($user['id'], $email, 'success', 'Login exitoso');
+        if ($secSvc) {
+            $secSvc->recordAttempt([
+                'user_id' => $user['id'], 'email' => $email, 'ip_address' => $ip, 'user_agent' => $ua,
+                'status' => 'success',
+            ]);
+        }
         Logger::security("Login exitoso - ID {$user['id']} desde {$ip}");
 
-        // 2FA check — si el usuario tiene 2FA activo y el método sigue habilitado globalmente
+        // ── Verificación 2FA ──────────────────────────────────────────────────────
         if (!empty($user['two_factor_enabled']) && !empty($user['two_factor_method'])) {
-            // SMS ya no es un método soportado
             if ($user['two_factor_method'] === 'sms') {
                 Audit::log(['module' => 'auth', 'action' => 'login_2fa_method_unavailable',
                     'entity' => 'user', 'entity_id' => $user['id'],

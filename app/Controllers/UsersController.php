@@ -7,11 +7,13 @@ use Core\Controller;
 use Core\Auth;
 use Core\CSRF;
 use Core\Redirect;
+use Core\Session;
 use Core\Validator;
 use Core\Logger;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Status;
+use App\Models\LoginAttempt;
 
 class UsersController extends Controller
 {
@@ -313,6 +315,69 @@ class UsersController extends Controller
         } else {
             Redirect::withError('/users', 'No se pudo inactivar el usuario.');
         }
+    }
+
+    public function unlock(string $id): void
+    {
+        Auth::requirePermission('users.unlock');
+
+        if (!$this->isPost()) {
+            Redirect::to('/users');
+        }
+
+        CSRF::validateOrFail();
+
+        $userId = (int) $id;
+        $user   = $this->userModel->findById($userId);
+
+        if (!$user) {
+            Session::flash('error', __('users.not_found'));
+            Redirect::to('/users');
+            exit;
+        }
+
+        if (!$this->userModel->isLockedByAttempts($user)) {
+            Session::flash('error', __('users.not_locked'));
+            Redirect::to('/users');
+            exit;
+        }
+
+        $unlocked = $this->userModel->unlock($userId);
+
+        if ($unlocked) {
+            try {
+                $attemptModel = new LoginAttempt();
+                $attemptModel->record([
+                    'user_id'        => $userId,
+                    'email'          => $user['email'],
+                    'ip_address'     => $_SERVER['REMOTE_ADDR'] ?? null,
+                    'user_agent'     => $_SERVER['HTTP_USER_AGENT'] ?? null,
+                    'status'         => 'user_unlocked',
+                    'failure_reason' => null,
+                ]);
+            } catch (\Throwable $e) {
+                Logger::error('UsersController::unlock attempt record — ' . $e->getMessage());
+            }
+            try {
+                Audit::log([
+                    'module'      => 'users',
+                    'action'      => 'user_unlocked',
+                    'entity'      => 'user',
+                    'entity_id'   => $userId,
+                    'description' => "Usuario ID {$userId} desbloqueado manualmente por admin ID " . Auth::id(),
+                    'status'      => 'success',
+                ]);
+            } catch (\Throwable $e) {
+                Logger::error('UsersController::unlock audit — ' . $e->getMessage());
+            }
+            Logger::security("Usuario ID {$userId} desbloqueado por admin ID " . Auth::id());
+            Session::flash('success', __('users.unlock_success'));
+        } else {
+            Session::flash('error', __('users.unlock_error'));
+        }
+
+        Redirect::to('/users');
+        exit;
     }
 
     // ─── Helpers de imagen ────────────────────────────────────────────────────

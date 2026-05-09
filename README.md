@@ -335,8 +335,10 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | GET | `/security/smtp` | Ver/editar configuración SMTP | Solo admin |
 | POST | `/security/smtp/update` | Guardar configuración SMTP | Solo admin |
 | POST | `/security/smtp/test` | Enviar correo de prueba | Solo admin |
-| GET | `/security/mfa` | Ver/editar configuración MFA global | `security_mfa.view` |
+| GET | `/security/mfa` | Módulo Autenticación (pestañas MFA e Intentos fallidos) | `security_mfa.view` |
 | POST | `/security/mfa/update` | Guardar configuración MFA | `security_mfa.edit` |
+| POST | `/security/mfa/update-login-security` | Guardar configuración de intentos fallidos | `security_mfa.edit` |
+| POST | `/users/unlock/{id}` | Desbloquear usuario | `users.unlock` |
 
 ---
 
@@ -554,10 +556,15 @@ MAIL_ENCRYPTION=tls
 
 ---
 
-## Seguridad > MFA (Autenticación Multifactor)
+## Seguridad > Autenticación (antes MFA)
 
-### Qué es este módulo
-Permite al administrador habilitar o deshabilitar globalmente los métodos de autenticación multifactor disponibles para los usuarios del sistema. La activación personal por usuario desde su perfil y el challenge de MFA en el login se implementan en una **fase posterior**.
+El módulo **Seguridad > Autenticación** reemplaza visualmente al antiguo módulo **Seguridad > MFA**. La ruta, los permisos y toda la lógica interna se mantienen iguales (`/security/mfa`, `security_mfa.view`, `security_mfa.edit`). El cambio es únicamente visual en el menú, título, breadcrumbs y traducciones.
+
+El módulo ahora agrupa dos configuraciones de seguridad relacionadas con el acceso al sistema:
+
+### Pestaña MFA
+
+Permite al administrador habilitar o deshabilitar globalmente los métodos de autenticación multifactor disponibles para los usuarios del sistema.
 
 ### Métodos disponibles
 
@@ -579,28 +586,106 @@ Permite al administrador habilitar o deshabilitar globalmente los métodos de au
 ### Cómo habilitar la Aplicación de Autenticación
 Simplemente activa el toggle "MFA por Aplicación de autenticación" y guarda. No requiere ningún proveedor externo.
 
-### Migración SQL
+### Migración SQL (MFA)
 ```
 database/009_add_mfa_settings.sql
 ```
 Crea `tbl_mfa_settings`, inserta el módulo `security_mfa`, sus 2 permisos (`view`, `edit`) y los asigna al rol Administrador.
 
-### Pasos manuales para aplicar la actualización
+---
 
-1. **Importar SQL:** en phpMyAdmin abre `database/009_add_mfa_settings.sql` e impórtalo.
-2. **Cerrar sesión e iniciar nuevamente:** para que los nuevos permisos se carguen en la sesión activa.
-3. **Verificar permisos:** en **Seguridad → Roles y Permisos** → Administrador, deben aparecer `security_mfa.view`, `security_mfa.edit`.
-4. **Entrar al módulo:** menú lateral → Seguridad → MFA.
-5. **Activar correo:** asegúrate de que SMTP esté probado exitosamente antes de activar MFA por correo.
-6. **Verificar menú:** la sección Seguridad debe mostrar: Sesiones, Roles y Permisos, SMTP, MFA, Auditoría.
+### Pestaña Intentos fallidos
+
+Configura la protección contra ataques de fuerza bruta en el inicio de sesión.
+
+#### Configuración por usuario/correo
+
+| Campo | Descripción | Default |
+|---|---|---|
+| Activar protección | Habilita el bloqueo por intentos fallidos | Activado |
+| Máx. intentos por usuario | Intentos antes de bloquear la cuenta | 5 |
+| Ventana de tiempo | Período en minutos en que cuentan los intentos | 15 min |
+| Tiempo de bloqueo | Duración del bloqueo tras superar el límite | 15 min |
+
+#### Configuración por IP
+
+| Campo | Descripción | Default |
+|---|---|---|
+| Activar protección por IP | Habilita el bloqueo por IP | Activado |
+| Máx. intentos por IP | Intentos de la misma IP antes de bloquear | 20 |
+| Ventana de tiempo | Período en minutos en que cuentan los intentos | 15 min |
+| Tiempo de bloqueo | Duración del bloqueo de la IP | 30 min |
+
+#### Cómo funciona el bloqueo por usuario/correo
+
+1. Si la protección está activa, el sistema lleva un contador en `tbl_users.failed_login_attempts`.
+2. Cuando el contador supera el límite configurado, se establece `tbl_users.locked_until` con la fecha de desbloqueo.
+3. Mientras `locked_until > now()`, cualquier intento de login con ese usuario muestra un mensaje genérico.
+4. Un login exitoso borra el contador y limpia `locked_until`.
+
+#### Cómo funciona el bloqueo por IP
+
+1. Si la protección por IP está activa, el sistema consulta `tbl_login_attempts` para contar intentos fallidos de la IP en la ventana de tiempo.
+2. Si el número de intentos supera el límite configurado, el login es rechazado antes de procesar las credenciales.
+3. El bloqueo se libera automáticamente cuando expira la ventana de tiempo (sin intervención manual).
+
+#### Desbloqueo manual de usuarios
+
+Si un usuario quedó bloqueado por intentos fallidos, un administrador con permiso `users.unlock` puede desbloquearlo desde el módulo **Usuarios**:
+
+- En el listado de usuarios: el usuario bloqueado aparece con un badge **Bloqueado** junto a su nombre, y un botón de candado abierto en las acciones.
+- En la edición del usuario: aparece un panel de alerta con la fecha/hora hasta la que está bloqueado y un botón "Desbloquear usuario".
+- Al desbloquear: se limpia `locked_until` y se reinicia `failed_login_attempts` a 0. El historial de `tbl_login_attempts` **no** se borra.
+- El evento queda registrado en auditoría (`user_unlocked`) y en `tbl_login_attempts` con status `user_unlocked`.
+
+#### Estado de implementación del bloqueo en login
+
+✅ **Implementado y activo.** La lógica de bloqueo está integrada en `AuthController::loginProcess()` y en el `LoginSecurityService`. Los valores se leen de `tbl_login_security_settings`. Si la tabla no existe aún (migración 012 no importada), el sistema usa los valores del `config/app.php` como respaldo.
+
+#### Tablas nuevas creadas
+
+| Tabla | Descripción |
+|---|---|
+| `tbl_login_security_settings` | Configuración de protección contra intentos fallidos |
+| `tbl_login_attempts` | Registro de todos los intentos de login (éxito, fallo, bloqueo) |
+
+#### Campo nuevo en tbl_users
+
+| Campo | Descripción |
+|---|---|
+| `last_failed_login_at` | Fecha/hora del último intento fallido |
+
+#### Migración SQL (Autenticación — Intentos fallidos)
+```
+database/012_add_login_security_settings.sql
+```
+
+Crea `tbl_login_security_settings`, `tbl_login_attempts`, agrega `last_failed_login_at` a `tbl_users`, y crea el permiso `users.unlock` asignado al Administrador.
+
+---
+
+### Pasos manuales para aplicar la actualización (v3.0 — Autenticación)
+
+1. **Importar SQL en phpMyAdmin:**
+   - `database/012_add_login_security_settings.sql`
+2. **Cerrar sesión e iniciar nuevamente** para que el nuevo permiso `users.unlock` se cargue en la sesión.
+3. **Verificar permisos:** en **Seguridad → Roles y Permisos** → Administrador, debe aparecer `users.unlock`.
+4. **Verificar menú:** debe mostrar **Seguridad → Autenticación** (ya no "MFA").
+5. **Configurar intentos fallidos:** entrar a **Seguridad → Autenticación → pestaña Intentos fallidos** y revisar/ajustar los valores por defecto.
+6. **Probar bloqueo con usuario secundario:**
+   a. Iniciar sesión con una cuenta de prueba e ingresar contraseña incorrecta varias veces hasta superar el límite.
+   b. Verificar que el login muestra el mensaje genérico.
+   c. Desde otra sesión de Administrador, ir a **Usuarios** y desbloquear al usuario.
+7. **Limpiar caché del navegador** si los estilos o el menú no se actualizan.
 
 ### Datos que debes configurar manualmente
 
 | Qué | Dónde |
 |---|---|
-| Importar `009_add_mfa_settings.sql` | phpMyAdmin |
-| SMTP activo y verificado (para email MFA) | Seguridad → SMTP (verificar con botón Probar) |
-| APP_KEY en `.env` (para cifrado de secretos TOTP) | `.env` (ya generado en SMTP, misma clave) |
+| Importar `009_add_mfa_settings.sql` | phpMyAdmin (si no se hizo antes) |
+| Importar `012_add_login_security_settings.sql` | phpMyAdmin |
+| SMTP activo y verificado (para email MFA) | Seguridad → SMTP |
+| APP_KEY en `.env` (para cifrado de secretos TOTP) | `.env` |
 
 ---
 

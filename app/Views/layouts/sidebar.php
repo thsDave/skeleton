@@ -123,7 +123,7 @@
         <li class="pc-item <?= ($activeMenu ?? '') === 'security_mfa' ? 'active' : '' ?>">
           <a href="<?= BASE_URL ?>/security/mfa" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-shield-plus"></i></span>
-            <span class="pc-mtext"><?= __('menu.security_mfa') ?></span>
+            <span class="pc-mtext"><?= __('menu.authentication') ?></span>
           </a>
         </li>
         <?php endif; ?>

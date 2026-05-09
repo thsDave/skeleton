@@ -46,6 +46,31 @@ $_editAvatar = $_editImg
 </div>
 <?php endif; ?>
 
+<?php
+$isLockedEdit = !empty($user['locked_until']) && strtotime($user['locked_until']) > time();
+if ($isLockedEdit): ?>
+<div class="alert alert-danger d-flex align-items-start gap-3 mb-3">
+  <i class="ph-duotone ph-lock fs-4 flex-shrink-0 mt-1"></i>
+  <div class="flex-grow-1">
+    <strong><?= __('users.locked') ?></strong> —
+    <?= __('users.locked_until') ?>:
+    <strong><?= htmlspecialchars(date('d/m/Y H:i', strtotime($user['locked_until'])), ENT_QUOTES, 'UTF-8') ?></strong>
+    <?php if (can('users.unlock')): ?>
+    <form action="<?= BASE_URL ?>/users/unlock/<?= (int)$user['id'] ?>"
+          method="POST"
+          class="d-inline ms-2 form-unlock-edit">
+      <?= \Core\CSRF::field() ?>
+      <button type="button"
+              class="btn btn-sm btn-warning btn-unlock-edit"
+              data-name="<?= htmlspecialchars(trim(($user['nombres'] ?? '') . ' ' . ($user['apellidos'] ?? '')), ENT_QUOTES, 'UTF-8') ?>">
+        <i class="ph-duotone ph-lock-open me-1"></i><?= __('users.unlock') ?>
+      </button>
+    </form>
+    <?php endif; ?>
+  </div>
+</div>
+<?php endif; ?>
+
 <div class="row justify-content-center">
   <div class="col-lg-9">
     <div class="card">
@@ -285,6 +310,23 @@ function previewAvatar(input) {
       : '<span class="text-danger small"><i class="ph-fill ph-x-circle me-1"></i>Las contraseñas no coinciden.</span>';
   }
 }());
+
+$(document).on('click', '.btn-unlock-edit', function () {
+  var form = $(this).closest('form');
+  var name = $(this).data('name');
+  Swal.fire({
+    title: '¿Desbloquear usuario?',
+    html: 'Se quitará el bloqueo de inicio de sesión a <strong>' + name + '</strong>.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f39c12',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Sí, desbloquear',
+    cancelButtonText: 'Cancelar'
+  }).then(function (result) {
+    if (result.isConfirmed) form.submit();
+  });
+});
 </script>
 JS;
 ?>

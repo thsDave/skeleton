@@ -113,6 +113,7 @@ $router->post('/users/store',             [UsersController::class, 'store']);
 $router->get('/users/edit/{id}',          [UsersController::class, 'edit']);
 $router->post('/users/update/{id}',       [UsersController::class, 'update']);
 $router->post('/users/delete/{id}',       [UsersController::class, 'delete']);
+$router->post('/users/unlock/{id}',       [UsersController::class, 'unlock']);
 
 // Languages (admin)
 $router->get('/languages',                   [LanguagesController::class, 'index']);
@@ -142,9 +143,10 @@ $router->get('/security/smtp',            [SmtpSettingsController::class, 'index
 $router->post('/security/smtp/update',    [SmtpSettingsController::class, 'update']);
 $router->post('/security/smtp/test',      [SmtpSettingsController::class, 'test']);
 
-// MFA Settings
-$router->get('/security/mfa',         [MfaSettingsController::class, 'index']);
-$router->post('/security/mfa/update', [MfaSettingsController::class, 'update']);
+// Authentication Settings (MFA + Intentos fallidos)
+$router->get('/security/mfa',                              [MfaSettingsController::class, 'index']);
+$router->post('/security/mfa/update',                     [MfaSettingsController::class, 'update']);
+$router->post('/security/mfa/update-login-security',      [MfaSettingsController::class, 'updateLoginSecurity']);
 
 // Roles y Permisos
 $router->get('/roles-permissions',                    [RolesPermissionsController::class, 'index']);

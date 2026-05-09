@@ -1,5 +1,5 @@
 <?php
-$pageTitle  = 'Usuarios';
+$pageTitle  = __('users.title');
 $activeMenu = 'users';
 require dirname(__DIR__) . '/layouts/main.php';
 ?>
@@ -9,14 +9,14 @@ require dirname(__DIR__) . '/layouts/main.php';
     <div class="row align-items-center g-0">
       <div class="col-sm-auto">
         <div class="page-header-title">
-          <h5 class="mb-0">Gestión de Usuarios</h5>
+          <h5 class="mb-0"><?= __('users.management_title') ?></h5>
         </div>
       </div>
       <div class="col-sm-auto ms-auto">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard">Inicio</a></li>
-            <li class="breadcrumb-item active">Usuarios</li>
+            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard"><?= __('common.home') ?></a></li>
+            <li class="breadcrumb-item active"><?= __('menu.users') ?></li>
           </ol>
         </nav>
       </div>
@@ -28,10 +28,12 @@ require dirname(__DIR__) . '/layouts/main.php';
   <div class="col-12">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="ph-duotone ph-users-three me-2 text-primary"></i>Usuarios del Sistema</h5>
+        <h5 class="mb-0"><i class="ph-duotone ph-users-three me-2 text-primary"></i><?= __('users.system_users') ?></h5>
+        <?php if (can('users.create')): ?>
         <a href="<?= BASE_URL ?>/users/create" class="btn btn-primary btn-sm">
-          <i class="ph-duotone ph-user-plus me-1"></i> Nuevo Usuario
+          <i class="ph-duotone ph-user-plus me-1"></i> <?= __('users.new_user') ?>
         </a>
+        <?php endif; ?>
       </div>
       <div class="card-body">
         <div class="table-responsive">
@@ -39,14 +41,14 @@ require dirname(__DIR__) . '/layouts/main.php';
             <thead class="table-light">
               <tr>
                 <th>#</th>
-                <th>Foto</th>
-                <th>Nombre</th>
-                <th>Correo</th>
-                <th>Teléfono</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Registro</th>
-                <th class="text-center">Acciones</th>
+                <th><?= __('users.col_photo') ?></th>
+                <th><?= __('users.col_name') ?></th>
+                <th><?= __('users.col_email') ?></th>
+                <th><?= __('users.col_phone') ?></th>
+                <th><?= __('users.col_role') ?></th>
+                <th><?= __('users.col_status') ?></th>
+                <th><?= __('users.col_registered') ?></th>
+                <th class="text-center"><?= __('users.col_actions') ?></th>
               </tr>
             </thead>
             <tbody>
@@ -55,13 +57,15 @@ require dirname(__DIR__) . '/layouts/main.php';
                 $avatar = $u['profile_image']
                     ? BASE_URL . '/uploads/profiles/' . htmlspecialchars($u['profile_image'], ENT_QUOTES, 'UTF-8')
                     : BASE_URL . '/assets/images/user/avatar-1.jpg';
-                $statusSlug = $u['status_slug'] ?? '';
+                $statusSlug  = $u['status_slug'] ?? '';
                 $statusBadge = match($statusSlug) {
                     'active'   => 'success',
                     'inactive' => 'secondary',
                     'blocked'  => 'danger',
                     default    => 'secondary',
                 };
+                $isLocked = !empty($u['locked_until']) && strtotime($u['locked_until']) > time();
+                $fullName = htmlspecialchars(trim(($u['nombres'] ?? '') . ' ' . ($u['apellidos'] ?? '')), ENT_QUOTES, 'UTF-8');
               ?>
               <tr>
                 <td><?= (int)$u['id'] ?></td>
@@ -72,7 +76,14 @@ require dirname(__DIR__) . '/layouts/main.php';
                        style="width:36px;height:36px;object-fit:cover;"
                        onerror="this.src='<?= BASE_URL ?>/assets/images/user/avatar-1.jpg'">
                 </td>
-                <td><?= htmlspecialchars(trim(($u['nombres'] ?? '') . ' ' . ($u['apellidos'] ?? '')), ENT_QUOTES, 'UTF-8') ?></td>
+                <td>
+                  <?= $fullName ?>
+                  <?php if ($isLocked): ?>
+                    <span class="badge bg-danger ms-1" title="<?= __('users.locked_until') ?>: <?= htmlspecialchars(date('d/m/Y H:i', strtotime($u['locked_until'])), ENT_QUOTES, 'UTF-8') ?>">
+                      <i class="ph-duotone ph-lock me-1"></i><?= __('users.locked') ?>
+                    </span>
+                  <?php endif; ?>
+                </td>
                 <td><?= htmlspecialchars($u['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars($u['telefono'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
                 <td>
@@ -87,25 +98,42 @@ require dirname(__DIR__) . '/layouts/main.php';
                 </td>
                 <td><?= htmlspecialchars(date('d/m/Y', strtotime($u['created_at'] ?? 'now')), ENT_QUOTES, 'UTF-8') ?></td>
                 <td class="text-center">
+                  <?php if (can('users.edit')): ?>
                   <a href="<?= BASE_URL ?>/users/edit/<?= (int)$u['id'] ?>"
                      class="btn btn-sm btn-outline-primary me-1"
-                     title="Editar">
+                     title="<?= __('buttons.edit') ?>">
                     <i class="ph-duotone ph-pencil"></i>
                   </a>
-                  <?php if ($statusSlug !== 'inactive'): ?>
+                  <?php endif; ?>
+
+                  <?php if ($isLocked && can('users.unlock')): ?>
+                  <form action="<?= BASE_URL ?>/users/unlock/<?= (int)$u['id'] ?>"
+                        method="POST"
+                        class="d-inline form-unlock">
+                    <?= \Core\CSRF::field() ?>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-warning btn-unlock me-1"
+                            title="<?= __('users.unlock') ?>"
+                            data-name="<?= $fullName ?>">
+                      <i class="ph-duotone ph-lock-open"></i>
+                    </button>
+                  </form>
+                  <?php endif; ?>
+
+                  <?php if (can('users.delete') && $statusSlug !== 'inactive'): ?>
                   <form action="<?= BASE_URL ?>/users/delete/<?= (int)$u['id'] ?>"
                         method="POST"
                         class="d-inline form-inactivate">
                     <?= \Core\CSRF::field() ?>
                     <button type="button"
                             class="btn btn-sm btn-outline-danger btn-inactivate"
-                            title="Inactivar"
-                            data-name="<?= htmlspecialchars(trim(($u['nombres'] ?? '') . ' ' . ($u['apellidos'] ?? '')), ENT_QUOTES, 'UTF-8') ?>">
+                            title="<?= __('users.inactivate') ?>"
+                            data-name="<?= $fullName ?>">
                       <i class="ph-duotone ph-user-minus"></i>
                     </button>
                   </form>
-                  <?php else: ?>
-                  <button class="btn btn-sm btn-outline-secondary" disabled title="Ya inactivo">
+                  <?php elseif (can('users.delete')): ?>
+                  <button class="btn btn-sm btn-outline-secondary" disabled title="<?= __('users.already_inactive') ?>">
                     <i class="ph-duotone ph-user-minus"></i>
                   </button>
                   <?php endif; ?>
@@ -146,6 +174,23 @@ $(document).ready(function () {
       confirmButtonColor: '#d33',
       cancelButtonColor: '#6c757d',
       confirmButtonText: 'Sí, inactivar',
+      cancelButtonText: 'Cancelar'
+    }).then(function (result) {
+      if (result.isConfirmed) form.submit();
+    });
+  });
+
+  $(document).on('click', '.btn-unlock', function () {
+    var form = $(this).closest('form');
+    var name = $(this).data('name');
+    Swal.fire({
+      title: '¿Desbloquear usuario?',
+      html: 'Se quitará el bloqueo de inicio de sesión a <strong>' + name + '</strong>.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f39c12',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, desbloquear',
       cancelButtonText: 'Cancelar'
     }).then(function (result) {
       if (result.isConfirmed) form.submit();

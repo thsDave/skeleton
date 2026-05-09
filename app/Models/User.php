@@ -67,10 +67,26 @@ class User extends Model
     {
         $stmt = $this->db->prepare(
             'UPDATE ' . self::TABLE . '
-             SET failed_login_attempts = failed_login_attempts + 1
+             SET failed_login_attempts = failed_login_attempts + 1,
+                 last_failed_login_at = NOW()
              WHERE id = ?'
         );
         $stmt->execute([$id]);
+    }
+
+    public function unlock(int $id): bool
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . '
+             SET locked_until = NULL, failed_login_attempts = 0, updated_at = NOW()
+             WHERE id = ?'
+        );
+        return $stmt->execute([$id]);
+    }
+
+    public function isLockedByAttempts(array $user): bool
+    {
+        return !empty($user['locked_until']) && strtotime($user['locked_until']) > time();
     }
 
     public function lockAccount(int $id, int $minutes): void
