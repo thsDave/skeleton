@@ -84,7 +84,7 @@
         <?php endif; ?>
 
         <?php
-        $showSecurity = can('security_sessions.view') || can('roles_permissions.view') || can('audit_logs.view') || can('security_smtp.view') || can('security_mfa.view') || can('security_attempts.view');
+        $showSecurity = can('security_sessions.view') || can('roles_permissions.view') || can('audit_logs.view') || can('security_smtp.view') || can('security_mfa.view') || can('security_attempts.view') || can('security_authentication.view');
         if ($showSecurity):
         ?>
         <li class="pc-item pc-caption">
@@ -115,6 +115,15 @@
           <a href="<?= BASE_URL ?>/security/smtp" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-envelope"></i></span>
             <span class="pc-mtext"><?= __('menu.security_smtp') ?></span>
+          </a>
+        </li>
+        <?php endif; ?>
+
+        <?php if (can('security_authentication.view')): ?>
+        <li class="pc-item <?= ($activeMenu ?? '') === 'security_authentication' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/security/authentication" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-sign-in"></i></span>
+            <span class="pc-mtext"><?= __('menu.security_authentication') ?></span>
           </a>
         </li>
         <?php endif; ?>

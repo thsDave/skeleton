@@ -69,6 +69,8 @@ use App\Controllers\PasswordResetController;
 use App\Controllers\SmtpSettingsController;
 use App\Controllers\MfaSettingsController;
 use App\Controllers\LoginAttemptsSettingsController;
+use App\Controllers\AuthenticationController;
+use App\Controllers\ExternalAuthController;
 use App\Controllers\TwoFactorController;
 use App\Controllers\TwoFactorChallengeController;
 
@@ -151,6 +153,22 @@ $router->post('/security/mfa/update', [MfaSettingsController::class, 'update']);
 // Intentos fallidos (módulo nuevo independiente)
 $router->get('/security/attempts',         [LoginAttemptsSettingsController::class, 'index']);
 $router->post('/security/attempts/update', [LoginAttemptsSettingsController::class, 'update']);
+
+// Autenticación — métodos de login y proveedores OAuth
+$router->get('/security/authentication',                                    [AuthenticationController::class, 'index']);
+$router->post('/security/authentication/settings/update',                   [AuthenticationController::class, 'updateSettings']);
+$router->get('/security/authentication/providers/edit/{id}',                [AuthenticationController::class, 'editProvider']);
+$router->post('/security/authentication/providers/update/{id}',             [AuthenticationController::class, 'updateProvider']);
+$router->post('/security/authentication/providers/toggle/{id}',             [AuthenticationController::class, 'toggleProvider']);
+$router->post('/security/authentication/providers/test/{id}',               [AuthenticationController::class, 'testProvider']);
+
+// OAuth externo — flujo público
+$router->get('/auth/external/{provider}/redirect',  [ExternalAuthController::class, 'redirect']);
+$router->get('/auth/external/{provider}/callback',  [ExternalAuthController::class, 'callback']);
+
+// Vinculación de cuentas externas desde Mi Cuenta
+$router->get('/account/external/link/{provider}',   [AccountController::class, 'initiateLink']);
+$router->post('/account/external/unlink/{id}',      [AccountController::class, 'unlinkAccount']);
 
 // Roles y Permisos
 $router->get('/roles-permissions',                    [RolesPermissionsController::class, 'index']);

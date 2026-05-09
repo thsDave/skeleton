@@ -11,6 +11,9 @@ use Core\Session;
 use Core\Validator;
 use Core\Logger;
 use App\Models\User;
+use App\Models\AuthenticationSettings;
+use App\Models\ExternalAuthProvider;
+use App\Models\UserExternalAccount;
 
 class AccountController extends Controller
 {
@@ -24,9 +27,13 @@ class AccountController extends Controller
     public function index(): void
     {
         Auth::requireAuth();
-        $authUser = Auth::user();
-        $user = $this->userModel->findById(Auth::id());
-        $this->view('account.index', compact('authUser', 'user'));
+        $authUser         = Auth::user();
+        $user             = $this->userModel->findById(Auth::id());
+        $authSettings     = (new AuthenticationSettings())->get();
+        $enabledProviders = (new ExternalAuthProvider())->allEnabled();
+        $linkedAccounts   = (new UserExternalAccount())->allForUser(Auth::id());
+        $this->view('account.index',
+            compact('authUser', 'user', 'authSettings', 'enabledProviders', 'linkedAccounts'));
     }
 
     public function editEmail(): void
@@ -134,5 +141,58 @@ class AccountController extends Controller
         } else {
             Redirect::withError('/account/edit-password', 'No se pudo actualizar la contraseña. Intenta de nuevo.');
         }
+    }
+
+    public function initiateLink(string $provider): void
+    {
+        Auth::requireAuth();
+        $allowed = \App\Models\ExternalAuthProvider::allowedSlugs();
+        if (!in_array($provider, $allowed, true)) {
+            Redirect::to('/account');
+        }
+        Redirect::to('/auth/external/' . $provider . '/redirect?action=link');
+    }
+
+    public function unlinkAccount(int $id): void
+    {
+        Auth::requireAuth();
+        CSRF::validateOrFail();
+
+        $userId    = Auth::id();
+        $linkModel = new UserExternalAccount();
+        $link      = $linkModel->findById($id);
+
+        if (!$link || (int) $link['user_id'] !== $userId) {
+            Session::flash('error', __('account.unlink_not_found'));
+            Redirect::to('/account');
+        }
+
+        $settings = (new AuthenticationSettings())->get();
+        if (!$settings['local_login_enabled']) {
+            $count = $linkModel->countForUser($userId);
+            if ($count <= 1) {
+                Session::flash('error', __('account.unlink_last_method'));
+                Redirect::to('/account');
+            }
+        }
+
+        if ($linkModel->deleteById($id)) {
+            $providerName = $link['provider_display_name'] ?? $link['provider_slug'] ?? '?';
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'external_login.account_unlinked',
+                'entity'      => 'user',
+                'entity_id'   => $userId,
+                'description' => "Cuenta externa desvinculada: {$providerName}",
+                'status'      => 'success',
+                'user_id'     => $userId,
+            ]);
+            Session::flash('success', __('account.provider_unlinked'));
+        } else {
+            Logger::error("AccountController::unlinkAccount — failed to delete link id={$id}");
+            Session::flash('error', __('account.unlink_error'));
+        }
+
+        Redirect::to('/account');
     }
 }

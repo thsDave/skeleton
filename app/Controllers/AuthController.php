@@ -12,6 +12,8 @@ use Core\Audit;
 use Core\Logger;
 use App\Models\User;
 use App\Models\LoginLog;
+use App\Models\AuthenticationSettings;
+use App\Models\ExternalAuthProvider;
 use App\Services\LoginSecurityService;
 use App\Services\Mailer;
 
@@ -29,13 +31,29 @@ class AuthController extends Controller
     public function loginForm(): void
     {
         Auth::requireGuest();
-        $this->view('auth.login');
+        $authSettings     = (new AuthenticationSettings())->get();
+        $enabledProviders = $authSettings['external_login_enabled']
+            ? (new ExternalAuthProvider())->allEnabled()
+            : [];
+        $this->view('auth.login', compact('authSettings', 'enabledProviders'));
     }
 
     public function loginProcess(): void
     {
         Auth::requireGuest();
         CSRF::validateOrFail();
+
+        $authSettings = (new AuthenticationSettings())->get();
+        if (!$authSettings['local_login_enabled']) {
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'external_login.no_login_methods_available',
+                'description' => 'Intento de login local cuando está deshabilitado',
+                'status'      => 'denied',
+                'user_id'     => null,
+            ]);
+            Redirect::to('/login');
+        }
 
         $email    = trim($this->input('email', ''));
         $password = $this->input('password', '');

@@ -121,4 +121,131 @@ require dirname(__DIR__) . '/layouts/main.php';
   </div>
 </div>
 
+<!-- Cuentas externas vinculadas -->
+<?php
+$authSettings     = $authSettings     ?? ['external_login_enabled' => 0];
+$enabledProviders = $enabledProviders ?? [];
+$linkedAccounts   = $linkedAccounts   ?? [];
+
+$linkedBySlug = [];
+foreach ($linkedAccounts as $la) {
+    $linkedBySlug[$la['provider_slug']] = $la;
+}
+?>
+<?php if ($authSettings['external_login_enabled'] && !empty($enabledProviders)): ?>
+<div class="row mt-2">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="ph-duotone ph-plugs-connected me-2 text-info"></i>
+          <?= __('account.external_accounts') ?>
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3"><?= __('account.external_accounts_desc') ?></p>
+        <div class="row g-3">
+          <?php foreach ($enabledProviders as $prov): ?>
+          <?php
+            $pSlug   = $prov['slug'] ?? '';
+            $pName   = htmlspecialchars($prov['name'] ?? '', ENT_QUOTES, 'UTF-8');
+            $linked  = $linkedBySlug[$pSlug] ?? null;
+            $iconClass = match ($pSlug) {
+                'google'    => 'ph-duotone ph-google-logo text-danger',
+                'microsoft' => 'ph-duotone ph-windows-logo text-primary',
+                'github'    => 'ph-duotone ph-github-logo',
+                default     => 'ph-duotone ph-plugs-connected text-secondary',
+            };
+          ?>
+          <div class="col-md-4">
+            <div class="card border h-100">
+              <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <i class="<?= $iconClass ?>" style="font-size:1.5rem;"></i>
+                  <span class="fw-semibold"><?= $pName ?></span>
+                </div>
+
+                <?php if ($linked): ?>
+                  <div class="mb-2">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                      <i class="ph-duotone ph-check me-1"></i><?= __('account.linked') ?>
+                    </span>
+                  </div>
+                  <?php if (!empty($linked['provider_email'])): ?>
+                  <p class="small text-muted mb-1">
+                    <i class="ph-duotone ph-envelope me-1"></i>
+                    <?= htmlspecialchars($linked['provider_email'], ENT_QUOTES, 'UTF-8') ?>
+                  </p>
+                  <?php endif; ?>
+                  <?php if (!empty($linked['last_login_at'])): ?>
+                  <p class="small text-muted mb-0 flex-grow-1">
+                    <i class="ph-duotone ph-clock me-1"></i>
+                    <?= htmlspecialchars(date('d/m/Y H:i', strtotime($linked['last_login_at'])), ENT_QUOTES, 'UTF-8') ?>
+                  </p>
+                  <?php else: ?>
+                  <div class="flex-grow-1"></div>
+                  <?php endif; ?>
+                  <div class="mt-3">
+                    <form action="<?= BASE_URL ?>/account/external/unlink/<?= (int)$linked['id'] ?>" method="POST" class="form-unlink-account">
+                      <?= \Core\CSRF::field() ?>
+                      <input type="hidden" name="provider_name" value="<?= $pName ?>">
+                      <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                        <i class="ph-duotone ph-link-break me-1"></i>
+                        <?= __('account.unlink_provider') ?>
+                      </button>
+                    </form>
+                  </div>
+                <?php else: ?>
+                  <div class="mb-2">
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                      <?= __('account.not_linked') ?>
+                    </span>
+                  </div>
+                  <div class="flex-grow-1"></div>
+                  <div class="mt-3">
+                    <a href="<?= BASE_URL ?>/account/external/link/<?= htmlspecialchars($pSlug, ENT_QUOTES, 'UTF-8') ?>"
+                       class="btn btn-sm btn-outline-primary w-100">
+                      <i class="ph-duotone ph-link me-1"></i>
+                      <?= __('account.link_provider') ?>
+                    </a>
+                  </div>
+                <?php endif; ?>
+              </div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>
+
+<?php $extraScript = <<<'JS'
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.form-unlink-account').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var pName = form.querySelector('[name="provider_name"]');
+      var name  = pName ? pName.value : 'este proveedor';
+      Swal.fire({
+        icon: 'warning',
+        title: '¿Desvincular cuenta?',
+        html: '¿Deseas desvincular tu cuenta de <strong>' + name + '</strong>?<br><small class="text-muted">Ya no podrás iniciar sesión con este proveedor.</small>',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, desvincular',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#d63031',
+        cancelButtonColor: '#6c757d'
+      }).then(function (result) {
+        if (result.isConfirmed) form.submit();
+      });
+    });
+  });
+});
+</script>
+JS;
+?>

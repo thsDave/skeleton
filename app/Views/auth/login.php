@@ -2,8 +2,14 @@
 use Core\Session;
 use Core\CSRF;
 
-$errors = Session::getFlash('errors', []);
-$old    = Session::getFlash('old', []);
+$errors           = Session::getFlash('errors', []);
+$old              = Session::getFlash('old', []);
+$authSettings     = $authSettings     ?? ['local_login_enabled' => 1, 'external_login_enabled' => 0];
+$enabledProviders = $enabledProviders ?? [];
+
+$showLocal    = (bool) ($authSettings['local_login_enabled']    ?? 1);
+$showExternal = (bool) ($authSettings['external_login_enabled'] ?? 0) && !empty($enabledProviders);
+$noMethod     = !$showLocal && !$showExternal;
 ?>
 <!doctype html>
 <html lang="es">
@@ -36,7 +42,7 @@ $old    = Session::getFlash('old', []);
       <div class="card my-5">
         <div class="card-body">
 
-          <!-- Logo: icono + texto, siempre visible sin depender de archivos externos -->
+          <!-- Logo -->
           <div class="text-center mb-4">
             <div class="d-inline-flex align-items-center gap-2">
               <div class="bg-primary rounded-3 d-flex align-items-center justify-content-center"
@@ -62,6 +68,15 @@ $old    = Session::getFlash('old', []);
             <?php endforeach; ?>
           <?php endif; ?>
 
+          <?php if ($noMethod): ?>
+            <div class="alert alert-warning text-center">
+              <i class="ph-duotone ph-warning me-2"></i>
+              <?= __('auth.no_login_methods_available') ?>
+            </div>
+          <?php endif; ?>
+
+          <!-- Formulario local -->
+          <?php if ($showLocal): ?>
           <form action="<?= BASE_URL ?>/login" method="POST" novalidate>
             <?= CSRF::field() ?>
 
@@ -103,11 +118,63 @@ $old    = Session::getFlash('old', []);
             </button>
           </form>
 
-          <div class="text-center mt-2">
+          <div class="text-center mt-2 <?= $showExternal ? 'mb-3' : '' ?>">
             <a href="<?= BASE_URL ?>/forgot-password" class="text-muted small">
               <i class="ph-duotone ph-lock-open me-1"></i><?= __('auth.forgot_password') ?>
             </a>
           </div>
+          <?php endif; ?>
+
+          <!-- Separador -->
+          <?php if ($showLocal && $showExternal): ?>
+          <div class="d-flex align-items-center my-3">
+            <hr class="flex-grow-1">
+            <span class="px-3 text-muted small"><?= __('auth.or_continue_with') ?></span>
+            <hr class="flex-grow-1">
+          </div>
+          <?php endif; ?>
+
+          <!-- Botones de proveedores externos -->
+          <?php if ($showExternal): ?>
+          <div class="d-grid gap-2">
+            <?php foreach ($enabledProviders as $prov): ?>
+            <?php
+              $pSlug  = $prov['slug'] ?? '';
+              $pName  = htmlspecialchars($prov['name'] ?? '', ENT_QUOTES, 'UTF-8');
+              $iconClass = match ($pSlug) {
+                  'google'    => 'ph-duotone ph-google-logo text-danger',
+                  'microsoft' => 'ph-duotone ph-windows-logo text-primary',
+                  'github'    => 'ph-duotone ph-github-logo',
+                  default     => 'ph-duotone ph-cloud text-secondary',
+              };
+              $btnClass = match ($pSlug) {
+                  'google'    => 'btn-outline-danger',
+                  'microsoft' => 'btn-outline-primary',
+                  'github'    => 'btn-outline-dark',
+                  default     => 'btn-outline-secondary',
+              };
+              $label = match ($pSlug) {
+                  'google'    => __('auth.continue_with_google'),
+                  'microsoft' => __('auth.continue_with_microsoft'),
+                  'github'    => __('auth.continue_with_github'),
+                  default     => __('auth.continue_with') . ' ' . $pName,
+              };
+            ?>
+            <a href="<?= BASE_URL ?>/auth/external/<?= htmlspecialchars($pSlug, ENT_QUOTES, 'UTF-8') ?>/redirect"
+               class="btn <?= $btnClass ?> d-flex align-items-center justify-content-center gap-2">
+              <i class="<?= $iconClass ?>" style="font-size:1.1rem;"></i>
+              <span><?= $label ?></span>
+            </a>
+            <?php endforeach; ?>
+          </div>
+          <?php if (!$showLocal): ?>
+          <div class="text-center mt-3">
+            <a href="<?= BASE_URL ?>/forgot-password" class="text-muted small">
+              <i class="ph-duotone ph-lock-open me-1"></i><?= __('auth.forgot_password') ?>
+            </a>
+          </div>
+          <?php endif; ?>
+          <?php endif; ?>
 
         </div>
       </div>
