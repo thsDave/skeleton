@@ -19,14 +19,16 @@ class AuthenticationController extends Controller
     public function index(): void
     {
         Auth::requirePermission('security_authentication.view');
-        $authUser  = Auth::user();
-        $settings  = (new AuthenticationSettings())->get();
-        $providers = (new ExternalAuthProvider())->all();
-        $roles     = (new Role())->getAll();
-        $errors    = Session::getFlash('errors', []);
-        $old       = Session::getFlash('old', []);
+        $authUser           = Auth::user();
+        $settings           = (new AuthenticationSettings())->get();
+        $providerModel      = new ExternalAuthProvider();
+        $providers          = $providerModel->all();
+        $providersReadyCount = $providerModel->countReady();
+        $roles              = (new Role())->getAll();
+        $errors             = Session::getFlash('errors', []);
+        $old                = Session::getFlash('old', []);
         $this->view('security.authentication.index',
-            compact('authUser', 'settings', 'providers', 'roles', 'errors', 'old'));
+            compact('authUser', 'settings', 'providers', 'providersReadyCount', 'roles', 'errors', 'old'));
     }
 
     public function updateSettings(): void
@@ -40,6 +42,22 @@ class AuthenticationController extends Controller
         if (!$localEnabled && !$externalEnabled) {
             Session::flash('error', __('security_authentication.error_no_methods'));
             Redirect::to('/security/authentication');
+        }
+
+        if ($externalEnabled) {
+            $readyCount = (new ExternalAuthProvider())->countReady();
+            if ($readyCount === 0) {
+                try {
+                    Audit::log([
+                        'module'      => 'security_authentication',
+                        'action'      => 'authentication_settings.update_failed',
+                        'description' => 'Intento de activar login externo sin proveedor externo configurado',
+                        'status'      => 'warning',
+                    ]);
+                } catch (\Throwable) {}
+                Session::flash('error', __('security_authentication.external_provider_required'));
+                Redirect::to('/security/authentication');
+            }
         }
 
         $data = [

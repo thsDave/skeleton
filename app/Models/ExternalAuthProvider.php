@@ -170,6 +170,23 @@ class ExternalAuthProvider extends Model
         }
     }
 
+    public function countReady(): int
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT COUNT(*) FROM " . self::TABLE . "
+                 WHERE is_enabled = 1
+                   AND client_id IS NOT NULL AND client_id <> ''
+                   AND client_secret IS NOT NULL AND client_secret <> ''
+                   AND redirect_uri IS NOT NULL AND redirect_uri <> ''"
+            );
+            return (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {
+            Logger::error('ExternalAuthProvider::countReady — ' . $e->getMessage());
+            return 0;
+        }
+    }
+
     public static function allowedSlugs(): array
     {
         return self::ALLOWED_SLUGS;

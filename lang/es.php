@@ -797,6 +797,9 @@ return [
     'security_authentication.info_external'               => 'Los proveedores externos usan OAuth 2.0 para autenticación.',
     'security_authentication.info_warning'                => 'No desactives el login local si no tienes un proveedor externo configurado.',
     'security_authentication.info_mfa'                    => 'El MFA sigue activo después del login externo si el usuario lo tiene habilitado.',
+    'security_authentication.external_provider_required'  => 'Debe configurar y habilitar al menos un proveedor externo antes de activar el inicio de sesión externo.',
+    'security_authentication.redirect_uri_copied'         => 'URI copiada correctamente.',
+    'security_authentication.redirect_uri_copy_failed'    => 'No se pudo copiar la URI. Cópiala manualmente.',
     // Proveedores externos
     'security_authentication.external_providers'          => 'Proveedores externos',
     'security_authentication.provider'                    => 'Proveedor',

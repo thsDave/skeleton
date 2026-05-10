@@ -1,11 +1,12 @@
 <?php
 $pageTitle  = __('security_authentication.title');
 $activeMenu = 'security_authentication';
-$settings   = $settings ?? ['local_login_enabled'=>1,'external_login_enabled'=>0,'allow_auto_user_creation'=>0,'default_role_id'=>null,'require_existing_user'=>1,'allow_account_linking'=>1];
-$providers  = $providers ?? [];
-$roles      = $roles     ?? [];
-$errors     = $errors    ?? [];
-$old        = $old       ?? [];
+$settings            = $settings            ?? ['local_login_enabled'=>1,'external_login_enabled'=>0,'allow_auto_user_creation'=>0,'default_role_id'=>null,'require_existing_user'=>1,'allow_account_linking'=>1];
+$providers           = $providers           ?? [];
+$providersReadyCount = $providersReadyCount ?? 0;
+$roles               = $roles               ?? [];
+$errors              = $errors              ?? [];
+$old                 = $old                 ?? [];
 
 require dirname(dirname(__DIR__)) . '/layouts/main.php';
 ?>
@@ -35,7 +36,10 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   <div class="col-lg-8">
 
     <?php if (can('security_authentication.edit')): ?>
-    <form id="formSettings" action="<?= BASE_URL ?>/security/authentication/settings/update" method="POST" novalidate>
+    <form id="formSettings" action="<?= BASE_URL ?>/security/authentication/settings/update" method="POST" novalidate
+      data-providers-ready="<?= (int) $providersReadyCount ?>"
+      data-msg-external-required="<?= htmlspecialchars(__('security_authentication.external_provider_required'), ENT_QUOTES, 'UTF-8') ?>"
+      data-msg-no-methods="<?= htmlspecialchars(__('security_authentication.error_no_methods'), ENT_QUOTES, 'UTF-8') ?>">
       <?= \Core\CSRF::field() ?>
 
       <div class="card mb-3">
@@ -390,12 +394,17 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
 <?php $extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  var form           = document.getElementById('formSettings');
   var externalSwitch = document.getElementById('externalLoginEnabled');
   var localSwitch    = document.getElementById('localLoginEnabled');
   var cardExternal   = document.getElementById('cardExternalOptions');
   var autoCreate     = document.getElementById('allowAutoUserCreation');
   var defaultRoleRow = document.getElementById('defaultRoleRow');
   var btnSave        = document.getElementById('btnSaveSettings');
+
+  var providersReady       = form ? parseInt(form.dataset.providersReady || '0', 10) : 0;
+  var msgExternalRequired  = form ? (form.dataset.msgExternalRequired || '') : '';
+  var msgNoMethods         = form ? (form.dataset.msgNoMethods || '') : '';
 
   function toggleExternalOptions() {
     if (externalSwitch && cardExternal) {
@@ -409,47 +418,70 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  if (externalSwitch) externalSwitch.addEventListener('change', toggleExternalOptions);
-  if (autoCreate)     autoCreate.addEventListener('change', toggleDefaultRole);
+  if (autoCreate) autoCreate.addEventListener('change', toggleDefaultRole);
 
-  // Warn before disabling local login
+  // When toggling external login ON — warn immediately if no providers are ready
+  if (externalSwitch) {
+    externalSwitch.addEventListener('change', function () {
+      toggleExternalOptions();
+      if (externalSwitch.checked && providersReady === 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Sin proveedores configurados',
+          text: msgExternalRequired,
+          confirmButtonColor: '#4680ff',
+          confirmButtonText: 'Entendido'
+        }).then(function () {
+          externalSwitch.checked = false;
+          toggleExternalOptions();
+        });
+      }
+    });
+  }
+
+  // Form submit validations
   if (btnSave) {
     btnSave.addEventListener('click', function (e) {
-      if (localSwitch && !localSwitch.checked && externalSwitch && !externalSwitch.checked) {
+      var localOn    = localSwitch    && localSwitch.checked;
+      var externalOn = externalSwitch && externalSwitch.checked;
+
+      // No methods active
+      if (!localOn && !externalOn) {
         e.preventDefault();
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Debes mantener al menos un método de inicio de sesión activo.',
-          confirmButtonColor: '#4680ff'
-        });
+        Swal.fire({ icon: 'error', title: 'Error', text: msgNoMethods, confirmButtonColor: '#4680ff' });
         return;
       }
 
-      if (localSwitch && !localSwitch.checked) {
+      // External enabled but no providers ready — block here too (server will also block)
+      if (externalOn && providersReady === 0) {
+        e.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Error', text: msgExternalRequired, confirmButtonColor: '#4680ff' });
+        return;
+      }
+
+      // Warn before disabling local login
+      if (!localOn && externalOn) {
         e.preventDefault();
         Swal.fire({
           icon: 'warning',
           title: 'Advertencia de seguridad',
-          html: '<strong>¿Desactivar el inicio de sesión local?</strong><br><br>Si desactivas el inicio de sesión con correo y contraseña, solo podrás entrar al sistema mediante proveedores externos.<br><br>Asegúrate de tener al menos un proveedor externo activo y tu cuenta vinculada antes de continuar.',
+          html: '<strong>¿Desactivar el inicio de sesión local?</strong><br><br>Si desactivas el acceso con correo y contraseña, solo podrás entrar mediante proveedores externos.<br><br>Asegúrate de tener tu cuenta vinculada antes de continuar.',
           showCancelButton: true,
           confirmButtonText: 'Sí, continuar',
           cancelButtonText: 'Cancelar',
           confirmButtonColor: '#d63031',
           cancelButtonColor: '#6c757d'
         }).then(function (result) {
-          if (result.isConfirmed) {
-            document.getElementById('formSettings').submit();
-          }
+          if (result.isConfirmed) form.submit();
         });
       }
     });
   }
 
   // Toggle provider confirmation
-  document.querySelectorAll('.form-toggle-provider').forEach(function (form) {
-    form.addEventListener('submit', function (e) {
-      var btn     = form.querySelector('button[type="submit"]');
+  document.querySelectorAll('.form-toggle-provider').forEach(function (provForm) {
+    provForm.addEventListener('submit', function (e) {
+      var btn     = provForm.querySelector('button[type="submit"]');
       var enabled = btn && btn.dataset.enabled === '1';
       var name    = btn && btn.dataset.name ? btn.dataset.name : 'este proveedor';
       if (enabled) {
@@ -464,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function () {
           confirmButtonColor: '#e67e22',
           cancelButtonColor: '#6c757d'
         }).then(function (result) {
-          if (result.isConfirmed) form.submit();
+          if (result.isConfirmed) provForm.submit();
         });
       }
     });

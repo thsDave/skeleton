@@ -55,7 +55,9 @@ $hasSecret = !empty($provider['client_secret']);
               id="callbackUriDisplay"
               value="<?= htmlspecialchars($suggestedRedirectUri ?? '', ENT_QUOTES, 'UTF-8') ?>"
               readonly>
-            <button type="button" class="btn btn-outline-secondary" id="btnCopyUri">
+            <button type="button" class="btn btn-outline-secondary" id="btnCopyUri"
+              data-msg-copied="<?= htmlspecialchars(__('security_authentication.redirect_uri_copied'), ENT_QUOTES, 'UTF-8') ?>"
+              data-msg-failed="<?= htmlspecialchars(__('security_authentication.redirect_uri_copy_failed'), ENT_QUOTES, 'UTF-8') ?>">
               <i class="ph-duotone ph-copy"></i>
             </button>
           </div>
@@ -307,20 +309,59 @@ $hasSecret = !empty($provider['client_secret']);
 <?php $extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var btnCopy   = document.getElementById('btnCopyUri');
-  var uriInput  = document.getElementById('callbackUriDisplay');
+  var btnCopy  = document.getElementById('btnCopyUri');
+  var uriInput = document.getElementById('callbackUriDisplay');
+
+  var msgCopied = btnCopy ? (btnCopy.dataset.msgCopied || 'URI copiada correctamente.') : '';
+  var msgFailed = btnCopy ? (btnCopy.dataset.msgFailed || 'No se pudo copiar la URI. Cópiala manualmente.') : '';
+
+  function copyToClipboard(text, onSuccess, onError) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(onSuccess).catch(onError);
+    } else {
+      // Fallback para entornos HTTP (desarrollo local)
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (err) {}
+      document.body.removeChild(ta);
+      if (ok) { onSuccess(); } else { onError(); }
+    }
+  }
+
   if (btnCopy && uriInput) {
     btnCopy.addEventListener('click', function () {
-      navigator.clipboard.writeText(uriInput.value).then(function () {
-        btnCopy.innerHTML = '<i class="ph-duotone ph-check text-success"></i>';
-        setTimeout(function () {
-          btnCopy.innerHTML = '<i class="ph-duotone ph-copy"></i>';
-        }, 2000);
-      });
+      var uri = uriInput.value.trim();
+      if (!uri) { return; }
+      copyToClipboard(uri,
+        function () {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: msgCopied,
+            showConfirmButton: false,
+            timer: 2500,
+            timerProgressBar: true
+          });
+        },
+        function () {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: msgFailed,
+            confirmButtonColor: '#4680ff'
+          });
+        }
+      );
     });
   }
 
-  var btnToggle = document.getElementById('btnToggleSecret');
+  var btnToggle   = document.getElementById('btnToggleSecret');
   var secretInput = document.getElementById('client_secret');
   var iconSecret  = document.getElementById('iconSecret');
   if (btnToggle && secretInput) {
