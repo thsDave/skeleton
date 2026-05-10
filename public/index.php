@@ -73,6 +73,7 @@ use App\Controllers\AuthenticationController;
 use App\Controllers\ExternalAuthController;
 use App\Controllers\TwoFactorController;
 use App\Controllers\TwoFactorChallengeController;
+use App\Controllers\AppearanceController;
 
 $router = new Router();
 
@@ -193,6 +194,14 @@ $router->post('/profile/two-factor/disable',               [TwoFactorController:
 $router->get('/two-factor/challenge',  [TwoFactorChallengeController::class, 'show']);
 $router->post('/two-factor/challenge', [TwoFactorChallengeController::class, 'verify']);
 $router->post('/two-factor/resend',    [TwoFactorChallengeController::class, 'resend']);
+
+// Appearance
+$router->get('/appearance',                         [AppearanceController::class, 'index']);
+$router->post('/appearance/update',                 [AppearanceController::class, 'update']);
+$router->post('/appearance/reset-logo',             [AppearanceController::class, 'resetLogo']);
+$router->post('/appearance/reset-favicon',          [AppearanceController::class, 'resetFavicon']);
+$router->post('/appearance/reset-login-background', [AppearanceController::class, 'resetLoginBackground']);
+$router->post('/appearance/reset-colors',           [AppearanceController::class, 'resetColors']);
 
 // Raíz — redirigir a dashboard o login
 $router->get('/', [DashboardController::class, 'index']);

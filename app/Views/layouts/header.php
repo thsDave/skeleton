@@ -14,7 +14,18 @@ $_headerTheme   = $_isDark ? 'dark' : 'light';
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="csrf-token" content="<?= htmlspecialchars(\Core\CSRF::token(), ENT_QUOTES, 'UTF-8') ?>" />
 
-  <link rel="icon" href="<?= BASE_URL ?>/assets/images/favicon.svg" type="image/x-icon" />
+  <?php
+  $_headerAppearance = (new \App\Models\AppearanceSetting())->get();
+  if (!empty($_headerAppearance['favicon_path'])) {
+      $_faviconExt  = strtolower(pathinfo($_headerAppearance['favicon_path'], PATHINFO_EXTENSION));
+      $_faviconMime = ($_faviconExt === 'ico') ? 'image/x-icon' : 'image/png';
+      $_faviconHref = BASE_URL . '/uploads/appearance/favicon/' . htmlspecialchars($_headerAppearance['favicon_path'], ENT_QUOTES, 'UTF-8');
+  } else {
+      $_faviconMime = 'image/x-icon';
+      $_faviconHref = BASE_URL . '/assets/images/favicon.svg';
+  }
+  ?>
+  <link rel="icon" href="<?= $_faviconHref ?>" type="<?= $_faviconMime ?>" />
   <link href="<?= BASE_URL ?>/assets/fonts/inter/inter.css" rel="stylesheet" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/fonts/phosphor/duotone/style.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/fonts/tabler-icons.min.css" />
@@ -34,6 +45,27 @@ $_headerTheme   = $_isDark ? 'dark' : 'light';
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
 
   <?php if (isset($extraHead)) echo $extraHead; ?>
+  <?php
+  $_pc = $_headerAppearance['primary_color'] ?? null;
+  $_sc = $_headerAppearance['sidebar_color'] ?? null;
+  if ($_pc || $_sc):
+  ?>
+  <style>
+    :root {
+      <?= $_pc ? '--app-primary:' . htmlspecialchars($_pc, ENT_QUOTES, 'UTF-8') . ';' : '' ?>
+      <?= $_sc ? '--app-sidebar:' . htmlspecialchars($_sc, ENT_QUOTES, 'UTF-8') . ';' : '' ?>
+    }
+    <?php if ($_pc): ?>
+    .btn-primary { background-color: var(--app-primary) !important; border-color: var(--app-primary) !important; }
+    .bg-primary   { background-color: var(--app-primary) !important; }
+    .text-primary  { color: var(--app-primary) !important; }
+    .page-header .breadcrumb-item a { color: var(--app-primary); }
+    <?php endif; ?>
+    <?php if ($_sc): ?>
+    .pc-sidebar .navbar-wrapper { background-color: var(--app-sidebar) !important; }
+    <?php endif; ?>
+  </style>
+  <?php endif; ?>
 </head>
 <body
   data-pc-preset="preset-1"

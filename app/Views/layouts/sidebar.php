@@ -1,11 +1,26 @@
+<?php
+$_sidebarAppearance = (new \App\Models\AppearanceSetting())->get();
+$_appName  = htmlspecialchars($_sidebarAppearance['app_display_name'] ?? 'Skeleton', ENT_QUOTES, 'UTF-8');
+$_logoPath = $_sidebarAppearance['logo_path'] ?? null;
+$_logoUrl  = $_logoPath ? BASE_URL . '/uploads/appearance/logo/' . htmlspecialchars($_logoPath, ENT_QUOTES, 'UTF-8') : null;
+// Iniciales para logo-sm (primeras 2 letras del nombre)
+$_initials = mb_strtoupper(mb_substr(preg_replace('/\s+/', '', $_appName), 0, 2));
+?>
 <nav class="pc-sidebar">
   <div class="navbar-wrapper">
     <div class="m-header">
       <a href="<?= BASE_URL ?>/dashboard" class="b-brand text-primary">
         <div class="d-flex align-items-center gap-2">
-          <i class="ph-duotone ph-shield-check text-white" style="font-size:1.8rem;"></i>
-          <span class="logo-lg text-white fw-bold fs-5">Skeleton</span>
-          <span class="logo-sm text-white fw-bold fs-5">SK</span>
+          <?php if ($_logoUrl): ?>
+            <img src="<?= $_logoUrl ?>" alt="<?= $_appName ?>"
+                 class="logo-lg" style="max-height:36px;max-width:140px;object-fit:contain;">
+            <img src="<?= $_logoUrl ?>" alt="<?= $_appName ?>"
+                 class="logo-sm" style="max-height:36px;max-width:36px;object-fit:contain;">
+          <?php else: ?>
+            <i class="ph-duotone ph-shield-check text-white" style="font-size:1.8rem;"></i>
+            <span class="logo-lg text-white fw-bold fs-5"><?= $_appName ?></span>
+            <span class="logo-sm text-white fw-bold fs-5"><?= $_initials ?></span>
+          <?php endif; ?>
         </div>
       </a>
     </div>
@@ -57,7 +72,7 @@
         <?php endif; ?>
 
         <?php
-        $showAdmin = can('users.view') || can('languages.view');
+        $showAdmin = can('users.view') || can('languages.view') || can('appearance.view');
         if ($showAdmin):
         ?>
         <li class="pc-item pc-caption">
@@ -79,6 +94,15 @@
           <a href="<?= BASE_URL ?>/languages" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-translate"></i></span>
             <span class="pc-mtext"><?= __('menu.languages') ?></span>
+          </a>
+        </li>
+        <?php endif; ?>
+
+        <?php if (can('appearance.view')): ?>
+        <li class="pc-item <?= ($activeMenu ?? '') === 'appearance' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/appearance" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-palette"></i></span>
+            <span class="pc-mtext"><?= __('menu.appearance') ?></span>
           </a>
         </li>
         <?php endif; ?>

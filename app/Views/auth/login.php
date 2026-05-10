@@ -19,7 +19,18 @@ $noMethod     = !$showLocal && !$showExternal;
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-  <link rel="icon" href="<?= BASE_URL ?>/assets/images/favicon.svg" type="image/x-icon" />
+  <?php
+  $_loginApp = (new \App\Models\AppearanceSetting())->get();
+  if (!empty($_loginApp['favicon_path'])) {
+      $_lfExt   = strtolower(pathinfo($_loginApp['favicon_path'], PATHINFO_EXTENSION));
+      $_lfMime  = ($_lfExt === 'ico') ? 'image/x-icon' : 'image/png';
+      $_lfHref  = BASE_URL . '/uploads/appearance/favicon/' . htmlspecialchars($_loginApp['favicon_path'], ENT_QUOTES, 'UTF-8');
+  } else {
+      $_lfMime  = 'image/x-icon';
+      $_lfHref  = BASE_URL . '/assets/images/favicon.svg';
+  }
+  ?>
+  <link rel="icon" href="<?= $_lfHref ?>" type="<?= $_lfMime ?>" />
   <link href="<?= BASE_URL ?>/assets/fonts/inter/inter.css" rel="stylesheet" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/fonts/phosphor/duotone/style.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/fonts/tabler-icons.min.css" />
@@ -35,25 +46,49 @@ $noMethod     = !$showLocal && !$showExternal;
   <div class="pc-loader"><div class="loader-fill"></div></div>
 </div>
 
-<div class="auth-main v1">
-  <div class="bg-overlay bg-primary"></div>
+<?php
+$_loginBg      = $_loginApp['login_background_path'] ?? null;
+$_loginBgUrl   = $_loginBg ? BASE_URL . '/uploads/appearance/login/' . htmlspecialchars($_loginBg, ENT_QUOTES, 'UTF-8') : null;
+$_loginOvColor = $_loginApp['login_overlay_color'] ?? null;
+$_loginOvOp    = (float)($_loginApp['login_overlay_opacity'] ?? 0.40);
+$_loginOvOp    = max(0, min(1, $_loginOvOp));
+?>
+<div class="auth-main v1"<?php if ($_loginBgUrl): ?> style="background-image:url('<?= $_loginBgUrl ?>');background-size:cover;background-position:center;"<?php endif; ?>>
+  <?php if ($_loginOvColor): ?>
+  <div class="bg-overlay" style="background-color:<?= htmlspecialchars($_loginOvColor, ENT_QUOTES, 'UTF-8') ?>;opacity:<?= $_loginOvOp ?>;"></div>
+  <?php else: ?>
+  <div class="bg-overlay bg-primary" style="opacity:<?= $_loginOvOp ?>;"></div>
+  <?php endif; ?>
   <div class="auth-wrapper">
     <div class="auth-form">
       <div class="card my-5">
         <div class="card-body">
 
           <!-- Logo -->
+          <?php
+          $_loginLogoPath = $_loginApp['logo_path'] ?? null;
+          $_loginLogoUrl  = $_loginLogoPath ? BASE_URL . '/uploads/appearance/logo/' . htmlspecialchars($_loginLogoPath, ENT_QUOTES, 'UTF-8') : null;
+          $_loginAppName  = htmlspecialchars($_loginApp['app_display_name'] ?? 'Skeleton', ENT_QUOTES, 'UTF-8');
+          $_loginTagline  = htmlspecialchars($_loginApp['app_tagline'] ?? 'Sistema MVC', ENT_QUOTES, 'UTF-8');
+          ?>
           <div class="text-center mb-4">
+            <?php if ($_loginLogoUrl): ?>
+            <div class="d-inline-flex align-items-center justify-content-center">
+              <img src="<?= $_loginLogoUrl ?>" alt="<?= $_loginAppName ?>"
+                   style="max-height:56px;max-width:200px;object-fit:contain;">
+            </div>
+            <?php else: ?>
             <div class="d-inline-flex align-items-center gap-2">
               <div class="bg-primary rounded-3 d-flex align-items-center justify-content-center"
                    style="width:44px;height:44px;">
                 <i class="ph-duotone ph-shield-check text-white" style="font-size:1.5rem;"></i>
               </div>
               <div class="text-start">
-                <h4 class="mb-0 fw-bold text-primary lh-1">Skeleton</h4>
-                <small class="text-muted">Sistema MVC</small>
+                <h4 class="mb-0 fw-bold text-primary lh-1"><?= $_loginAppName ?></h4>
+                <?php if ($_loginTagline): ?><small class="text-muted"><?= $_loginTagline ?></small><?php endif; ?>
               </div>
             </div>
+            <?php endif; ?>
           </div>
 
           <h5 class="mb-1 f-w-500 text-center">Iniciar Sesión</h5>

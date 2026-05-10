@@ -31,5 +31,32 @@ return [
             'prefix'         => 'manual_',
         ],
 
+        'appearance_logo' => [
+            'disk_path'      => dirname(__DIR__) . '/public/uploads/appearance/logo/',
+            'web_path'       => 'uploads/appearance/logo/',
+            'max_size'       => 2 * 1024 * 1024,
+            'allowed_mime'   => ['image/jpeg', 'image/png', 'image/webp'],
+            'validate_image' => true,
+            'prefix'         => 'logo_',
+        ],
+
+        'appearance_favicon' => [
+            'disk_path'      => dirname(__DIR__) . '/public/uploads/appearance/favicon/',
+            'web_path'       => 'uploads/appearance/favicon/',
+            'max_size'       => 1 * 1024 * 1024,
+            'allowed_mime'   => ['image/x-icon', 'image/vnd.microsoft.icon', 'image/png'],
+            'validate_image' => false,
+            'prefix'         => 'favicon_',
+        ],
+
+        'appearance_login_background' => [
+            'disk_path'      => dirname(__DIR__) . '/public/uploads/appearance/login/',
+            'web_path'       => 'uploads/appearance/login/',
+            'max_size'       => 5 * 1024 * 1024,
+            'allowed_mime'   => ['image/jpeg', 'image/png', 'image/webp'],
+            'validate_image' => true,
+            'prefix'         => 'login_bg_',
+        ],
+
     ],
 ];

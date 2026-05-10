@@ -155,6 +155,7 @@ class UploadService
             'image/jpeg'    => 'jpg',
             'image/png'     => 'png',
             'image/webp'    => 'webp',
+            'image/x-icon', 'image/vnd.microsoft.icon' => 'ico',
             'application/pdf' => 'pdf',
             'application/msword' => 'doc',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',

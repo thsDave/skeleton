@@ -758,6 +758,30 @@ Agrega columnas a `tbl_users` (`two_factor_enabled`, `two_factor_method`, `two_f
 
 ---
 
+## Apariencia del sistema
+
+Módulo administrativo en `/appearance` (Administración > Apariencia) que permite configurar visualmente el sistema sin tocar código.
+
+**Qué se puede configurar:**
+
+| Elemento | Ruta de archivos | Extensiones |
+|---|---|---|
+| Logo | `public/uploads/appearance/logo/` | jpg, png, webp |
+| Favicon | `public/uploads/appearance/favicon/` | ico, png |
+| Fondo de login | `public/uploads/appearance/login/` | jpg, png, webp |
+| Color principal | — (BD) | Hex `#rrggbb` |
+| Color del sidebar | — (BD) | Hex `#rrggbb` |
+| Nombre visual y lema | — (BD) | texto |
+
+- Usa **UploadService** para validar y guardar todos los archivos.
+- Los colores se inyectan como variables CSS en el layout; no sobrescriben DashboardKit completamente.
+- Para restablecer cualquier elemento: botón "Restablecer" en la vista (requiere permiso `appearance.reset`).
+- **Migración a importar:** `database/015_add_appearance_settings.sql`
+- Tabla de BD: `tbl_appearance_settings` (un solo registro).
+- Permisos: `appearance.view`, `appearance.edit`, `appearance.reset` — asignados al Administrador.
+
+---
+
 ## UploadService
 
 Servicio centralizado para la subida de archivos (`app/Services/UploadService.php`). Toda la lógica de validación, naming y almacenamiento de archivos pasa por este servicio; los controladores solo llaman `upload()` o `delete()`.
