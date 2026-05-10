@@ -187,6 +187,43 @@ class ExternalAuthProvider extends Model
         }
     }
 
+    public function countVerifiedAndReady(): int
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT COUNT(*) FROM " . self::TABLE . "
+                 WHERE is_enabled = 1
+                   AND is_verified = 1
+                   AND client_id IS NOT NULL AND client_id <> ''
+                   AND client_secret IS NOT NULL AND client_secret <> ''
+                   AND redirect_uri IS NOT NULL AND redirect_uri <> ''"
+            );
+            return (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {
+            Logger::error('ExternalAuthProvider::countVerifiedAndReady — ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function allVerifiedAndEnabled(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT * FROM " . self::TABLE . "
+                 WHERE is_enabled = 1
+                   AND is_verified = 1
+                   AND client_id IS NOT NULL AND client_id <> ''
+                   AND client_secret IS NOT NULL AND client_secret <> ''
+                   AND redirect_uri IS NOT NULL AND redirect_uri <> ''
+                 ORDER BY id ASC"
+            );
+            return $stmt->fetchAll() ?: [];
+        } catch (\Throwable $e) {
+            Logger::error('ExternalAuthProvider::allVerifiedAndEnabled — ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public static function allowedSlugs(): array
     {
         return self::ALLOWED_SLUGS;

@@ -32,9 +32,13 @@ class AuthController extends Controller
     {
         Auth::requireGuest();
         $authSettings     = (new AuthenticationSettings())->get();
-        $enabledProviders = $authSettings['external_login_enabled']
-            ? (new ExternalAuthProvider())->allEnabled()
-            : [];
+        $enabledProviders = [];
+        if ($authSettings['external_login_enabled']) {
+            $enabledProviders = (new ExternalAuthProvider())->allVerifiedAndEnabled();
+            if (empty($enabledProviders)) {
+                Logger::error('AuthController::loginForm — external_login_enabled but no verified providers available');
+            }
+        }
         $this->view('auth.login', compact('authSettings', 'enabledProviders'));
     }
 

@@ -208,7 +208,7 @@ $hasSecret = !empty($provider['client_secret']);
         </div>
       </div>
 
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 flex-wrap">
         <button type="submit" class="btn btn-primary">
           <i class="ph-duotone ph-floppy-disk me-1"></i>
           <?= __('security_authentication.save_provider') ?>
@@ -219,10 +219,73 @@ $hasSecret = !empty($provider['client_secret']);
         </a>
       </div>
     </form>
+
+    <?php if (can('security_authentication.providers_test') && !empty($provider['client_id']) && !empty($provider['client_secret'])): ?>
+    <div class="card mt-3 border-info-subtle">
+      <div class="card-header bg-info-subtle">
+        <h6 class="mb-0 text-info">
+          <i class="ph-duotone ph-test-tube me-2"></i>
+          <?= __('security_authentication.test') ?>: <?= htmlspecialchars($provider['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+        </h6>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted mb-3"><?= __('security_authentication.provider_test_oauth_info') ?></p>
+        <form action="<?= BASE_URL ?>/security/authentication/providers/test/<?= (int)($provider['id'] ?? 0) ?>" method="POST"
+              id="formTestProvider">
+          <?= \Core\CSRF::field() ?>
+          <button type="submit" class="btn btn-info btn-sm" id="btnTestProvider">
+            <i class="ph-duotone ph-arrow-square-out me-1"></i>
+            <?= __('security_authentication.provider_test_start') ?>
+          </button>
+        </form>
+      </div>
+    </div>
+    <?php endif; ?>
   </div>
 
   <!-- Panel lateral -->
   <div class="col-lg-4">
+
+    <!-- Estado del proveedor -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6 class="mb-0">
+          <i class="ph-duotone ph-activity me-2 text-secondary"></i>
+          <?= __('security_authentication.status_card') ?>
+        </h6>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm table-borderless mb-0 small">
+          <tbody>
+            <tr>
+              <td class="text-muted ps-3 py-2" style="width:55%"><?= __('security_authentication.is_enabled') ?></td>
+              <td class="py-2">
+                <?php if ($provider['is_enabled'] ?? 0): ?>
+                  <span class="badge bg-success"><?= __('common.enabled') ?></span>
+                <?php else: ?>
+                  <span class="badge bg-secondary"><?= __('common.disabled') ?></span>
+                <?php endif; ?>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-3 py-2"><?= __('security_authentication.is_verified') ?></td>
+              <td class="py-2">
+                <?php if ($provider['is_verified'] ?? 0): ?>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    <i class="ph-duotone ph-seal-check me-1"></i><?= __('security_authentication.verified') ?>
+                  </span>
+                <?php else: ?>
+                  <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                    <?= __('security_authentication.not_verified') ?>
+                  </span>
+                <?php endif; ?>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card mb-3">
       <div class="card-header">
         <h6 class="mb-0">
@@ -368,6 +431,24 @@ document.addEventListener('DOMContentLoaded', function () {
       var isPassword = secretInput.type === 'password';
       secretInput.type = isPassword ? 'text' : 'password';
       iconSecret.className = isPassword ? 'ph-duotone ph-eye-slash' : 'ph-duotone ph-eye';
+    });
+  }
+
+  var formTest = document.getElementById('formTestProvider');
+  if (formTest) {
+    formTest.addEventListener('submit', function (e) {
+      e.preventDefault();
+      Swal.fire({
+        icon: 'info',
+        title: 'Prueba OAuth real',
+        html: 'Serás redirigido al proveedor para autenticarte.<br><br>Tras iniciar sesión, regresarás aquí con el resultado de la verificación.',
+        showCancelButton: true,
+        confirmButtonText: 'Continuar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#0dcaf0'
+      }).then(function (r) {
+        if (r.isConfirmed) formTest.submit();
+      });
     });
   }
 });

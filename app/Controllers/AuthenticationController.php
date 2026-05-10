@@ -19,16 +19,17 @@ class AuthenticationController extends Controller
     public function index(): void
     {
         Auth::requirePermission('security_authentication.view');
-        $authUser           = Auth::user();
-        $settings           = (new AuthenticationSettings())->get();
-        $providerModel      = new ExternalAuthProvider();
-        $providers          = $providerModel->all();
-        $providersReadyCount = $providerModel->countReady();
-        $roles              = (new Role())->getAll();
-        $errors             = Session::getFlash('errors', []);
-        $old                = Session::getFlash('old', []);
+        $authUser                = Auth::user();
+        $settings                = (new AuthenticationSettings())->get();
+        $providerModel           = new ExternalAuthProvider();
+        $providers               = $providerModel->all();
+        $providersReadyCount     = $providerModel->countReady();
+        $providersVerifiedCount  = $providerModel->countVerifiedAndReady();
+        $roles                   = (new Role())->getAll();
+        $errors                  = Session::getFlash('errors', []);
+        $old                     = Session::getFlash('old', []);
         $this->view('security.authentication.index',
-            compact('authUser', 'settings', 'providers', 'providersReadyCount', 'roles', 'errors', 'old'));
+            compact('authUser', 'settings', 'providers', 'providersReadyCount', 'providersVerifiedCount', 'roles', 'errors', 'old'));
     }
 
     public function updateSettings(): void
@@ -45,13 +46,13 @@ class AuthenticationController extends Controller
         }
 
         if ($externalEnabled) {
-            $readyCount = (new ExternalAuthProvider())->countReady();
-            if ($readyCount === 0) {
+            $verifiedCount = (new ExternalAuthProvider())->countVerifiedAndReady();
+            if ($verifiedCount === 0) {
                 try {
                     Audit::log([
                         'module'      => 'security_authentication',
                         'action'      => 'authentication_settings.update_failed',
-                        'description' => 'Intento de activar login externo sin proveedor externo configurado',
+                        'description' => 'Intento de activar login externo sin proveedor verificado activo',
                         'status'      => 'warning',
                     ]);
                 } catch (\Throwable) {}
@@ -215,21 +216,11 @@ class AuthenticationController extends Controller
         }
 
         $missing = [];
-        if (empty($provider['client_id'])) {
-            $missing[] = 'Client ID';
-        }
-        if (empty($provider['client_secret'])) {
-            $missing[] = 'Client Secret';
-        }
-        if (empty($provider['redirect_uri'])) {
-            $missing[] = 'Redirect URI';
-        }
-        if (empty($provider['authorization_url'])) {
-            $missing[] = 'Authorization URL';
-        }
-        if (empty($provider['token_url'])) {
-            $missing[] = 'Token URL';
-        }
+        if (empty($provider['client_id']))        $missing[] = 'Client ID';
+        if (empty($provider['client_secret']))     $missing[] = 'Client Secret';
+        if (empty($provider['redirect_uri']))      $missing[] = 'Redirect URI';
+        if (empty($provider['authorization_url'])) $missing[] = 'Authorization URL';
+        if (empty($provider['token_url']))         $missing[] = 'Token URL';
 
         if (!empty($missing)) {
             $msg = __('security_authentication.test_missing_fields') . ': ' . implode(', ', $missing);
@@ -239,57 +230,44 @@ class AuthenticationController extends Controller
                 'action'      => 'external_provider.test_failed',
                 'entity'      => 'external_auth_provider',
                 'entity_id'   => $id,
-                'description' => "Prueba fallida para {$provider['name']}: {$msg}",
+                'description' => "Prueba fallida para {$provider['name']}: configuración incompleta",
                 'status'      => 'warning',
             ]);
             Session::flash('error', __('security_authentication.provider_test_failed') . ' — ' . $msg);
             Redirect::to('/security/authentication');
         }
 
-        $authUrl = $provider['authorization_url'] ?? '';
-        if (!empty($provider['tenant_id'])) {
-            $authUrl = str_replace('{tenant_id}', $provider['tenant_id'], $authUrl);
+        $secret = $model->decryptSecret($provider['client_secret'] ?? '');
+        if (empty($secret)) {
+            $msg = __('security_authentication.test_secret_decrypt_failed');
+            $model->updateTestResult($id, false, $msg);
+            Session::flash('error', __('security_authentication.provider_test_failed') . ' — ' . $msg);
+            Redirect::to('/security/authentication');
         }
 
-        $reachable = false;
-        if (!empty($authUrl)) {
-            $ch = curl_init($authUrl);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_NOBODY         => true,
-                CURLOPT_TIMEOUT        => 5,
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-            ]);
-            curl_exec($ch);
-            $httpCode  = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $reachable = ($httpCode >= 200 && $httpCode < 500);
-            curl_close($ch);
-        }
+        $slug    = $provider['slug'] ?? '';
+        $service = new ExternalAuthService();
+        $oauth   = $service->buildProvider($provider, $secret);
+        $state   = bin2hex(random_bytes(32));
 
-        $success = $reachable;
-        $message = $success
-            ? __('security_authentication.test_config_ok')
-            : __('security_authentication.test_unreachable');
+        Session::set("oauth_state_{$slug}", $state);
+        Session::set("oauth_action_{$slug}", 'admin_test');
+        Session::set('oauth_admin_test_id', $id);
 
-        $model->updateTestResult($id, $success, $message);
+        $scopes  = $provider['scopes'] ? explode(' ', $provider['scopes']) : [];
+        $authUrl = $oauth->getAuthorizationUrl(['state' => $state, 'scope' => $scopes]);
 
-        $action = $success ? 'external_provider.test_success' : 'external_provider.test_failed';
         Audit::log([
             'module'      => 'security_authentication',
-            'action'      => $action,
+            'action'      => 'external_provider.test_started',
             'entity'      => 'external_auth_provider',
             'entity_id'   => $id,
-            'description' => "Prueba de proveedor {$provider['name']}: {$message}",
-            'status'      => $success ? 'success' : 'warning',
+            'description' => "Prueba OAuth iniciada para {$provider['name']}",
+            'status'      => 'pending',
+            'user_id'     => Auth::id(),
         ]);
 
-        if ($success) {
-            Session::flash('success', __('security_authentication.provider_test_success'));
-        } else {
-            Session::flash('error', __('security_authentication.provider_test_failed') . ' — ' . $message);
-        }
-
-        Redirect::to('/security/authentication');
+        header('Location: ' . $authUrl);
+        exit;
     }
 }

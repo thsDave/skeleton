@@ -1,12 +1,13 @@
 <?php
 $pageTitle  = __('security_authentication.title');
 $activeMenu = 'security_authentication';
-$settings            = $settings            ?? ['local_login_enabled'=>1,'external_login_enabled'=>0,'allow_auto_user_creation'=>0,'default_role_id'=>null,'require_existing_user'=>1,'allow_account_linking'=>1];
-$providers           = $providers           ?? [];
-$providersReadyCount = $providersReadyCount ?? 0;
-$roles               = $roles               ?? [];
-$errors              = $errors              ?? [];
-$old                 = $old                 ?? [];
+$settings                = $settings                ?? ['local_login_enabled'=>1,'external_login_enabled'=>0,'allow_auto_user_creation'=>0,'default_role_id'=>null,'require_existing_user'=>1,'allow_account_linking'=>1];
+$providers               = $providers               ?? [];
+$providersReadyCount     = $providersReadyCount     ?? 0;
+$providersVerifiedCount  = $providersVerifiedCount  ?? 0;
+$roles                   = $roles                   ?? [];
+$errors                  = $errors                  ?? [];
+$old                     = $old                     ?? [];
 
 require dirname(dirname(__DIR__)) . '/layouts/main.php';
 ?>
@@ -37,7 +38,7 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
 
     <?php if (can('security_authentication.edit')): ?>
     <form id="formSettings" action="<?= BASE_URL ?>/security/authentication/settings/update" method="POST" novalidate
-      data-providers-ready="<?= (int) $providersReadyCount ?>"
+      data-providers-ready="<?= (int) $providersVerifiedCount ?>"
       data-msg-external-required="<?= htmlspecialchars(__('security_authentication.external_provider_required'), ENT_QUOTES, 'UTF-8') ?>"
       data-msg-no-methods="<?= htmlspecialchars(__('security_authentication.error_no_methods'), ENT_QUOTES, 'UTF-8') ?>">
       <?= \Core\CSRF::field() ?>
@@ -248,6 +249,14 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   </div>
 </div>
 
+<!-- ══ Alerta si no hay proveedor verificado ══════════════════════════ -->
+<?php if (($settings['external_login_enabled'] ?? 0) && $providersVerifiedCount === 0): ?>
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+  <i class="ph-duotone ph-warning fs-5 flex-shrink-0"></i>
+  <div><?= __('security_authentication.external_provider_required') ?></div>
+</div>
+<?php endif; ?>
+
 <!-- ══ Proveedores externos ═══════════════════════════════════════════ -->
 <div class="card">
   <div class="card-header d-flex align-items-center justify-content-between">
@@ -314,13 +323,20 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
                 …/auth/external/<?= htmlspecialchars($provSlug, ENT_QUOTES, 'UTF-8') ?>/callback
               </code>
             </td>
-            <td class="small text-muted">
+            <td class="small">
               <?php if (!empty($prov['last_tested_at'])): ?>
-                <span class="badge bg-<?= ($prov['last_test_status'] ?? '') === 'success' ? 'success' : 'danger' ?>-subtle
-                      text-<?= ($prov['last_test_status'] ?? '') === 'success' ? 'success' : 'danger' ?>">
-                  <?= ($prov['last_test_status'] ?? '') === 'success' ? '✓' : '✗' ?>
-                </span>
-                <?= htmlspecialchars(date('d/m/Y H:i', strtotime($prov['last_tested_at'])), ENT_QUOTES, 'UTF-8') ?>
+                <?php $testOk = ($prov['last_test_status'] ?? '') === 'success'; ?>
+                <div class="d-flex align-items-center gap-1 mb-1">
+                  <span class="badge bg-<?= $testOk ? 'success' : 'danger' ?>-subtle text-<?= $testOk ? 'success' : 'danger' ?>">
+                    <?= $testOk ? '✓' : '✗' ?>
+                  </span>
+                  <span class="text-muted"><?= htmlspecialchars(date('d/m/Y H:i', strtotime($prov['last_tested_at'])), ENT_QUOTES, 'UTF-8') ?></span>
+                </div>
+                <?php if (!empty($prov['last_test_message'])): ?>
+                <div class="text-muted" style="font-size:.75rem;max-width:180px;white-space:normal;">
+                  <?= htmlspecialchars($prov['last_test_message'], ENT_QUOTES, 'UTF-8') ?>
+                </div>
+                <?php endif; ?>
               <?php else: ?>
                 <span class="text-muted">—</span>
               <?php endif; ?>

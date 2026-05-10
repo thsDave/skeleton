@@ -110,9 +110,30 @@ class ExternalAuthController extends Controller
         $action = Session::get("oauth_action_{$provider}", 'login');
         Session::forget("oauth_action_{$provider}");
 
+        $isAdminTest = ($action === 'admin_test');
+
         if (isset($_GET['error'])) {
             $errDesc = $_GET['error_description'] ?? $_GET['error'];
             Logger::error("ExternalAuthController::callback — provider error [{$provider}]: {$errDesc}");
+            if ($isAdminTest) {
+                $testId = Session::get('oauth_admin_test_id');
+                Session::forget('oauth_admin_test_id');
+                if ($testId) {
+                    (new ExternalAuthProvider())->updateTestResult(
+                        (int) $testId, false,
+                        __('security_authentication.test_provider_denied')
+                    );
+                }
+                Audit::log([
+                    'module'      => 'security_authentication',
+                    'action'      => 'external_provider.test_failed',
+                    'description' => "Proveedor {$provider} rechazó la prueba OAuth",
+                    'status'      => 'warning',
+                    'user_id'     => Auth::check() ? Auth::id() : null,
+                ]);
+                Session::flash('error', __('security_authentication.provider_test_failed') . ' — ' . __('security_authentication.test_provider_denied'));
+                Redirect::to('/security/authentication');
+            }
             Audit::log([
                 'module'      => 'auth',
                 'action'      => 'external_login.denied',
@@ -127,26 +148,46 @@ class ExternalAuthController extends Controller
         $code = $_GET['code'] ?? '';
         if (empty($code)) {
             Logger::error("ExternalAuthController::callback — no code from {$provider}");
+            if ($isAdminTest) {
+                Session::forget('oauth_admin_test_id');
+                Session::flash('error', __('security_authentication.provider_test_failed'));
+                Redirect::to('/security/authentication');
+            }
             Session::flash('error', __('auth.external_login_failed'));
             Redirect::to('/login');
         }
 
-        $settings = (new AuthenticationSettings())->get();
-        if (!$settings['external_login_enabled']) {
-            Audit::log([
-                'module'      => 'auth',
-                'action'      => 'external_login.provider_disabled',
-                'description' => "Login externo deshabilitado, proveedor: {$provider}",
-                'status'      => 'denied',
-                'user_id'     => null,
-            ]);
-            Session::flash('error', __('auth.external_provider_disabled'));
-            Redirect::to('/login');
+        // Admin test bypasses external_login_enabled and is_enabled checks
+        if ($isAdminTest) {
+            if (!Auth::check()) {
+                Session::forget('oauth_admin_test_id');
+                Session::flash('error', __('auth.external_login_failed'));
+                Redirect::to('/login');
+            }
+            $settings = (new AuthenticationSettings())->get();
+        } else {
+            $settings = (new AuthenticationSettings())->get();
+            if (!$settings['external_login_enabled']) {
+                Audit::log([
+                    'module'      => 'auth',
+                    'action'      => 'external_login.provider_disabled',
+                    'description' => "Login externo deshabilitado, proveedor: {$provider}",
+                    'status'      => 'denied',
+                    'user_id'     => null,
+                ]);
+                Session::flash('error', __('auth.external_provider_disabled'));
+                Redirect::to('/login');
+            }
         }
 
         $providerModel = new ExternalAuthProvider();
         $providerRow   = $providerModel->findBySlug($provider);
-        if (!$providerRow || !$providerRow['is_enabled']) {
+        if (!$providerRow || (!$isAdminTest && !$providerRow['is_enabled'])) {
+            if ($isAdminTest) {
+                Session::forget('oauth_admin_test_id');
+                Session::flash('error', __('security_authentication.provider_not_found'));
+                Redirect::to('/security/authentication');
+            }
             Audit::log([
                 'module'      => 'auth',
                 'action'      => 'external_login.provider_disabled',
@@ -214,6 +255,11 @@ class ExternalAuthController extends Controller
             Redirect::to('/login');
         }
 
+        if ($isAdminTest) {
+            $this->handleAdminTest($provider, $providerRow, $providerUserId, $providerEmail);
+            return;
+        }
+
         if ($action === 'link') {
             $this->handleLinking(
                 $settings, $providerRow, $providerUserId,
@@ -226,6 +272,44 @@ class ExternalAuthController extends Controller
             $settings, $providerRow, $providerUserId,
             $providerEmail, $providerName, $avatarUrl, $provider
         );
+    }
+
+    private function handleAdminTest(
+        string $provider,
+        array  $providerRow,
+        string $providerUserId,
+        string $providerEmail
+    ): void {
+        $adminUserId = Auth::id();
+        $testId      = (int) (Session::get('oauth_admin_test_id') ?? $providerRow['id']);
+        Session::forget('oauth_admin_test_id');
+
+        $providerModel = new ExternalAuthProvider();
+        $msg = __('security_authentication.test_oauth_success_msg') . ' — ' . $providerEmail;
+        $providerModel->markVerified($testId);
+        $providerModel->updateTestResult($testId, true, $msg);
+
+        Audit::log([
+            'module'      => 'security_authentication',
+            'action'      => 'external_provider.test_success',
+            'entity'      => 'external_auth_provider',
+            'entity_id'   => $testId,
+            'description' => "Prueba OAuth real exitosa para {$providerRow['name']}",
+            'status'      => 'success',
+            'user_id'     => $adminUserId,
+        ]);
+        Audit::log([
+            'module'      => 'security_authentication',
+            'action'      => 'external_provider.verified',
+            'entity'      => 'external_auth_provider',
+            'entity_id'   => $testId,
+            'description' => "Proveedor {$providerRow['name']} verificado mediante flujo OAuth real",
+            'status'      => 'success',
+            'user_id'     => $adminUserId,
+        ]);
+
+        Session::flash('success', __('security_authentication.provider_test_success'));
+        Redirect::to('/security/authentication');
     }
 
     private function handleLogin(

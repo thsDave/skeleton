@@ -758,6 +758,101 @@ Agrega columnas a `tbl_users` (`two_factor_enabled`, `two_factor_method`, `two_f
 
 ---
 
+## Inicio de sesión externo (OAuth 2.0)
+
+El módulo **Seguridad > Autenticación** permite configurar proveedores OAuth 2.0 que aparecen como botones en la pantalla de login.
+
+### Proveedores soportados
+
+| Proveedor | Slug | Requiere |
+|---|---|---|
+| Google | `google` | Client ID, Client Secret, Redirect URI |
+| Microsoft 365 | `microsoft` | Client ID, Client Secret, Tenant ID, Redirect URI |
+| GitHub | `github` | Client ID, Client Secret, Redirect URI |
+
+> **Google usa OAuth 2.0 tradicional, no Firebase Authentication.** Se configura con Client ID y Client Secret desde [Google Cloud Console](https://console.cloud.google.com/apis/credentials). No se usan ni se necesitan los campos de Firebase SDK (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`, `measurementId`). Si en el futuro se requiere Firebase Authentication, debe implementarse como una integración distinta basada en verificación de ID Token en backend.
+
+### Cómo activar proveedores externos
+
+1. Ir a **Seguridad → Autenticación → sección Proveedores externos**.
+2. Hacer clic en **Configurar** en el proveedor deseado.
+3. Completar: Client ID, Client Secret, Redirect URI (copiada desde el campo superior).
+4. Guardar el proveedor.
+5. Hacer clic en **Probar** (o **Iniciar prueba OAuth** desde la página de edición).
+6. Serás redirigido al proveedor para autenticarte.
+7. Tras autenticarte exitosamente, el sistema marca `is_verified = 1` y `last_test_status = success`.
+8. Vuelve a **Seguridad → Autenticación → Métodos de inicio de sesión** y activa **Proveedores externos (OAuth)**.
+9. Solo se puede activar si existe al menos un proveedor `is_enabled = 1` Y `is_verified = 1`.
+
+### Redirect URI requerida
+
+```
+{APP_URL}/auth/external/{slug}/callback
+```
+
+Ejemplos:
+- `https://tudominio.com/auth/external/google/callback`
+- `https://tudominio.com/auth/external/microsoft/callback`
+- `https://tudominio.com/auth/external/github/callback`
+
+Registra exactamente esta URL como "Redirect URI autorizada" en la consola del proveedor.
+
+### Qué aparece en la pantalla de login
+
+Solo aparecen botones de proveedores que cumplan simultáneamente:
+- `is_enabled = 1`
+- `is_verified = 1`
+- `client_id`, `client_secret` y `redirect_uri` configurados
+
+| Condición | Resultado |
+|---|---|
+| Solo login local activo | Formulario email/contraseña |
+| Login local + externo activos | Formulario + separador "o" + botones de proveedores |
+| Solo externo activo | Solo botones de proveedores |
+| Externo activo pero sin proveedores verificados | Mensaje de error, sin botones |
+
+### Verificación de proveedores
+
+`is_verified = 1` **solo** se establece cuando:
+1. **Prueba OAuth real**: el admin usa el botón "Probar" y completa el flujo OAuth exitosamente.
+2. **Login externo real**: un usuario se autentica exitosamente con el proveedor.
+3. **Vinculación de cuenta**: un usuario vincula su cuenta con el proveedor exitosamente.
+
+El botón "Probar" inicia un flujo OAuth real — no es una simple prueba de conectividad. Esto garantiza que `is_verified = 1` signifique que las credenciales funcionan correctamente.
+
+### Precaución antes de desactivar login local
+
+No desactives el login local si no has:
+1. Probado el login externo en la misma sesión.
+2. Vinculado tu cuenta de administrador al proveedor externo desde **Mi Cuenta**.
+
+Si deshabilitas el login local y el proveedor externo falla, perderás acceso al sistema.
+
+### Rutas OAuth
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/auth/external/{slug}/redirect` | Inicia flujo OAuth (genera state, redirige al proveedor) |
+| GET | `/auth/external/{slug}/callback` | Callback del proveedor (valida state, obtiene token, completa login) |
+| POST | `/security/authentication/providers/test/{id}` | Inicia prueba OAuth real para el admin |
+
+### Variables .env relevantes
+
+```env
+APP_URL=https://tudominio.com   # Se usa para construir la Redirect URI
+APP_KEY=...                     # Clave AES-256 para cifrar client_secret
+```
+
+### Migración SQL (Autenticación externa)
+
+```
+database/014_add_authentication_methods.sql
+```
+
+Crea: `tbl_authentication_settings`, `tbl_external_auth_providers`, `tbl_user_external_accounts`. Inserta Google, Microsoft 365 y GitHub con configuración inicial.
+
+---
+
 ## Apariencia del sistema
 
 Módulo administrativo en `/appearance` (Administración > Apariencia) que permite configurar visualmente el sistema sin tocar código.
