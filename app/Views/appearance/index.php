@@ -41,23 +41,24 @@ $loginBgUrl = !empty($appearance['login_background_path'])
   </div>
 </div>
 
-<?php if (!empty($errors)): ?>
-<div class="alert alert-danger">
-  <ul class="mb-0 ps-3">
-    <?php foreach ($errors as $msg): ?>
-      <li><?= htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') ?></li>
-    <?php endforeach; ?>
-  </ul>
-</div>
-<?php endif; ?>
+<div class="row g-3">
 
-<form action="<?= $base ?>/appearance/update" method="POST" enctype="multipart/form-data" novalidate>
-  <?= \Core\CSRF::field() ?>
+  <?php if (!empty($errors)): ?>
+  <div class="col-12">
+    <div class="alert alert-danger">
+      <ul class="mb-0 ps-3">
+        <?php foreach ($errors as $msg): ?>
+          <li><?= htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') ?></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+  </div>
+  <?php endif; ?>
 
-  <div class="row g-3">
-
-    <!-- Columna principal -->
-    <div class="col-lg-8">
+  <!-- Columna principal -->
+  <div class="col-lg-8">
+    <form action="<?= $base ?>/appearance/update" method="POST" enctype="multipart/form-data" novalidate>
+      <?= \Core\CSRF::field() ?>
 
       <!-- Identidad visual -->
       <div class="card mb-3">
@@ -289,10 +290,11 @@ $loginBgUrl = !empty($appearance['login_background_path'])
       </div>
       <?php endif; ?>
 
-    </div>
+    </form>
+  </div>
 
-    <!-- Panel lateral: Restablecer -->
-    <div class="col-lg-4">
+  <!-- Panel lateral: Restablecer -->
+  <div class="col-lg-4">
 
       <?php if (can('appearance.reset')): ?>
       <div class="card mb-3">
@@ -349,9 +351,8 @@ $loginBgUrl = !empty($appearance['login_background_path'])
         </div>
       </div>
 
-    </div>
   </div>
-</form>
+</div>
 
 <?php if (can('appearance.reset')): ?>
 <form id="frmResetLogo" action="<?= $base ?>/appearance/reset-logo" method="POST">
