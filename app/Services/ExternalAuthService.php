@@ -31,6 +31,7 @@ class ExternalAuthService
             'urlAccessToken'          => $tokenUrl,
             'urlResourceOwnerDetails' => $providerRow['userinfo_url'] ?? '',
             'responseResourceOwnerId' => self::ID_FIELDS[$providerRow['slug']] ?? 'id',
+            'scopeSeparator'          => ' ',
         ]);
     }
 
@@ -111,6 +112,13 @@ class ExternalAuthService
             'github' => $userInfo['avatar_url'] ?? null,
             default  => null,
         };
+    }
+
+    public function normalizeScopes(string $raw): array
+    {
+        $normalized = str_replace([',', "\n", "\r", "\t"], ' ', $raw);
+        $tokens = preg_split('/\s+/', trim($normalized), -1, PREG_SPLIT_NO_EMPTY);
+        return $tokens ?: [];
     }
 
     public function generateRedirectUri(string $baseUrl, string $slug): string

@@ -65,7 +65,7 @@ class ExternalAuthController extends Controller
         Session::set("oauth_state_{$provider}", $state);
         Session::set("oauth_action_{$provider}", $action);
 
-        $scopes = $providerRow['scopes'] ? explode(' ', $providerRow['scopes']) : [];
+        $scopes = $providerRow['scopes'] ? $service->normalizeScopes($providerRow['scopes']) : [];
 
         $authUrl = $oauthProv->getAuthorizationUrl([
             'state' => $state,

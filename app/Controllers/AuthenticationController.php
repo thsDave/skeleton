@@ -254,7 +254,7 @@ class AuthenticationController extends Controller
         Session::set("oauth_action_{$slug}", 'admin_test');
         Session::set('oauth_admin_test_id', $id);
 
-        $scopes  = $provider['scopes'] ? explode(' ', $provider['scopes']) : [];
+        $scopes  = $provider['scopes'] ? $service->normalizeScopes($provider['scopes']) : [];
         $authUrl = $oauth->getAuthorizationUrl(['state' => $state, 'scope' => $scopes]);
 
         Audit::log([
