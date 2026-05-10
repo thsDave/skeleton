@@ -986,4 +986,17 @@ return [
     'permissions.security_authentication.providers_edit'   => 'Edit OAuth Providers',
     'permissions.security_authentication.providers_delete' => 'Delete OAuth Providers',
     'permissions.security_authentication.providers_test'   => 'Test OAuth Providers',
+
+    // ── File uploads (UploadService) ─────────────────────────────────────────────
+    'upload.no_file'                => 'No file was received.',
+    'upload.error'                  => 'An error occurred while uploading the file.',
+    'upload.max_size_exceeded'      => 'The file exceeds the maximum allowed size.',
+    'upload.invalid_extension'      => 'This file type is not allowed.',
+    'upload.forbidden_extension'    => 'This file type is forbidden for security reasons.',
+    'upload.invalid_mime'           => 'This file type is not allowed.',
+    'upload.invalid_image'          => 'The file does not appear to be a valid image.',
+    'upload.save_failed'            => 'Could not save the file. Please contact the administrator.',
+    'upload.directory_not_writable' => 'The destination folder is not writable.',
+    'upload.success'                => 'File uploaded successfully.',
+    'upload.file_removed'           => 'Previous file removed.',
 ];

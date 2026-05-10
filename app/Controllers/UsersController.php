@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Status;
 use App\Models\LoginAttempt;
+use App\Services\UploadService;
 
 class UsersController extends Controller
 {
@@ -102,10 +103,11 @@ class UsersController extends Controller
         }
 
         // Procesar imagen
+        $uploadSvc     = new UploadService();
         $uploadedImage = null;
         if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $result = $this->handleImageUpload($_FILES['profile_image'], 0);
-            if ($result['error']) {
+            $result = $uploadSvc->upload($_FILES['profile_image'], 'profile_images', ['prefix' => 'avatar_new_']);
+            if (!$result['success']) {
                 Redirect::withErrors('/users/create', ['profile_image' => $result['error']]);
             }
             $uploadedImage = $result['filename'];
@@ -126,11 +128,9 @@ class UsersController extends Controller
         if ($newId) {
             // Renombrar imagen con el ID real si se subió
             if ($uploadedImage) {
-                $config  = require dirname(__DIR__, 2) . '/config/app.php';
-                $newName = 'avatar_' . $newId . '_' . pathinfo($uploadedImage, PATHINFO_FILENAME) . '.' . pathinfo($uploadedImage, PATHINFO_EXTENSION);
-                $oldPath = $config['upload_profile_path'] . $uploadedImage;
-                $newPath = $config['upload_profile_path'] . $newName;
-                if (rename($oldPath, $newPath)) {
+                $diskPath = $uploadSvc->getDiskPath('profile_images');
+                $newName  = 'avatar_' . $newId . '_' . pathinfo($uploadedImage, PATHINFO_FILENAME) . '.' . pathinfo($uploadedImage, PATHINFO_EXTENSION);
+                if (rename($diskPath . $uploadedImage, $diskPath . $newName)) {
                     $this->userModel->updateProfileImage($newId, $newName);
                 }
             }
@@ -234,12 +234,17 @@ class UsersController extends Controller
         // Procesar imagen
         $newImage = null;
         if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $result = $this->handleImageUpload($_FILES['profile_image'], $userId);
-            if ($result['error']) {
+            $uploadSvc = new UploadService();
+            $result    = $uploadSvc->upload(
+                $_FILES['profile_image'],
+                'profile_images',
+                ['prefix' => 'avatar_' . $userId . '_']
+            );
+            if (!$result['success']) {
                 Redirect::withErrors("/users/edit/{$userId}", ['profile_image' => $result['error']]);
             }
             $newImage = $result['filename'];
-            $this->deleteOldImage($user['profile_image'] ?? null);
+            $uploadSvc->delete($user['profile_image'] ?? null, 'profile_images');
         }
 
         $data = [
@@ -380,62 +385,4 @@ class UsersController extends Controller
         exit;
     }
 
-    // ─── Helpers de imagen ────────────────────────────────────────────────────
-
-    private function handleImageUpload(array $file, int $userId): array
-    {
-        $config = require dirname(__DIR__, 2) . '/config/app.php';
-
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return ['error' => 'Error al subir el archivo.', 'filename' => null];
-        }
-        if ($file['size'] > $config['upload_max_size']) {
-            return ['error' => 'La imagen no debe superar 2 MB.', 'filename' => null];
-        }
-
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime  = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-
-        if (!in_array($mime, $config['upload_allowed_mime'], true)) {
-            return ['error' => 'Solo se permiten imágenes JPG, PNG o WEBP.', 'filename' => null];
-        }
-
-        $ext = match($mime) {
-            'image/jpeg' => 'jpg',
-            'image/png'  => 'png',
-            'image/webp' => 'webp',
-            default      => null,
-        };
-
-        if (!$ext) {
-            return ['error' => 'Formato de imagen no permitido.', 'filename' => null];
-        }
-
-        $prefix   = $userId > 0 ? "avatar_{$userId}_" : 'avatar_new_';
-        $filename = $prefix . bin2hex(random_bytes(8)) . '.' . $ext;
-        $destPath = $config['upload_profile_path'] . $filename;
-
-        if (!is_dir($config['upload_profile_path'])) {
-            mkdir($config['upload_profile_path'], 0755, true);
-        }
-
-        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            return ['error' => 'No se pudo guardar la imagen.', 'filename' => null];
-        }
-
-        return ['error' => null, 'filename' => $filename];
-    }
-
-    private function deleteOldImage(?string $filename): void
-    {
-        if (!$filename) {
-            return;
-        }
-        $config = require dirname(__DIR__, 2) . '/config/app.php';
-        $path   = $config['upload_profile_path'] . $filename;
-        if (file_exists($path)) {
-            @unlink($path);
-        }
-    }
 }

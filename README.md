@@ -758,6 +758,53 @@ Agrega columnas a `tbl_users` (`two_factor_enabled`, `two_factor_method`, `two_f
 
 ---
 
+## UploadService
+
+Servicio centralizado para la subida de archivos (`app/Services/UploadService.php`). Toda la lógica de validación, naming y almacenamiento de archivos pasa por este servicio; los controladores solo llaman `upload()` o `delete()`.
+
+### Perfiles disponibles (config/uploads.php)
+
+| Perfil | Ruta | Tamaño máx. | Extensiones |
+|---|---|---|---|
+| `profile_images` | `public/uploads/profiles/` | 2 MB | jpg, jpeg, png, webp |
+| `user_manuals` | `public/uploads/manuals/` | 10 MB | pdf, doc, docx |
+
+### Módulos que lo usan
+
+- **Imagen de perfil** — `ProfileController` y `UsersController`
+- **Manuales** — `SystemInformationController`
+
+### Extensiones siempre bloqueadas
+
+`php`, `phtml`, `phar`, `php3`–`php8`, `exe`, `bat`, `cmd`, `sh`, `pl`, `cgi`, `js`, `html`, `htm`, `svg`
+
+La carpeta `public/uploads/` incluye un `.htaccess` que bloquea la ejecución de scripts y deshabilita el listado de directorio.
+
+### Uso en módulos futuros
+
+```php
+use App\Services\UploadService;
+
+$svc    = new UploadService();
+$result = $svc->upload($_FILES['campo'], 'profile_images', ['prefix' => 'avatar_1_']);
+
+if (!$result['success']) {
+    // $result['error'] contiene el mensaje amigable para el usuario
+}
+
+// $result['filename']      — basename del archivo guardado
+// $result['original_name'] — nombre original del cliente
+// $result['mime']          — MIME real detectado
+// $result['size']          — tamaño en bytes
+
+// Para eliminar un archivo anterior:
+$svc->delete('avatar_1_abc123.jpg', 'profile_images');
+```
+
+Para agregar un nuevo perfil, define una entrada en `config/uploads.php` siguiendo el mismo esquema.
+
+---
+
 ## Notas de seguridad para producción
 
 - En `.env` usa `APP_DEBUG=false` para no exponer trazas de error al usuario.

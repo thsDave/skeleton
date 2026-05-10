@@ -987,4 +987,17 @@ return [
     'dashboard.audit_status'             => 'Estado',
     // Generic
     'dashboard.na'                       => 'No disponible',
+
+    // ── Subida de archivos (UploadService) ─────────────────────────────────────
+    'upload.no_file'                => 'No se recibió ningún archivo.',
+    'upload.error'                  => 'Error al subir el archivo.',
+    'upload.max_size_exceeded'      => 'El archivo supera el tamaño máximo permitido.',
+    'upload.invalid_extension'      => 'El tipo de archivo no está permitido.',
+    'upload.forbidden_extension'    => 'Este tipo de archivo está prohibido por razones de seguridad.',
+    'upload.invalid_mime'           => 'El tipo de archivo no está permitido.',
+    'upload.invalid_image'          => 'El archivo no parece ser una imagen válida.',
+    'upload.save_failed'            => 'No se pudo guardar el archivo. Contacta al administrador.',
+    'upload.directory_not_writable' => 'La carpeta de destino no tiene permisos de escritura.',
+    'upload.success'                => 'Archivo subido correctamente.',
+    'upload.file_removed'           => 'Archivo anterior eliminado.',
 ];

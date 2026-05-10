@@ -12,6 +12,7 @@ use Core\Logger;
 use App\Models\SystemSetting;
 use App\Models\UserManual;
 use App\Models\Status;
+use App\Services\UploadService;
 
 class SystemInformationController extends Controller
 {
@@ -148,8 +149,12 @@ class SystemInformationController extends Controller
                 compact('title', 'description'));
         }
 
-        $result = $this->handleFileUpload($_FILES['manual_file']);
-        if ($result['error']) {
+        $result = (new UploadService())->upload(
+            $_FILES['manual_file'],
+            'user_manuals',
+            ['prefix' => 'manual_' . Auth::id() . '_']
+        );
+        if (!$result['success']) {
             Redirect::withErrors('/manuals/create', ['manual_file' => $result['error']],
                 compact('title', 'description'));
         }
@@ -159,7 +164,7 @@ class SystemInformationController extends Controller
                 'title'       => $title,
                 'description' => $description ?: null,
                 'file_name'   => $result['original_name'],
-                'file_path'   => $result['stored_name'],
+                'file_path'   => $result['filename'],
                 'file_type'   => $result['mime'],
                 'file_size'   => $result['size'],
                 'uploaded_by' => Auth::id(),
@@ -262,56 +267,4 @@ class SystemInformationController extends Controller
         exit;
     }
 
-    // ─── Helper de carga de archivos ─────────────────────────────────────────
-
-    private function handleFileUpload(array $file): array
-    {
-        $config = require dirname(__DIR__, 2) . '/config/app.php';
-
-        if ($file['error'] !== UPLOAD_ERR_OK) {
-            return ['error' => 'Error al subir el archivo.', 'stored_name' => null];
-        }
-        if ($file['size'] > $config['upload_manuals_max_size']) {
-            return ['error' => 'El archivo no debe superar 10 MB.', 'stored_name' => null];
-        }
-
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime  = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-
-        $allowed = $config['upload_manuals_mime'] ?? [];
-        if (!in_array($mime, $allowed, true)) {
-            return ['error' => 'Solo se permiten archivos PDF, DOC o DOCX.', 'stored_name' => null];
-        }
-
-        $ext = match($mime) {
-            'application/pdf'                                                        => 'pdf',
-            'application/msword'                                                     => 'doc',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'=> 'docx',
-            default => null,
-        };
-
-        if (!$ext) {
-            return ['error' => 'Formato de archivo no permitido.', 'stored_name' => null];
-        }
-
-        $storedName = 'manual_' . Auth::id() . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
-        $destPath   = $config['upload_manuals_path'] . $storedName;
-
-        if (!is_dir($config['upload_manuals_path'])) {
-            mkdir($config['upload_manuals_path'], 0755, true);
-        }
-
-        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            return ['error' => 'No se pudo guardar el archivo.', 'stored_name' => null];
-        }
-
-        return [
-            'error'         => null,
-            'stored_name'   => $storedName,
-            'original_name' => basename($file['name']),
-            'mime'          => $mime,
-            'size'          => $file['size'],
-        ];
-    }
 }

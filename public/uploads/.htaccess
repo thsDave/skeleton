@@ -1,0 +1,15 @@
+# Deshabilitar listado de directorio y ejecución de CGI
+Options -Indexes -ExecCGI
+
+# Bloquear acceso directo a archivos ejecutables o peligrosos
+<FilesMatch "\.(php|phtml|phar|php3|php4|php5|php7|php8|pl|cgi|sh|bat|exe|cmd)$">
+    Require all denied
+</FilesMatch>
+
+# Intentar deshabilitar motor PHP para instalaciones con mod_php
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
