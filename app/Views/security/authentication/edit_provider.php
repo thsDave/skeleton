@@ -304,8 +304,6 @@ $hasSecret = !empty($provider['client_secret']);
   </div>
 </div>
 
-<?php require dirname(dirname(__DIR__)) . '/layouts/footer.php'; ?>
-
 <?php $extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -319,7 +317,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(onSuccess).catch(onError);
     } else {
-      // Fallback para entornos HTTP (desarrollo local)
       var ta = document.createElement('textarea');
       ta.value = text;
       ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
@@ -334,7 +331,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   if (btnCopy && uriInput) {
-    btnCopy.addEventListener('click', function () {
+    btnCopy.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       var uri = uriInput.value.trim();
       if (!uri) { return; }
       copyToClipboard(uri,
@@ -375,3 +374,5 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 JS;
 ?>
+
+<?php require dirname(dirname(__DIR__)) . '/layouts/footer.php'; ?>
