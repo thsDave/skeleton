@@ -798,8 +798,16 @@ return [
     'security_authentication.info_warning'                => 'No desactives el login local si no tienes un proveedor externo configurado.',
     'security_authentication.info_mfa'                    => 'El MFA sigue activo después del login externo si el usuario lo tiene habilitado.',
     'security_authentication.external_provider_required'    => 'Debes configurar, activar y verificar al menos un proveedor externo antes de habilitar el inicio de sesión externo. Usa el botón "Probar" para verificar un proveedor.',
-    'security_authentication.redirect_uri_copied'           => 'URI copiada correctamente.',
+    'security_authentication.redirect_uri_copied'            => 'URI copiada correctamente.',
     'security_authentication.redirect_uri_copy_failed'      => 'No se pudo copiar la URI. Cópiala manualmente.',
+    // Restricción por dominio institucional
+    'security_authentication.restrict_external_domains'          => 'Restringir por dominio institucional',
+    'security_authentication.restrict_external_domains_desc'     => 'Solo permite el acceso externo a correos de dominios institucionales autorizados.',
+    'security_authentication.allowed_external_domains'           => 'Dominios autorizados',
+    'security_authentication.allowed_external_domains_help'      => 'Si esta opción está activa, solo podrán iniciar sesión con proveedores externos las cuentas cuyo correo pertenezca a uno de los dominios autorizados. Un dominio por línea o separados por coma.',
+    'security_authentication.allowed_external_domains_placeholder' => 'cristosal.org',
+    'security_authentication.invalid_domain_list'                => 'Debes ingresar al menos un dominio autorizado válido. No uses @ ni URLs completas (ej: cristosal.org).',
+    'security_authentication.domain_restriction_updated'         => 'Restricción de dominio actualizada correctamente.',
     // Proveedores externos
     'security_authentication.external_providers'            => 'Proveedores externos',
     'security_authentication.provider'                      => 'Proveedor',

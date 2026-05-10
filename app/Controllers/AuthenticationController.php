@@ -61,13 +61,39 @@ class AuthenticationController extends Controller
             }
         }
 
+        // ── Domain restriction validation and normalization ──────────────────────
+        $restrictDomains   = !empty($_POST['restrict_external_domains']) ? 1 : 0;
+        $allowedDomainsRaw = trim($_POST['allowed_external_domains'] ?? '');
+        $normalizedDomains = '';
+
+        if ($allowedDomainsRaw !== '') {
+            $parts   = preg_split('/[\n\r,]+/', $allowedDomainsRaw);
+            $domains = [];
+            foreach ($parts as $part) {
+                $d = strtolower(trim($part));
+                if ($d === '' || str_contains($d, '@')) continue;
+                if (preg_match('#^https?://#i', $d)) continue;
+                // Basic domain format: labels separated by dots, no leading/trailing hyphens
+                if (!preg_match('/^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?)+$/', $d)) continue;
+                $domains[] = $d;
+            }
+            $normalizedDomains = implode("\n", array_unique($domains));
+        }
+
+        if ($restrictDomains && $normalizedDomains === '') {
+            Session::flash('error', __('security_authentication.invalid_domain_list'));
+            Redirect::to('/security/authentication');
+        }
+
         $data = [
-            'local_login_enabled'      => $localEnabled    ? 1 : 0,
-            'external_login_enabled'   => $externalEnabled ? 1 : 0,
-            'allow_auto_user_creation' => !empty($_POST['allow_auto_user_creation']) ? 1 : 0,
-            'default_role_id'          => !empty($_POST['default_role_id']) ? (int) $_POST['default_role_id'] : null,
-            'require_existing_user'    => !empty($_POST['require_existing_user'])    ? 1 : 0,
-            'allow_account_linking'    => !empty($_POST['allow_account_linking'])    ? 1 : 0,
+            'local_login_enabled'       => $localEnabled    ? 1 : 0,
+            'external_login_enabled'    => $externalEnabled ? 1 : 0,
+            'allow_auto_user_creation'  => !empty($_POST['allow_auto_user_creation']) ? 1 : 0,
+            'default_role_id'           => !empty($_POST['default_role_id']) ? (int) $_POST['default_role_id'] : null,
+            'require_existing_user'     => !empty($_POST['require_existing_user'])    ? 1 : 0,
+            'allow_account_linking'     => !empty($_POST['allow_account_linking'])    ? 1 : 0,
+            'restrict_external_domains' => $restrictDomains,
+            'allowed_external_domains'  => $normalizedDomains ?: null,
         ];
 
         if ((new AuthenticationSettings())->save($data)) {
@@ -76,8 +102,9 @@ class AuthenticationController extends Controller
                 'action'      => 'authentication_settings.updated',
                 'description' => 'Configuración de métodos de autenticación actualizada',
                 'new_values'  => [
-                    'local_login_enabled'    => $data['local_login_enabled'],
-                    'external_login_enabled' => $data['external_login_enabled'],
+                    'local_login_enabled'       => $data['local_login_enabled'],
+                    'external_login_enabled'    => $data['external_login_enabled'],
+                    'restrict_external_domains' => $data['restrict_external_domains'],
                 ],
                 'status'      => 'success',
             ]);

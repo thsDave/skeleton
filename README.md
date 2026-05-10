@@ -2,7 +2,7 @@
 
 Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
 
-**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo, **configuración SMTP administrable**, **configuración global de MFA** y **verificación en 2 pasos por usuario (email y TOTP)**.
+**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo, **configuración SMTP administrable**, **configuración global de MFA**, **verificación en 2 pasos por usuario (email y TOTP)**, **login externo OAuth (Google, Microsoft, GitHub)** y **restricción de login externo por dominio institucional**.
 
 ---
 
@@ -850,6 +850,54 @@ database/014_add_authentication_methods.sql
 ```
 
 Crea: `tbl_authentication_settings`, `tbl_external_auth_providers`, `tbl_user_external_accounts`. Inserta Google, Microsoft 365 y GitHub con configuración inicial.
+
+---
+
+## Restricción de login externo por dominio institucional
+
+Permite limitar el acceso mediante proveedores externos (Google, Microsoft, GitHub) únicamente a cuentas cuyo correo pertenezca a uno o varios dominios institucionales autorizados.
+
+### Qué hace
+
+- Si la restricción está **activada**, solo los correos del tipo `usuario@cristosal.org` (o cualquier dominio autorizado) pueden iniciar sesión mediante OAuth.
+- Los correos de otros dominios (Gmail, Hotmail, etc.) son rechazados con un mensaje genérico.
+- El login local con correo y contraseña **no se ve afectado**.
+- La vinculación de cuentas desde "Mi Cuenta" también respeta la restricción.
+- Las pruebas OAuth del administrador (botón "Probar") **no** están sujetas a la restricción de dominio.
+
+### Cómo configurar
+
+1. Ir a **Seguridad → Autenticación → Opciones avanzadas**.
+2. Activar el switch **Restringir por dominio institucional**.
+3. Ingresar los dominios autorizados en el textarea (uno por línea o separados por coma):
+
+```
+cristosal.org
+cristosal.com
+fundacion.org
+```
+
+4. Hacer clic en **Guardar configuración**.
+
+### Formato de dominios aceptado
+
+| Formato | ¿Aceptado? |
+|---|---|
+| `cristosal.org` | ✓ |
+| `sub.cristosal.org` | ✓ (si se agrega explícitamente) |
+| `@cristosal.org` | ✗ |
+| `https://cristosal.org` | ✗ |
+| `cristosal.org, fundacion.org` | ✓ (se normaliza) |
+
+La coincidencia es **exacta**. `cristosal.org` no acepta automáticamente `sub.cristosal.org`.
+
+### Migración SQL
+
+```
+database/016_add_external_domain_restrictions.sql
+```
+
+Agrega las columnas `restrict_external_domains` y `allowed_external_domains` a `tbl_authentication_settings`. **Ejecutar solo si las columnas no existen** — verificar antes en phpMyAdmin > Estructura de tabla.
 
 ---
 

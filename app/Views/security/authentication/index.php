@@ -1,7 +1,7 @@
 <?php
 $pageTitle  = __('security_authentication.title');
 $activeMenu = 'security_authentication';
-$settings                = $settings                ?? ['local_login_enabled'=>1,'external_login_enabled'=>0,'allow_auto_user_creation'=>0,'default_role_id'=>null,'require_existing_user'=>1,'allow_account_linking'=>1];
+$settings                = $settings                ?? ['local_login_enabled'=>1,'external_login_enabled'=>0,'allow_auto_user_creation'=>0,'default_role_id'=>null,'require_existing_user'=>1,'allow_account_linking'=>1,'restrict_external_domains'=>0,'allowed_external_domains'=>null];
 $providers               = $providers               ?? [];
 $providersReadyCount     = $providersReadyCount     ?? 0;
 $providersVerifiedCount  = $providersVerifiedCount  ?? 0;
@@ -40,7 +40,8 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
     <form id="formSettings" action="<?= BASE_URL ?>/security/authentication/settings/update" method="POST" novalidate
       data-providers-ready="<?= (int) $providersVerifiedCount ?>"
       data-msg-external-required="<?= htmlspecialchars(__('security_authentication.external_provider_required'), ENT_QUOTES, 'UTF-8') ?>"
-      data-msg-no-methods="<?= htmlspecialchars(__('security_authentication.error_no_methods'), ENT_QUOTES, 'UTF-8') ?>">
+      data-msg-no-methods="<?= htmlspecialchars(__('security_authentication.error_no_methods'), ENT_QUOTES, 'UTF-8') ?>"
+      data-msg-invalid-domain="<?= htmlspecialchars(__('security_authentication.invalid_domain_list'), ENT_QUOTES, 'UTF-8') ?>">
       <?= \Core\CSRF::field() ?>
 
       <div class="card mb-3">
@@ -156,6 +157,39 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
             <div class="form-text text-muted"><?= __('security_authentication.default_role_desc') ?></div>
           </div>
 
+          <!-- Restricción por dominio institucional -->
+          <div class="border-top pt-3 mt-3">
+            <div class="d-flex align-items-start justify-content-between mb-3">
+              <div>
+                <label class="fw-semibold small mb-0" for="restrictExternalDomains">
+                  <i class="ph-duotone ph-buildings me-1 text-warning"></i>
+                  <?= __('security_authentication.restrict_external_domains') ?>
+                </label>
+                <p class="text-muted small mb-0"><?= __('security_authentication.restrict_external_domains_desc') ?></p>
+              </div>
+              <div class="form-check form-switch ms-3 flex-shrink-0">
+                <input class="form-check-input" type="checkbox" role="switch"
+                  id="restrictExternalDomains" name="restrict_external_domains" value="1"
+                  <?= ($settings['restrict_external_domains'] ?? 0) ? 'checked' : '' ?>>
+              </div>
+            </div>
+
+            <div id="domainRestrictionRow" style="<?= ($settings['restrict_external_domains'] ?? 0) ? '' : 'display:none;' ?>">
+              <label for="allowedExternalDomains" class="form-label fw-semibold small">
+                <?= __('security_authentication.allowed_external_domains') ?>
+              </label>
+              <textarea name="allowed_external_domains" id="allowedExternalDomains"
+                class="form-control font-monospace"
+                rows="4"
+                style="font-size:.85rem;"
+                placeholder="<?= htmlspecialchars(__('security_authentication.allowed_external_domains_placeholder'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($settings['allowed_external_domains'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+              <div class="form-text text-muted mt-1">
+                <i class="ph-duotone ph-info me-1"></i>
+                <?= __('security_authentication.allowed_external_domains_help') ?>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -216,10 +250,20 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
               </td>
             </tr>
             <tr>
-              <td class="text-muted ps-3 pe-2 py-2 pb-3"><?= __('security_authentication.allow_auto_user_creation') ?></td>
-              <td class="py-2 pb-3">
+              <td class="text-muted ps-3 pe-2 py-2"><?= __('security_authentication.allow_auto_user_creation') ?></td>
+              <td class="py-2">
                 <?php if ($settings['allow_auto_user_creation']): ?>
                   <span class="badge bg-info"><?= __('common.yes') ?></span>
+                <?php else: ?>
+                  <span class="badge bg-secondary"><?= __('common.no') ?></span>
+                <?php endif; ?>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted ps-3 pe-2 py-2 pb-3"><?= __('security_authentication.restrict_external_domains') ?></td>
+              <td class="py-2 pb-3">
+                <?php if ($settings['restrict_external_domains'] ?? 0): ?>
+                  <span class="badge bg-warning text-dark"><i class="ph-duotone ph-buildings me-1"></i><?= __('common.yes') ?></span>
                 <?php else: ?>
                   <span class="badge bg-secondary"><?= __('common.no') ?></span>
                 <?php endif; ?>
@@ -410,17 +454,21 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
 <?php $extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  var form           = document.getElementById('formSettings');
-  var externalSwitch = document.getElementById('externalLoginEnabled');
-  var localSwitch    = document.getElementById('localLoginEnabled');
-  var cardExternal   = document.getElementById('cardExternalOptions');
-  var autoCreate     = document.getElementById('allowAutoUserCreation');
-  var defaultRoleRow = document.getElementById('defaultRoleRow');
-  var btnSave        = document.getElementById('btnSaveSettings');
+  var form                = document.getElementById('formSettings');
+  var externalSwitch      = document.getElementById('externalLoginEnabled');
+  var localSwitch         = document.getElementById('localLoginEnabled');
+  var cardExternal        = document.getElementById('cardExternalOptions');
+  var autoCreate          = document.getElementById('allowAutoUserCreation');
+  var defaultRoleRow      = document.getElementById('defaultRoleRow');
+  var restrictDomains     = document.getElementById('restrictExternalDomains');
+  var domainRestrictionRow= document.getElementById('domainRestrictionRow');
+  var allowedDomainsEl    = document.getElementById('allowedExternalDomains');
+  var btnSave             = document.getElementById('btnSaveSettings');
 
-  var providersReady       = form ? parseInt(form.dataset.providersReady || '0', 10) : 0;
-  var msgExternalRequired  = form ? (form.dataset.msgExternalRequired || '') : '';
-  var msgNoMethods         = form ? (form.dataset.msgNoMethods || '') : '';
+  var providersReady      = form ? parseInt(form.dataset.providersReady || '0', 10) : 0;
+  var msgExternalRequired = form ? (form.dataset.msgExternalRequired || '') : '';
+  var msgNoMethods        = form ? (form.dataset.msgNoMethods || '') : '';
+  var msgInvalidDomain    = form ? (form.dataset.msgInvalidDomain || '') : '';
 
   function toggleExternalOptions() {
     if (externalSwitch && cardExternal) {
@@ -434,7 +482,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  if (autoCreate) autoCreate.addEventListener('change', toggleDefaultRole);
+  function toggleDomainRestriction() {
+    if (restrictDomains && domainRestrictionRow) {
+      domainRestrictionRow.style.display = restrictDomains.checked ? '' : 'none';
+    }
+  }
+
+  if (autoCreate)      autoCreate.addEventListener('change', toggleDefaultRole);
+  if (restrictDomains) restrictDomains.addEventListener('change', toggleDomainRestriction);
 
   // When toggling external login ON — warn immediately if no providers are ready
   if (externalSwitch) {
@@ -472,6 +527,14 @@ document.addEventListener('DOMContentLoaded', function () {
       if (externalOn && providersReady === 0) {
         e.preventDefault();
         Swal.fire({ icon: 'error', title: 'Error', text: msgExternalRequired, confirmButtonColor: '#4680ff' });
+        return;
+      }
+
+      // Domain restriction: if switch is ON and textarea is empty
+      if (restrictDomains && restrictDomains.checked && allowedDomainsEl && allowedDomainsEl.value.trim() === '') {
+        e.preventDefault();
+        allowedDomainsEl.focus();
+        Swal.fire({ icon: 'error', title: 'Error', text: msgInvalidDomain, confirmButtonColor: '#4680ff' });
         return;
       }
 
