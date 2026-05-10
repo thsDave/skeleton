@@ -304,39 +304,24 @@ $loginBgUrl = !empty($appearance['login_background_path'])
         </div>
         <div class="card-body d-grid gap-2">
 
-          <form action="<?= $base ?>/appearance/reset-logo" method="POST">
-            <?= \Core\CSRF::field() ?>
-            <button type="button" class="btn btn-outline-secondary btn-sm w-100 btn-reset-confirm"
-              data-form="frmResetLogo"
-              data-msg="<?= htmlspecialchars(__('appearance.confirm_reset_logo'), ENT_QUOTES, 'UTF-8') ?>">
-              <i class="ph-duotone ph-image me-1"></i><?= __('appearance.reset_logo') ?>
-            </button>
-          </form>
-          <form id="frmResetLogo" action="<?= $base ?>/appearance/reset-logo" method="POST">
-            <?= \Core\CSRF::field() ?>
-          </form>
+          <button type="button" class="btn btn-outline-secondary btn-sm w-100 btn-reset-confirm"
+            data-form="frmResetLogo"
+            data-msg="<?= htmlspecialchars(__('appearance.confirm_reset_logo'), ENT_QUOTES, 'UTF-8') ?>">
+            <i class="ph-duotone ph-image me-1"></i><?= __('appearance.reset_logo') ?>
+          </button>
 
-          <form id="frmResetFavicon" action="<?= $base ?>/appearance/reset-favicon" method="POST">
-            <?= \Core\CSRF::field() ?>
-          </form>
           <button type="button" class="btn btn-outline-secondary btn-sm btn-reset-confirm"
             data-form="frmResetFavicon"
             data-msg="<?= htmlspecialchars(__('appearance.confirm_reset_favicon'), ENT_QUOTES, 'UTF-8') ?>">
             <i class="ph-duotone ph-browser me-1"></i><?= __('appearance.reset_favicon') ?>
           </button>
 
-          <form id="frmResetLoginBg" action="<?= $base ?>/appearance/reset-login-background" method="POST">
-            <?= \Core\CSRF::field() ?>
-          </form>
           <button type="button" class="btn btn-outline-secondary btn-sm btn-reset-confirm"
             data-form="frmResetLoginBg"
             data-msg="<?= htmlspecialchars(__('appearance.confirm_reset_login_bg'), ENT_QUOTES, 'UTF-8') ?>">
             <i class="ph-duotone ph-sign-in me-1"></i><?= __('appearance.reset_login_background') ?>
           </button>
 
-          <form id="frmResetColors" action="<?= $base ?>/appearance/reset-colors" method="POST">
-            <?= \Core\CSRF::field() ?>
-          </form>
           <button type="button" class="btn btn-outline-warning btn-sm btn-reset-confirm"
             data-form="frmResetColors"
             data-msg="<?= htmlspecialchars(__('appearance.confirm_reset_colors'), ENT_QUOTES, 'UTF-8') ?>">
@@ -367,6 +352,21 @@ $loginBgUrl = !empty($appearance['login_background_path'])
     </div>
   </div>
 </form>
+
+<?php if (can('appearance.reset')): ?>
+<form id="frmResetLogo" action="<?= $base ?>/appearance/reset-logo" method="POST">
+  <?= \Core\CSRF::field() ?>
+</form>
+<form id="frmResetFavicon" action="<?= $base ?>/appearance/reset-favicon" method="POST">
+  <?= \Core\CSRF::field() ?>
+</form>
+<form id="frmResetLoginBg" action="<?= $base ?>/appearance/reset-login-background" method="POST">
+  <?= \Core\CSRF::field() ?>
+</form>
+<form id="frmResetColors" action="<?= $base ?>/appearance/reset-colors" method="POST">
+  <?= \Core\CSRF::field() ?>
+</form>
+<?php endif; ?>
 
 <?php $extraScript = <<<'JS'
 <script>
