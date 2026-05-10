@@ -881,8 +881,9 @@ return [
     'auth.external_login_failed'        => 'No se pudo completar el inicio de sesión externo. Intenta de nuevo.',
     'auth.external_login_denied'        => 'El proveedor no autorizó el inicio de sesión.',
     'auth.external_email_not_verified'  => 'No se pudo obtener un correo verificado del proveedor.',
-    'auth.external_user_not_found'      => 'No existe un usuario registrado con ese correo. Contacta al administrador.',
-    'auth.external_provider_disabled'   => 'El proveedor de autenticación no está disponible.',
+    'auth.external_user_not_found'           => 'No existe un usuario registrado con ese correo. Contacta al administrador.',
+    'auth.external_provider_disabled'        => 'El proveedor de autenticación no está disponible.',
+    'auth.external_account_not_authorized'   => 'Las credenciales ingresadas no son válidas o la cuenta no está autorizada para acceder al sistema.',
     'auth.external_invalid_state'       => 'Error de seguridad en el proceso de autenticación. Intenta de nuevo.',
     // Cuenta — vínculos externos
     'account.external_accounts'         => 'Cuentas externas vinculadas',

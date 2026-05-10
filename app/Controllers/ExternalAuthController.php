@@ -102,8 +102,7 @@ class ExternalAuthController extends Controller
                 'status'      => 'denied',
                 'user_id'     => null,
             ]);
-            Session::flash('error', __('auth.external_login_failed'));
-            Redirect::to('/login');
+            Redirect::withErrors('/login', ['general' => __('auth.external_login_failed')]);
         }
 
         Session::forget("oauth_state_{$provider}");
@@ -141,8 +140,7 @@ class ExternalAuthController extends Controller
                 'status'      => 'denied',
                 'user_id'     => null,
             ]);
-            Session::flash('error', __('auth.external_login_denied'));
-            Redirect::to('/login');
+            Redirect::withErrors('/login', ['general' => __('auth.external_login_denied')]);
         }
 
         $code = $_GET['code'] ?? '';
@@ -153,21 +151,20 @@ class ExternalAuthController extends Controller
                 Session::flash('error', __('security_authentication.provider_test_failed'));
                 Redirect::to('/security/authentication');
             }
-            Session::flash('error', __('auth.external_login_failed'));
-            Redirect::to('/login');
+            Redirect::withErrors('/login', ['general' => __('auth.external_login_failed')]);
         }
 
         // Admin test bypasses external_login_enabled and is_enabled checks
         if ($isAdminTest) {
             if (!Auth::check()) {
                 Session::forget('oauth_admin_test_id');
-                Session::flash('error', __('auth.external_login_failed'));
-                Redirect::to('/login');
+                Redirect::withErrors('/login', ['general' => __('auth.external_login_failed')]);
             }
             $settings = (new AuthenticationSettings())->get();
         } else {
             $settings = (new AuthenticationSettings())->get();
             if (!$settings['external_login_enabled']) {
+                Logger::security("ExternalAuthController::callback — external login disabled, provider: {$provider}");
                 Audit::log([
                     'module'      => 'auth',
                     'action'      => 'external_login.provider_disabled',
@@ -175,8 +172,7 @@ class ExternalAuthController extends Controller
                     'status'      => 'denied',
                     'user_id'     => null,
                 ]);
-                Session::flash('error', __('auth.external_provider_disabled'));
-                Redirect::to('/login');
+                Redirect::withErrors('/login', ['general' => __('auth.external_provider_disabled')]);
             }
         }
 
@@ -188,6 +184,7 @@ class ExternalAuthController extends Controller
                 Session::flash('error', __('security_authentication.provider_not_found'));
                 Redirect::to('/security/authentication');
             }
+            Logger::security("ExternalAuthController::callback — provider disabled or not found: {$provider}");
             Audit::log([
                 'module'      => 'auth',
                 'action'      => 'external_login.provider_disabled',
@@ -195,8 +192,7 @@ class ExternalAuthController extends Controller
                 'status'      => 'denied',
                 'user_id'     => null,
             ]);
-            Session::flash('error', __('auth.external_provider_disabled'));
-            Redirect::to('/login');
+            Redirect::withErrors('/login', ['general' => __('auth.external_provider_disabled')]);
         }
 
         try {
@@ -231,6 +227,7 @@ class ExternalAuthController extends Controller
             }
 
             if (empty($providerEmail)) {
+                Logger::security("ExternalAuthController::callback — no email from provider [{$provider}]");
                 Audit::log([
                     'module'      => 'auth',
                     'action'      => 'external_login.email_not_verified',
@@ -238,8 +235,7 @@ class ExternalAuthController extends Controller
                     'status'      => 'denied',
                     'user_id'     => null,
                 ]);
-                Session::flash('error', __('auth.external_email_not_verified'));
-                Redirect::to('/login');
+                Redirect::withErrors('/login', ['general' => __('auth.external_account_not_authorized')]);
             }
 
         } catch (\Throwable $e) {
@@ -251,8 +247,7 @@ class ExternalAuthController extends Controller
                 'status'      => 'failed',
                 'user_id'     => null,
             ]);
-            Session::flash('error', __('auth.external_login_failed'));
-            Redirect::to('/login');
+            Redirect::withErrors('/login', ['general' => __('auth.external_login_failed')]);
         }
 
         if ($isAdminTest) {
@@ -329,6 +324,7 @@ class ExternalAuthController extends Controller
         if ($linked) {
             $user = $userModel->findById((int) $linked['user_id']);
             if (!$user || ($user['status_slug'] ?? '') !== 'active') {
+                Logger::security("ExternalAuthController::handleLogin — inactive or missing user [{$provider}] uid={$linked['user_id']}");
                 Audit::log([
                     'module'      => 'auth',
                     'action'      => 'external_login.failed',
@@ -336,8 +332,7 @@ class ExternalAuthController extends Controller
                     'status'      => 'denied',
                     'user_id'     => $linked['user_id'] ?? null,
                 ]);
-                Session::flash('error', __('auth.login_invalid_credentials'));
-                Redirect::to('/login');
+                Redirect::withErrors('/login', ['general' => __('auth.login_invalid_credentials')]);
             }
             $linkModel->updateLastLogin((int) $linked['user_id'], (int) $providerRow['id']);
             (new ExternalAuthProvider())->markVerified((int) $providerRow['id']);
@@ -349,8 +344,8 @@ class ExternalAuthController extends Controller
 
         if ($userByEmail && $settings['allow_account_linking']) {
             if (($userByEmail['status_slug'] ?? '') !== 'active') {
-                Session::flash('error', __('auth.login_invalid_credentials'));
-                Redirect::to('/login');
+                Logger::security("ExternalAuthController::handleLogin — inactive user by email [{$provider}] {$providerEmail}");
+                Redirect::withErrors('/login', ['general' => __('auth.login_invalid_credentials')]);
             }
             $linkModel->create([
                 'user_id'          => $userByEmail['id'],
@@ -375,6 +370,7 @@ class ExternalAuthController extends Controller
         }
 
         if ($settings['require_existing_user'] || !$settings['allow_auto_user_creation']) {
+            Logger::security("ExternalAuthController::handleLogin — user not found [{$provider}] {$providerEmail}");
             Audit::log([
                 'module'      => 'auth',
                 'action'      => 'external_login.user_not_found',
@@ -382,12 +378,12 @@ class ExternalAuthController extends Controller
                 'status'      => 'denied',
                 'user_id'     => null,
             ]);
-            Session::flash('error', __('auth.external_user_not_found'));
-            Redirect::to('/login');
+            Redirect::withErrors('/login', ['general' => __('auth.external_account_not_authorized')]);
         }
 
         $defaultRoleId = (int) ($settings['default_role_id'] ?? 2);
         if (!$defaultRoleId) {
+            Logger::error("ExternalAuthController::handleLogin — no default role configured for auto-create [{$provider}]");
             Audit::log([
                 'module'      => 'auth',
                 'action'      => 'external_login.failed',
@@ -395,8 +391,7 @@ class ExternalAuthController extends Controller
                 'status'      => 'failed',
                 'user_id'     => null,
             ]);
-            Session::flash('error', __('auth.external_login_failed'));
-            Redirect::to('/login');
+            Redirect::withErrors('/login', ['general' => __('auth.external_login_failed')]);
         }
 
         $nameParts = explode(' ', $providerName, 2);
@@ -414,8 +409,7 @@ class ExternalAuthController extends Controller
 
         if (!$newUserId) {
             Logger::error("ExternalAuthController::handleLogin — could not create user for {$providerEmail}");
-            Session::flash('error', __('auth.external_login_failed'));
-            Redirect::to('/login');
+            Redirect::withErrors('/login', ['general' => __('auth.external_login_failed')]);
         }
 
         $linkModel->create([

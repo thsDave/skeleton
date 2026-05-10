@@ -970,6 +970,7 @@ return [
     'auth.external_login_no_email'               => 'Your external account did not provide an email address. Please ensure your email is public and try again.',
     'auth.external_login_user_not_found'         => 'No user registered with that email was found. Contact an administrator.',
     'auth.external_login_auto_create_disabled'   => 'Automatic user creation is disabled. Contact an administrator.',
+    'auth.external_account_not_authorized'       => 'The credentials entered are invalid or the account is not authorized to access the system.',
     'auth.external_login_error'                  => 'An error occurred during external sign-in. Please try again.',
     'auth.local_login_disabled'                  => 'Local login is disabled. Please use an external provider.',
 
