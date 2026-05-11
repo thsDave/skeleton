@@ -358,7 +358,7 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 
 ### Qué ve el administrador (o usuario con `users.view`)
 - **KPIs** (8 tarjetas): total usuarios, activos, inactivos, con 2FA, sin 2FA, perfil incompleto, idiomas activos, estado SMTP.
-- **Gráficas** (Chart.js 4): usuarios por rol (doughnut), estado 2FA (doughnut), métodos 2FA activos (doughnut), estado de usuarios (barra).
+- **Gráficas** (Chart.js 4): usuarios por rol (doughnut), estado 2FA (doughnut), métodos 2FA activos (doughnut), estado de usuarios activos/inactivos/bloqueados (barra).
 - **Seguridad del sistema**: estado SMTP, MFA por correo y autenticador, conteo de usuarios con/sin 2FA, tiempo de bloqueo por inactividad.
 - **Estado del sistema**: versión, año, líder, idioma base, módulos activos, permisos registrados.
 - **Usuarios y perfiles**: último usuario registrado, conteos de foto de perfil y perfil completo.

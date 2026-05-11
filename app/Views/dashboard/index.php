@@ -19,6 +19,9 @@ $sessionMins    = (int)(($sessionSettings['session_inactivity_seconds'] ?? 900) 
 $total      = (int)($userStats['total']        ?? 0);
 $active     = (int)($userStats['active']       ?? 0);
 $inactive   = (int)($userStats['inactive']     ?? 0);
+$blocked    = (int)($userStats['blocked']      ?? 0);
+$statusActive = (int)($userStats['status_active'] ?? $active);
+$statusInactive = (int)($userStats['status_inactive'] ?? $inactive);
 $withMfa    = (int)($userStats['with_mfa']     ?? 0);
 $withoutMfa = (int)($userStats['without_mfa']  ?? 0);
 $withImage  = (int)($userStats['with_image']   ?? 0);
@@ -441,6 +444,10 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <div class="dashboard-chart-frame dashboard-chart-frame-bars">
           <canvas id="chartUserStatus"></canvas>
         </div>
+        <div id="chartUserStatusEmpty" class="d-none text-center text-muted py-4 small dashboard-empty-state dashboard-empty-state-center">
+          <i class="ph-duotone ph-users-three text-muted mb-2" style="font-size:2rem;display:block;"></i>
+          <?= __('dashboard.no_users_status_data') ?>
+        </div>
       </div>
     </div>
   </div>
@@ -776,12 +783,16 @@ if ($showAdminDash):
     $jsMethodCounts    = json_encode($chartMfaMethodCounts);
     $jsWithMfa         = $withMfa;
     $jsWithoutMfa      = $withoutMfa;
-    $jsActive          = $active;
-    $jsInactive        = $inactive;
+    $jsActive          = $statusActive;
+    $jsInactive        = $statusInactive;
+    $jsBlocked         = $blocked;
     $jsMfaWithLabel    = json_encode(__('dashboard.with_mfa_label'),    JSON_UNESCAPED_UNICODE);
     $jsMfaWithoutLabel = json_encode(__('dashboard.without_mfa_label'), JSON_UNESCAPED_UNICODE);
-    $jsActiveLabel     = json_encode(__('dashboard.active_label'),      JSON_UNESCAPED_UNICODE);
-    $jsInactiveLabel   = json_encode(__('dashboard.inactive_label'),    JSON_UNESCAPED_UNICODE);
+    $jsActiveLabel     = json_encode(__('dashboard.users_active'),      JSON_UNESCAPED_UNICODE);
+    $jsInactiveLabel   = json_encode(__('dashboard.users_inactive'),    JSON_UNESCAPED_UNICODE);
+    $jsBlockedLabel    = json_encode(__('dashboard.users_blocked'),     JSON_UNESCAPED_UNICODE);
+    $jsUserSingular    = json_encode(__('dashboard.user_singular'),     JSON_UNESCAPED_UNICODE);
+    $jsUserPlural      = json_encode(__('dashboard.user_plural'),       JSON_UNESCAPED_UNICODE);
     $jsNoData          = json_encode(__('dashboard.no_data'),           JSON_UNESCAPED_UNICODE);
     $jsNoMfa           = json_encode(__('dashboard.no_mfa_users'),      JSON_UNESCAPED_UNICODE);
 
@@ -843,6 +854,15 @@ document.addEventListener('DOMContentLoaded', function () {
   function bar(id, labels, data, bgColors) {
     var el = document.getElementById(id);
     if (!el) return;
+    if (!data || data.length === 0 || data.every(function(v){ return v === 0; })) {
+      el.style.display = 'none';
+      if (el.parentElement && el.parentElement.classList.contains('dashboard-chart-frame')) {
+        el.parentElement.style.display = 'none';
+      }
+      var empty = document.getElementById(id + 'Empty');
+      if (empty) empty.classList.remove('d-none');
+      return;
+    }
     new Chart(el, {
       type: 'bar',
       data: {
@@ -857,10 +877,26 @@ document.addEventListener('DOMContentLoaded', function () {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { padding: 8 } },
+        layout: { padding: { top: 4, right: 4, bottom: 0, left: 0 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            padding: 10,
+            callbacks: {
+              label: function (context) {
+                var value = Number(context.parsed.y || 0);
+                return context.label + ': ' + value + ' ' + (value === 1 ? {$jsUserSingular} : {$jsUserPlural});
+              }
+            }
+          }
+        },
         scales: {
-          x: { grid: { display: false } },
-          y: { beginAtZero: true, grid: { color: gridColor }, ticks: { stepSize: 1, precision: 0 } }
+          x: { grid: { display: false }, ticks: { padding: 8 } },
+          y: {
+            beginAtZero: true,
+            grid: { color: gridColor },
+            ticks: { stepSize: 1, precision: 0, padding: 6 }
+          }
         }
       }
     });
@@ -880,9 +916,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Chart 4: Estado de usuarios (bar)
   bar('chartUserStatus',
-    [{$jsActiveLabel}, {$jsInactiveLabel}],
-    [{$jsActive}, {$jsInactive}],
-    ['#2ed8b6', '#ff5370']
+    [{$jsActiveLabel}, {$jsInactiveLabel}, {$jsBlockedLabel}],
+    [{$jsActive}, {$jsInactive}, {$jsBlocked}],
+    ['#2ed8b6', '#ff5370', '#ffb64d']
   );
 });
 </script>

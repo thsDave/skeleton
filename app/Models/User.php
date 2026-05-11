@@ -304,6 +304,16 @@ class User extends Model
                    COUNT(*)                                                                    AS total,
                    SUM(CASE WHEN s.slug = \'active\' THEN 1 ELSE 0 END)                       AS active,
                    SUM(CASE WHEN s.slug != \'active\' THEN 1 ELSE 0 END)                      AS inactive,
+                   SUM(CASE WHEN (u.locked_until IS NOT NULL AND u.locked_until > NOW())
+                              OR s.slug = \'blocked\' THEN 1 ELSE 0 END)                      AS blocked,
+                   SUM(CASE WHEN s.slug = \'active\'
+                              AND NOT ((u.locked_until IS NOT NULL AND u.locked_until > NOW())
+                                       OR s.slug = \'blocked\')
+                            THEN 1 ELSE 0 END)                                                AS status_active,
+                   SUM(CASE WHEN s.slug != \'active\'
+                              AND NOT ((u.locked_until IS NOT NULL AND u.locked_until > NOW())
+                                       OR s.slug = \'blocked\')
+                            THEN 1 ELSE 0 END)                                                AS status_inactive,
                    SUM(CASE WHEN u.two_factor_enabled = 1 THEN 1 ELSE 0 END)                  AS with_mfa,
                    SUM(CASE WHEN COALESCE(u.two_factor_enabled, 0) = 0 THEN 1 ELSE 0 END)     AS without_mfa,
                    SUM(CASE WHEN u.profile_image IS NOT NULL AND u.profile_image != \'\'
