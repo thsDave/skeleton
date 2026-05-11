@@ -51,6 +51,10 @@
   --dashboard-soft-bg: rgba(var(--bs-primary-rgb), 0.08);
 }
 
+.pc-container .page-header + .dashboard-shell {
+  padding-top: 70px;
+}
+
 .dashboard-hero,
 .dashboard-action-card,
 .dashboard-stat-card,
@@ -201,5 +205,18 @@
 
   .dashboard-chart-card .card-body {
     min-height: 245px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .pc-container .page-header + .dashboard-shell {
+    padding-top: 30px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .pc-container .page-header + .dashboard-shell {
+    padding-left: 0;
+    padding-right: 0;
   }
 }
