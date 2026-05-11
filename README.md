@@ -387,6 +387,10 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 - Si no hay actividad de auditoría, se muestra "No hay actividad reciente disponible."
 - No se inventan datos: todo viene de la base de datos real.
 
+### Assets de gráficas
+- Chart.js se carga localmente desde `public/assets/js/plugins/chart.umd.min.js` para cumplir la CSP y no depender de CDN externo.
+- Si se actualiza Chart.js, reemplaza el archivo local, elimina referencias `sourceMappingURL` externas si existen y prueba nuevamente el Dashboard.
+
 ---
 
 ## Novedades v3.0

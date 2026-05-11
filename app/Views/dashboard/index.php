@@ -797,7 +797,7 @@ if ($showAdminDash):
     $jsNoMfa           = json_encode(__('dashboard.no_mfa_users'),      JSON_UNESCAPED_UNICODE);
 
     $extraScript = <<<JS
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/plugins/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var isDark = document.body.getAttribute('data-pc-theme') === 'dark'
