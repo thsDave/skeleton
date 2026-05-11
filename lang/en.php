@@ -943,7 +943,7 @@ return [
     'security_authentication.restrict_external_domains'           => 'Restrict by institutional domain',
     'security_authentication.restrict_external_domains_desc'      => 'Only allows external login for email addresses from authorized institutional domains.',
     'security_authentication.allowed_external_domains'            => 'Authorized domains',
-    'security_authentication.allowed_external_domains_help'       => 'If this option is active, only accounts whose email belongs to one of the authorized domains will be able to sign in with external providers. One domain per line or separated by commas.',
+    'security_authentication.allowed_external_domains_help'       => 'Enter one domain per line or separated by commas. Do not use @ or full URLs (e.g. cristosal.org).',
     'security_authentication.allowed_external_domains_placeholder'=> 'yourdomain.org',
     'security_authentication.invalid_domain_list'                 => 'You must enter at least one valid authorized domain. Do not use @ or full URLs (e.g. yourdomain.org).',
     'security_authentication.domain_restriction_updated'          => 'Domain restriction updated successfully.',
