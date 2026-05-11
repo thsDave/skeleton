@@ -47,3 +47,45 @@ if (!function_exists('can')) {
         return \Core\Auth::can($permission);
     }
 }
+
+if (!function_exists('profile_avatar_url')) {
+    /**
+     * Devuelve la URL publica de una imagen de perfil o el avatar por defecto.
+     * Valida que el archivo exista para evitar imagenes rotas en layouts globales.
+     */
+    function profile_avatar_url(?string $filename = null): string
+    {
+        $fallback = BASE_URL . '/assets/images/user/avatar-1.jpg';
+
+        $filename = trim((string) $filename);
+        if ($filename === '') {
+            return $fallback;
+        }
+
+        $safeFilename = basename(str_replace('\\', '/', $filename));
+        if ($safeFilename === '') {
+            return $fallback;
+        }
+
+        $diskPath = dirname(__DIR__) . '/public/uploads/profiles/' . $safeFilename;
+        if (!is_file($diskPath)) {
+            return $fallback;
+        }
+
+        $url = BASE_URL . '/uploads/profiles/' . rawurlencode($safeFilename);
+        $mtime = @filemtime($diskPath);
+
+        return $mtime ? $url . '?v=' . $mtime : $url;
+    }
+}
+
+if (!function_exists('current_user_avatar_url')) {
+    /**
+     * Devuelve el avatar del usuario autenticado usando la sesion como fuente.
+     */
+    function current_user_avatar_url(?array $user = null): string
+    {
+        $user = $user ?? \Core\Auth::user();
+        return profile_avatar_url($user['profile_image'] ?? null);
+    }
+}

@@ -1,8 +1,6 @@
 <?php
-$_tpImage  = $authUser['profile_image'] ?? null;
-$_tpAvatar = $_tpImage
-    ? BASE_URL . '/uploads/profiles/' . htmlspecialchars($_tpImage, ENT_QUOTES, 'UTF-8')
-    : BASE_URL . '/assets/images/user/avatar-1.jpg';
+$_tpUser   = $authUser ?? \Core\Auth::user();
+$_tpAvatar = current_user_avatar_url($_tpUser);
 $_tpTheme  = \Core\Auth::check() ? \Core\Auth::theme() : 'light'; // 'light'|'dark'|'default'
 $_tpThemeIcon = match($_tpTheme) {
     'dark'    => 'ph-moon',

@@ -999,6 +999,7 @@ Módulo administrativo en `/appearance` (Administración > Apariencia) que permi
 - Usa **UploadService** para validar y guardar todos los archivos.
 - Los colores se inyectan como variables CSS en el layout; no sobrescriben DashboardKit completamente.
 - Los ajustes globales de modo oscuro viven en `public/assets/css/dark-mode.css` y se cargan después de DashboardKit, Select2 y DataTables para corregir contraste sin afectar el modo claro.
+- El avatar del topbar se obtiene con `current_user_avatar_url()`, usando la imagen de perfil guardada en sesión y el fallback `public/assets/images/user/avatar-1.jpg` si no hay archivo válido.
 - Para restablecer cualquier elemento: botón "Restablecer" en la vista (requiere permiso `appearance.reset`).
 - **Migración a importar:** `database/015_add_appearance_settings.sql`
 - Tabla de BD: `tbl_appearance_settings` (un solo registro).
