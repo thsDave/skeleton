@@ -58,6 +58,41 @@ class AuthenticationSettings extends Model
         }
     }
 
+    /**
+     * Returns true if $email is allowed under the current domain restriction settings.
+     * - Restriction off → always allowed.
+     * - Restriction on, no domains configured → always denied (misconfiguration).
+     * - Otherwise → exact domain match (case-insensitive, no partial matches).
+     *
+     * Pass $cachedSettings to avoid a second DB query when the caller already holds them.
+     */
+    public function isDomainAllowed(string $email, ?array $cachedSettings = null): bool
+    {
+        $settings = $cachedSettings ?? $this->get();
+
+        if (empty($settings['restrict_external_domains'])) {
+            return true;
+        }
+
+        $raw = $settings['allowed_external_domains'] ?? '';
+        if ($raw === '') {
+            return false;
+        }
+
+        $atPos = strrpos($email, '@');
+        if ($atPos === false) {
+            return false;
+        }
+
+        $emailDomain = strtolower(substr($email, $atPos + 1));
+        $allowed = array_filter(
+            array_map('trim', preg_split('/[\n\r,]+/', strtolower($raw))),
+            fn(string $d) => $d !== ''
+        );
+
+        return in_array($emailDomain, array_values($allowed), true);
+    }
+
     private function defaults(): array
     {
         return [

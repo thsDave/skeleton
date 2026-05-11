@@ -195,6 +195,20 @@ class AuthController extends Controller
             Redirect::withErrors('/login', ['general' => __('auth.login_invalid_credentials')], ['email' => $email]);
         }
 
+        // ── Restricción de dominio institucional ──────────────────────────────────
+        if (!(new AuthenticationSettings())->isDomainAllowed($email, $authSettings)) {
+            $emailDomain = strtolower(substr($email, (int) strrpos($email, '@') + 1));
+            Logger::security("AuthController::loginProcess — domain not allowed: {$emailDomain}");
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'local_login.domain_denied',
+                'description' => "Login local rechazado por dominio no autorizado: {$emailDomain}",
+                'status'      => 'denied',
+                'user_id'     => $user['id'],
+            ]);
+            Redirect::withErrors('/login', ['general' => __('auth.external_account_not_authorized')], ['email' => $email]);
+        }
+
         // ── Login exitoso — credenciales válidas ──────────────────────────────────
         $this->userModel->updateLastLogin($user['id'], $ip);
         $this->logModel->record($user['id'], $email, 'success', 'Login exitoso');

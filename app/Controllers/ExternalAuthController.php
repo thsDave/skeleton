@@ -251,19 +251,17 @@ class ExternalAuthController extends Controller
         }
 
         // Domain restriction — applies to login and account linking, not admin test
-        if (!$isAdminTest && !empty($settings['restrict_external_domains'])) {
-            if (!$this->isEmailDomainAllowed($providerEmail, $settings['allowed_external_domains'] ?? '')) {
-                $emailDomain = strtolower(substr($providerEmail, (int) strrpos($providerEmail, '@') + 1));
-                Logger::security("ExternalAuthController::callback — domain not allowed [{$provider}] {$emailDomain}");
-                Audit::log([
-                    'module'      => 'auth',
-                    'action'      => 'external_login.domain_denied',
-                    'description' => "Login externo rechazado por dominio no autorizado: {$emailDomain} [{$provider}]",
-                    'status'      => 'denied',
-                    'user_id'     => null,
-                ]);
-                Redirect::withErrors('/login', ['general' => __('auth.external_account_not_authorized')]);
-            }
+        if (!$isAdminTest && !(new AuthenticationSettings())->isDomainAllowed($providerEmail, $settings)) {
+            $emailDomain = strtolower(substr($providerEmail, (int) strrpos($providerEmail, '@') + 1));
+            Logger::security("ExternalAuthController::callback — domain not allowed [{$provider}] {$emailDomain}");
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'external_login.domain_denied',
+                'description' => "Login externo rechazado por dominio no autorizado: {$emailDomain} [{$provider}]",
+                'status'      => 'denied',
+                'user_id'     => null,
+            ]);
+            Redirect::withErrors('/login', ['general' => __('auth.external_account_not_authorized')]);
         }
 
         if ($isAdminTest) {
@@ -565,20 +563,4 @@ class ExternalAuthController extends Controller
         Redirect::to('/account');
     }
 
-    private function isEmailDomainAllowed(string $email, string $allowedDomainsRaw): bool
-    {
-        if ($allowedDomainsRaw === '') {
-            return false;
-        }
-        $atPos = strrpos($email, '@');
-        if ($atPos === false) {
-            return false;
-        }
-        $emailDomain = strtolower(substr($email, $atPos + 1));
-        $allowed = array_filter(
-            array_map('trim', preg_split('/[\n\r,]+/', strtolower($allowedDomainsRaw))),
-            fn(string $d) => $d !== ''
-        );
-        return in_array($emailDomain, array_values($allowed), true);
-    }
 }

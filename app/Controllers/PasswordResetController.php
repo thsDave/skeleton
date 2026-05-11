@@ -10,6 +10,7 @@ use Core\Session;
 use Core\Validator;
 use Core\Audit;
 use Core\Logger;
+use App\Models\AuthenticationSettings;
 use App\Models\User;
 use App\Models\PasswordReset;
 use App\Services\Mailer;
@@ -48,6 +49,21 @@ class PasswordResetController extends Controller
 
         if ($validator->fails()) {
             Redirect::withErrors('/forgot-password', $validator->errors(), ['email' => $email]);
+        }
+
+        // ── Restricción de dominio institucional ──────────────────────────────────
+        if (!(new AuthenticationSettings())->isDomainAllowed($email)) {
+            $emailDomain = strtolower(substr($email, (int) strrpos($email, '@') + 1));
+            Logger::security("PasswordResetController::sendResetLink — domain not allowed: {$emailDomain}");
+            Audit::log([
+                'module'      => 'password_reset',
+                'action'      => 'password_reset.domain_denied',
+                'description' => "Recuperación de contraseña rechazada por dominio no autorizado: {$emailDomain}",
+                'status'      => 'denied',
+                'user_id'     => null,
+            ]);
+            Session::flash('info', __('auth.reset_link_generic_message'));
+            Redirect::to('/forgot-password');
         }
 
         $maxRequests      = (int) env('PASSWORD_RESET_MAX_REQUESTS', 3);

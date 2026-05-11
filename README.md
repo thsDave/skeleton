@@ -853,17 +853,19 @@ Crea: `tbl_authentication_settings`, `tbl_external_auth_providers`, `tbl_user_ex
 
 ---
 
-## Restricción de login externo por dominio institucional
+## Restricción por dominio institucional
 
-Permite limitar el acceso mediante proveedores externos (Google, Microsoft, GitHub) únicamente a cuentas cuyo correo pertenezca a uno o varios dominios institucionales autorizados.
+Permite limitar el acceso al sistema únicamente a cuentas cuyo correo pertenezca a uno o varios dominios institucionales autorizados.
 
 ### Qué hace
 
-- Si la restricción está **activada**, solo los correos del tipo `usuario@cristosal.org` (o cualquier dominio autorizado) pueden iniciar sesión mediante OAuth.
+- Si la restricción está **activada**, solo los correos del tipo `usuario@contoso.org` (o cualquier dominio autorizado) pueden acceder al sistema.
 - Los correos de otros dominios (Gmail, Hotmail, etc.) son rechazados con un mensaje genérico.
-- El login local con correo y contraseña **no se ve afectado**.
+- La restricción aplica a **login local** (correo + contraseña) **y a proveedores externos** (Google, Microsoft, GitHub).
+- La **recuperación de contraseña** también respeta la restricción: no se envía correo a dominios no autorizados.
 - La vinculación de cuentas desde "Mi Cuenta" también respeta la restricción.
 - Las pruebas OAuth del administrador (botón "Probar") **no** están sujetas a la restricción de dominio.
+- La coincidencia es **exacta**: `contoso.org` no acepta automáticamente `sub.contoso.org` ni `fakecontoso.org`.
 
 ### Cómo configurar
 
@@ -872,9 +874,9 @@ Permite limitar el acceso mediante proveedores externos (Google, Microsoft, GitH
 3. Ingresar los dominios autorizados en el textarea (uno por línea o separados por coma):
 
 ```
-cristosal.org
-cristosal.com
-fundacion.org
+contoso.org
+contoso.com
+otraempresa.org
 ```
 
 4. Hacer clic en **Guardar configuración**.
@@ -883,13 +885,13 @@ fundacion.org
 
 | Formato | ¿Aceptado? |
 |---|---|
-| `cristosal.org` | ✓ |
-| `sub.cristosal.org` | ✓ (si se agrega explícitamente) |
-| `@cristosal.org` | ✗ |
-| `https://cristosal.org` | ✗ |
-| `cristosal.org, fundacion.org` | ✓ (se normaliza) |
+| `contoso.org` | ✓ |
+| `sub.contoso.org` | ✓ (si se agrega explícitamente) |
+| `@contoso.org` | ✗ |
+| `https://contoso.org` | ✗ |
+| `contoso.org, otraempresa.org` | ✓ (se normaliza) |
 
-La coincidencia es **exacta**. `cristosal.org` no acepta automáticamente `sub.cristosal.org`.
+La coincidencia es **exacta**: `contoso.org` no acepta `sub.contoso.org`, `fakecontoso.org` ni `contoso.org.fake.com`.
 
 ### Migración SQL
 

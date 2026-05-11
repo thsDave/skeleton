@@ -941,9 +941,9 @@ return [
     'security_authentication.info_state_csrf'          => 'The OAuth flow uses a CSRF state parameter to prevent forgery attacks.',
     // Domain restriction
     'security_authentication.restrict_external_domains'           => 'Restrict by institutional domain',
-    'security_authentication.restrict_external_domains_desc'      => 'Only allows external login for email addresses from authorized institutional domains.',
+    'security_authentication.restrict_external_domains_desc'      => 'Only allows system access for email addresses from authorized domains. Applies to both local login and external providers.',
     'security_authentication.allowed_external_domains'            => 'Authorized domains',
-    'security_authentication.allowed_external_domains_help'       => 'Enter one domain per line or separated by commas. Do not use @ or full URLs. Example: domain.com.',
+    'security_authentication.allowed_external_domains_help'       => 'Enter one domain per line or separated by commas. This restriction applies to local login and external providers. Do not use @ or full URLs. Example: domain.com.',
     'security_authentication.allowed_external_domains_placeholder'=> 'domain.com',
     'security_authentication.invalid_domain_list'                 => 'You must enter at least one valid authorized domain. Do not use @ or full URLs. Example: domain.com.',
     'security_authentication.domain_restriction_updated'          => 'Domain restriction updated successfully.',
