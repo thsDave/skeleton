@@ -6,6 +6,7 @@ use Core\CSRF;
 $flashError   = Session::getFlash('error');
 $flashSuccess = Session::getFlash('success');
 $theme        = Auth::theme();
+$bsTheme      = $theme === 'dark' ? 'dark' : 'light';
 ?>
 <!doctype html>
 <html lang="es">
@@ -24,9 +25,11 @@ $theme        = Auth::theme();
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/fonts/material.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css" id="main-style-link" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style-preset.css" />
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/dark-mode.css" />
 </head>
 <body data-pc-preset="preset-1" data-pc-sidebar-theme="dark" data-pc-direction="ltr"
-      data-pc-theme="<?= htmlspecialchars($theme, ENT_QUOTES, 'UTF-8') ?>">
+      data-pc-theme="<?= htmlspecialchars($theme, ENT_QUOTES, 'UTF-8') ?>"
+      data-bs-theme="<?= htmlspecialchars($bsTheme, ENT_QUOTES, 'UTF-8') ?>">
 
 <div class="loader-bg">
   <div class="pc-loader"><div class="loader-fill"></div></div>

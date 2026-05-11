@@ -35,7 +35,6 @@ $_headerTheme   = $_isDark ? 'dark' : 'light';
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css" id="main-style-link" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style-preset.css" />
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/custom.css" />
-  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/dark-mode.css" />
 
   <!-- Select2 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
@@ -43,6 +42,9 @@ $_headerTheme   = $_isDark ? 'dark' : 'light';
 
   <!-- DataTables CSS -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
+
+  <!-- Dark mode overrides: must load after DashboardKit, Select2 and DataTables -->
+  <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/dark-mode.css" />
 
   <?php if (isset($extraHead)) echo $extraHead; ?>
   <?php
