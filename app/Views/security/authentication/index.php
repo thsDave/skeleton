@@ -182,6 +182,7 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
                 class="form-control font-monospace"
                 rows="4"
                 style="font-size:.85rem;"
+                <?= ($settings['restrict_external_domains'] ?? 0) ? '' : 'disabled' ?>
                 placeholder="<?= htmlspecialchars(__('security_authentication.allowed_external_domains_placeholder'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($settings['allowed_external_domains'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
               <div class="form-text text-muted mt-1">
                 <i class="ph-duotone ph-info me-1"></i>
@@ -449,8 +450,6 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   </div>
 </div>
 
-<?php require dirname(dirname(__DIR__)) . '/layouts/footer.php'; ?>
-
 <?php $extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -588,4 +587,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 JS;
+
+require dirname(dirname(__DIR__)) . '/layouts/footer.php';
 ?>
