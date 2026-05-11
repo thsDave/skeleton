@@ -107,7 +107,7 @@ function prettyJson(?string $raw): string
             <?php if ($log['entity']): ?>
               <?= htmlspecialchars($log['entity'], ENT_QUOTES, 'UTF-8') ?>
               <?php if ($log['entity_id']): ?>
-              <span class="badge bg-light text-dark ms-1">#<?= (int)$log['entity_id'] ?></span>
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1">#<?= (int)$log['entity_id'] ?></span>
               <?php endif; ?>
             <?php else: ?>
               <span class="text-muted">—</span>

@@ -184,7 +184,7 @@ $statusColors = [
                   <?php if (!empty($log['entity'])): ?>
                     <span><?= htmlspecialchars($log['entity'], ENT_QUOTES, 'UTF-8') ?></span>
                     <?php if (!empty($log['entity_id'])): ?>
-                      <span class="badge bg-light text-dark ms-1">#<?= (int)$log['entity_id'] ?></span>
+                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-1">#<?= (int)$log['entity_id'] ?></span>
                     <?php endif; ?>
                   <?php else: ?>
                     <span class="text-muted">—</span>

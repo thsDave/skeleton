@@ -96,7 +96,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
               <?= __('dashboard.session_as') ?>
               <strong><?= $_email ?></strong>
               <?php if (!empty($freshUser['role_name'])): ?>
-                &mdash; <span class="badge bg-primary bg-opacity-10 text-primary"><?= htmlspecialchars($freshUser['role_name'], ENT_QUOTES, 'UTF-8') ?></span>
+                &mdash; <span class="badge bg-primary text-white"><?= htmlspecialchars($freshUser['role_name'], ENT_QUOTES, 'UTF-8') ?></span>
               <?php endif; ?>
             </p>
           </div>
@@ -495,7 +495,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
                   </td>
                   <td style="font-size:.78rem;">
                     <?php if (!empty($log['module'])): ?>
-                    <span class="badge bg-light text-dark border me-1">
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle me-1">
                       <?= htmlspecialchars($log['module'], ENT_QUOTES, 'UTF-8') ?>
                     </span>
                     <?php endif; ?>
@@ -595,7 +595,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <?php if (!empty($systemSettings)): ?>
         <div class="d-flex justify-content-between py-2 border-bottom">
           <span class="small text-muted"><?= __('dashboard.system_version') ?></span>
-          <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
+          <span class="badge bg-primary text-white fw-semibold">
             <?= htmlspecialchars($systemSettings['system_version'] ?? __('dashboard.na'), ENT_QUOTES, 'UTF-8') ?>
           </span>
         </div>
@@ -659,7 +659,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
             <?php endif; ?>
           </div>
           <?php if (!empty($lastUser['role_name'])): ?>
-          <span class="badge bg-light text-dark border flex-shrink-0" style="font-size:.7rem;"><?= htmlspecialchars($lastUser['role_name'], ENT_QUOTES, 'UTF-8') ?></span>
+          <span class="badge bg-primary text-white flex-shrink-0" style="font-size:.7rem;"><?= htmlspecialchars($lastUser['role_name'], ENT_QUOTES, 'UTF-8') ?></span>
           <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -755,7 +755,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <p class="text-muted small pb-2 border-bottom"><?= __('dashboard.welcome_message') ?></p>
         <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
           <span class="small text-muted"><?= __('dashboard.your_role') ?></span>
-          <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
+          <span class="badge bg-primary text-white fw-semibold">
             <?= htmlspecialchars($freshUser['role_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
           </span>
         </div>

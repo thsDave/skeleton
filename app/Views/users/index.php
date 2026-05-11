@@ -92,7 +92,7 @@ require dirname(__DIR__) . '/layouts/main.php';
                 <td><?= htmlspecialchars($u['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars($u['telefono'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>
                 <td>
-                  <span class="badge bg-light-primary text-primary">
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
                     <?= htmlspecialchars($u['role_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
                   </span>
                 </td>
