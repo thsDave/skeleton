@@ -74,6 +74,7 @@ use App\Controllers\ExternalAuthController;
 use App\Controllers\TwoFactorController;
 use App\Controllers\TwoFactorChallengeController;
 use App\Controllers\AppearanceController;
+use App\Controllers\PasswordPolicyController;
 
 $router = new Router();
 
@@ -194,6 +195,10 @@ $router->post('/profile/two-factor/disable',               [TwoFactorController:
 $router->get('/two-factor/challenge',  [TwoFactorChallengeController::class, 'show']);
 $router->post('/two-factor/challenge', [TwoFactorChallengeController::class, 'verify']);
 $router->post('/two-factor/resend',    [TwoFactorChallengeController::class, 'resend']);
+
+// Password Policy
+$router->get('/security/password-policy',         [PasswordPolicyController::class, 'index']);
+$router->post('/security/password-policy/update', [PasswordPolicyController::class, 'update']);
 
 // Appearance
 $router->get('/appearance',                         [AppearanceController::class, 'index']);

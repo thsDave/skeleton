@@ -2,7 +2,7 @@
 
 Sistema web base (skeleton) con arquitectura MVC en PHP puro. Usa la plantilla visual **DashboardKit Free Admin Template** (Bootstrap 5) y está diseñado como punto de partida limpio y seguro para futuros proyectos.
 
-**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo, **configuración SMTP administrable**, **configuración global de MFA**, **verificación en 2 pasos por usuario (email y TOTP)**, **login externo OAuth (Google, Microsoft, GitHub)** y **restricción de login externo por dominio institucional**.
+**v3.0** incluye: Composer + autoload PSR-4, variables de entorno (.env), modo oscuro por usuario, internacionalización (ES/EN), gestión de idiomas, información del sistema, manuales descargables, **bloqueo de sesión por inactividad**, recuperación de contraseña por correo, **configuración SMTP administrable**, **configuración global de MFA**, **verificación en 2 pasos por usuario (email y TOTP)**, **login externo OAuth (Google, Microsoft, GitHub)**, **restricción por dominio institucional** y **política de contraseñas configurable**.
 
 ---
 
@@ -205,6 +205,12 @@ DB_PASSWORD=
 | `009_add_mfa_settings.sql` | Configuración global MFA |
 | `010_add_user_two_factor_authentication.sql` | Verificación en 2 pasos por usuario |
 | `011_remove_sms_from_mfa.sql` | Eliminar datos SMS de MFA (usuarios con method=sms deshabilitados) |
+| `012_add_login_security_settings.sql` | Configuración de intentos fallidos y bloqueo |
+| `013_add_external_auth_providers.sql` | Login externo OAuth (Google, Microsoft, GitHub) |
+| `014_add_authentication_methods.sql` | Métodos de autenticación y proveedores externos |
+| `015_add_appearance_settings.sql` | Apariencia del sistema (logo, favicon, colores) |
+| `016_add_external_domain_restrictions.sql` | Restricción por dominio institucional |
+| `017_add_password_policy.sql` | Política de contraseñas e historial |
 
 ### Paso 5 — Acceder al sistema
 
@@ -900,6 +906,52 @@ database/016_add_external_domain_restrictions.sql
 ```
 
 Agrega las columnas `restrict_external_domains` y `allowed_external_domains` a `tbl_authentication_settings`. **Ejecutar solo si las columnas no existen** — verificar antes en phpMyAdmin > Estructura de tabla.
+
+---
+
+## Política de Contraseñas
+
+Módulo administrativo en `/security/password-policy` (Seguridad > Política de Contraseñas) que permite definir los requisitos que deben cumplir las contraseñas de todos los usuarios del sistema.
+
+### Qué controla
+
+| Configuración | Descripción |
+|---|---|
+| Activar/desactivar política | Si está inactiva, solo se exige un mínimo de 6 caracteres |
+| Longitud mínima | Entre 6 y 128 caracteres (mínimo recomendado: 8 cuando está activa) |
+| Mayúsculas / Minúsculas | Requerir al menos una letra de cada tipo |
+| Números | Requerir al menos un dígito |
+| Caracteres especiales | Requerir al menos un símbolo (`@`, `#`, `$`, etc.) |
+| Sin parte del correo | Rechaza contraseñas que contengan la parte local del correo (≥3 chars) |
+| Sin nombre o apellido | Rechaza contraseñas que contengan el nombre o apellido del usuario (≥3 chars) |
+| Sin contraseñas comunes | Bloquea passwords conocidos como `password123`, `admin`, `123456` |
+| Historial | Número de contraseñas anteriores que no se pueden reutilizar (0–10) |
+| Expiración | Días antes de que la contraseña expire (0 = sin expiración) |
+
+### Dónde aplica
+
+La política se valida en todos los flujos de cambio de contraseña:
+
+- **Crear usuario** (admin)
+- **Editar usuario** (admin, si se ingresa nueva contraseña)
+- **Mi Cuenta → Cambiar contraseña** (usuario autenticado)
+- **Restablecer contraseña por correo** (flujo público)
+
+Los formularios muestran un widget visual de requisitos que se actualiza en tiempo real mientras el usuario escribe.
+
+### Historial de contraseñas
+
+Los hashes de contraseñas anteriores se almacenan en `tbl_password_histories`. Al cambiar la contraseña, el sistema verifica contra los últimos N hashes usando `password_verify()`. Las entradas antiguas se eliminan automáticamente para mantener solo las N más recientes.
+
+### Migraciones SQL
+
+```
+database/017_add_password_policy.sql
+```
+
+Crea las tablas `tbl_password_policies` y `tbl_password_histories`, registra el módulo y permisos, y agrega la columna `force_password_change` a `tbl_users`.
+
+> **Nota:** La redirección automática por contraseña expirada (`password_expiration_days`) y la redirección por `force_password_change` están **pendientes de implementación** en el flujo de login.
 
 ---
 

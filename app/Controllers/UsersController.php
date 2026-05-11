@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Status;
 use App\Models\LoginAttempt;
+use App\Services\PasswordPolicyService;
 use App\Services\UploadService;
 
 class UsersController extends Controller
@@ -40,10 +41,11 @@ class UsersController extends Controller
     public function create(): void
     {
         Auth::requirePermission('users.create');
-        $authUser = Auth::user();
-        $roles    = $this->roleModel->getAll();
-        $statuses = $this->statusModel->getAll();
-        $this->view('users.create', compact('authUser', 'roles', 'statuses'));
+        $authUser    = Auth::user();
+        $roles       = $this->roleModel->getAll();
+        $statuses    = $this->statusModel->getAll();
+        $policyReqs  = (new PasswordPolicyService())->getRequirements();
+        $this->view('users.create', compact('authUser', 'roles', 'statuses', 'policyReqs'));
     }
 
     public function store(): void
@@ -77,13 +79,25 @@ class UsersController extends Controller
                   ->email('email', $email)
                   ->maxLength('email', $email, 150, 'Correo electrónico')
                   ->required('password', $password, 'Contraseña')
-                  ->strongPassword('password', $password)
                   ->matches('password_confirmation', $password, $confirm)
                   ->required('role_id', $roleId ?: '', 'Rol')
                   ->required('status_id', $statusId ?: '', 'Estado');
 
         if ($validator->fails()) {
             Redirect::withErrors('/users/create', $validator->errors(), compact(
+                'nombres', 'apellidos', 'telefono', 'direccion', 'email', 'roleId', 'statusId'
+            ));
+        }
+
+        // ── Política de contraseñas ───────────────────────────────────────────
+        $policySvc    = new PasswordPolicyService();
+        $policyResult = $policySvc->validate($password, [
+            'email'     => $email,
+            'nombres'   => $nombres,
+            'apellidos' => $apellidos,
+        ]);
+        if (!$policyResult['valid']) {
+            Redirect::withErrors('/users/create', ['password' => implode(' ', $policyResult['errors'])], compact(
                 'nombres', 'apellidos', 'telefono', 'direccion', 'email', 'roleId', 'statusId'
             ));
         }
@@ -113,19 +127,23 @@ class UsersController extends Controller
             $uploadedImage = $result['filename'];
         }
 
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
         $newId = $this->userModel->create([
             'nombres'       => $nombres,
             'apellidos'     => $apellidos,
             'telefono'      => $telefono ?: null,
             'direccion'     => $direccion ?: null,
             'email'         => $email,
-            'password'      => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
+            'password'      => $hashedPassword,
             'status_id'     => $statusId,
             'role_id'       => $roleId,
             'profile_image' => $uploadedImage,
         ]);
 
         if ($newId) {
+            // Guardar contraseña inicial en historial
+            $policySvc->saveHistory($newId, $hashedPassword);
+
             // Renombrar imagen con el ID real si se subió
             if ($uploadedImage) {
                 $diskPath = $uploadSvc->getDiskPath('profile_images');
@@ -152,17 +170,18 @@ class UsersController extends Controller
     public function edit(string $id): void
     {
         Auth::requirePermission('users.edit');
-        $authUser = Auth::user();
-        $userId   = (int)$id;
-        $user     = $this->userModel->findById($userId);
+        $authUser   = Auth::user();
+        $userId     = (int)$id;
+        $user       = $this->userModel->findById($userId);
 
         if (!$user) {
             Redirect::withError('/users', 'Usuario no encontrado.');
         }
 
-        $roles    = $this->roleModel->getAll();
-        $statuses = $this->statusModel->getAll();
-        $this->view('users.edit', compact('authUser', 'user', 'roles', 'statuses'));
+        $roles      = $this->roleModel->getAll();
+        $statuses   = $this->statusModel->getAll();
+        $policyReqs = (new PasswordPolicyService())->getRequirements();
+        $this->view('users.edit', compact('authUser', 'user', 'roles', 'statuses', 'policyReqs'));
     }
 
     public function update(string $id): void
@@ -206,14 +225,33 @@ class UsersController extends Controller
                   ->required('status_id', $statusId ?: '', 'Estado');
 
         if ($password !== '') {
-            $validator->strongPassword('password', $password)
-                      ->matches('password_confirmation', $password, $confirm);
+            $validator->matches('password_confirmation', $password, $confirm);
         }
 
         if ($validator->fails()) {
             Redirect::withErrors("/users/edit/{$userId}", $validator->errors(), compact(
                 'nombres', 'apellidos', 'telefono', 'direccion', 'email', 'roleId', 'statusId'
             ));
+        }
+
+        // ── Política de contraseñas (solo si cambia contraseña) ───────────────
+        $policySvc = new PasswordPolicyService();
+        if ($password !== '') {
+            $policyResult = $policySvc->validate($password, [
+                'email'     => $user['email'],
+                'nombres'   => $user['nombres'],
+                'apellidos' => $user['apellidos'],
+            ]);
+            if (!$policyResult['valid']) {
+                Redirect::withErrors("/users/edit/{$userId}", ['password' => implode(' ', $policyResult['errors'])], compact(
+                    'nombres', 'apellidos', 'telefono', 'direccion', 'email', 'roleId', 'statusId'
+                ));
+            }
+            if ($policySvc->isPasswordReused($password, $userId)) {
+                Redirect::withErrors("/users/edit/{$userId}", ['password' => __('password_policy.error_reused', ['count' => (string)(int)($policySvc->getPolicy()['password_history_count'] ?? 3)])], compact(
+                    'nombres', 'apellidos', 'telefono', 'direccion', 'email', 'roleId', 'statusId'
+                ));
+            }
         }
 
         if ($this->userModel->emailExists($email, $userId)) {
@@ -257,14 +295,24 @@ class UsersController extends Controller
             'role_id'   => $roleId,
         ];
 
+        $newHash = null;
         if ($password !== '') {
-            $data['password'] = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+            $newHash          = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+            $data['password'] = $newHash;
         }
         if ($newImage) {
             $data['profile_image'] = $newImage;
         }
 
         if ($this->userModel->adminUpdate($userId, $data)) {
+            // Guardar en historial si hubo cambio de contraseña
+            if ($newHash !== null) {
+                $policySvc->saveHistory($userId, $newHash);
+                Audit::log(['module' => 'users', 'action' => 'user.password_changed_by_admin',
+                    'entity' => 'user', 'entity_id' => $userId,
+                    'description' => "Contraseña de usuario ID {$userId} cambiada por admin ID " . Auth::id(),
+                    'status' => 'success']);
+            }
             Logger::security("Usuario ID {$userId} actualizado por admin ID " . Auth::id());
             $oldAudit = ['nombres' => $user['nombres'], 'apellidos' => $user['apellidos'],
                 'email' => $user['email'], 'role_id' => $user['role_id'], 'status_id' => $user['status_id']];

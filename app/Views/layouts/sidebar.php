@@ -108,7 +108,7 @@ $_initials = mb_strtoupper(mb_substr(preg_replace('/\s+/', '', $_appName), 0, 2)
         <?php endif; ?>
 
         <?php
-        $showSecurity = can('security_sessions.view') || can('roles_permissions.view') || can('audit_logs.view') || can('security_smtp.view') || can('security_mfa.view') || can('security_attempts.view') || can('security_authentication.view');
+        $showSecurity = can('security_sessions.view') || can('roles_permissions.view') || can('audit_logs.view') || can('security_smtp.view') || can('security_mfa.view') || can('security_attempts.view') || can('security_authentication.view') || can('security_password_policy.view');
         if ($showSecurity):
         ?>
         <li class="pc-item pc-caption">
@@ -166,6 +166,15 @@ $_initials = mb_strtoupper(mb_substr(preg_replace('/\s+/', '', $_appName), 0, 2)
           <a href="<?= BASE_URL ?>/security/attempts" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-shield-warning"></i></span>
             <span class="pc-mtext"><?= __('menu.security_attempts') ?></span>
+          </a>
+        </li>
+        <?php endif; ?>
+
+        <?php if (can('security_password_policy.view')): ?>
+        <li class="pc-item <?= ($activeMenu ?? '') === 'security_password_policy' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/security/password-policy" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-password"></i></span>
+            <span class="pc-mtext"><?= __('menu.security_password_policy') ?></span>
           </a>
         </li>
         <?php endif; ?>

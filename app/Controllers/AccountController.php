@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\AuthenticationSettings;
 use App\Models\ExternalAuthProvider;
 use App\Models\UserExternalAccount;
+use App\Services\PasswordPolicyService;
 
 class AccountController extends Controller
 {
@@ -87,9 +88,10 @@ class AccountController extends Controller
     public function editPassword(): void
     {
         Auth::requireAuth();
-        $authUser = Auth::user();
-        $user = $this->userModel->findById(Auth::id());
-        $this->view('account.edit_password', compact('authUser', 'user'));
+        $authUser   = Auth::user();
+        $user       = $this->userModel->findById(Auth::id());
+        $policyReqs = (new PasswordPolicyService())->getRequirements();
+        $this->view('account.edit_password', compact('authUser', 'user', 'policyReqs'));
     }
 
     public function updatePassword(): void
@@ -111,7 +113,6 @@ class AccountController extends Controller
         $validator->required('current_password', $currentPassword, 'Contraseña actual')
                   ->required('new_password', $newPassword, 'Nueva contraseña')
                   ->required('confirm_password', $confirmPassword, 'Confirmar contraseña')
-                  ->strongPassword('new_password', $newPassword)
                   ->matches('confirm_password', $newPassword, $confirmPassword);
 
         if ($validator->fails()) {
@@ -128,12 +129,35 @@ class AccountController extends Controller
             Redirect::withErrors('/account/edit-password', ['current_password' => 'La contraseña actual es incorrecta.']);
         }
 
+        // ── Política de contraseñas ───────────────────────────────────────────
+        $policySvc    = new PasswordPolicyService();
+        $policyResult = $policySvc->validate($newPassword, [
+            'email'     => $user['email'],
+            'nombres'   => $user['nombres'],
+            'apellidos' => $user['apellidos'],
+        ]);
+        if (!$policyResult['valid']) {
+            Audit::log(['module' => 'account', 'action' => 'password.policy_validation_failed',
+                'entity' => 'user', 'entity_id' => $id,
+                'description' => 'Cambio de contraseña rechazado por política',
+                'status' => 'denied']);
+            Redirect::withErrors('/account/edit-password', ['new_password' => implode(' ', $policyResult['errors'])]);
+        }
+        if ($policySvc->isPasswordReused($newPassword, $id)) {
+            Audit::log(['module' => 'account', 'action' => 'password.history_reuse_blocked',
+                'entity' => 'user', 'entity_id' => $id,
+                'description' => 'Cambio de contraseña rechazado por reutilización',
+                'status' => 'denied']);
+            Redirect::withErrors('/account/edit-password', ['new_password' => __('password_policy.error_reused', ['count' => (string)(int)($policySvc->getPolicy()['password_history_count'] ?? 3)])]);
+        }
+
         $hashed = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
 
         if ($this->userModel->updatePassword($id, $hashed)) {
+            $policySvc->saveHistory($id, $hashed);
             Session::regenerate();
             Logger::security("Contraseña actualizada - ID {$id}");
-            Audit::log(['module' => 'account', 'action' => 'password_changed',
+            Audit::log(['module' => 'account', 'action' => 'password.changed',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Contraseña de cuenta actualizada',
                 'status' => 'success']);

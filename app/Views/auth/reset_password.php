@@ -84,12 +84,26 @@ $errors = Session::getFlash('errors', []);
                   <div class="invalid-feedback"><?= htmlspecialchars($errors['new_password'], ENT_QUOTES, 'UTF-8') ?></div>
                 <?php endif; ?>
               </div>
-              <div id="pwd-requirements" class="mt-2 small lh-lg">
-                <div id="req-length"  class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.min_length') ?></div>
-                <div id="req-upper"   class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.uppercase') ?></div>
-                <div id="req-lower"   class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.lowercase') ?></div>
-                <div id="req-number"  class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.number') ?></div>
-                <div id="req-special" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.special') ?></div>
+<?php
+$_rMinLen  = (int)(($policyReqs['is_enabled'] ?? 0) ? ($policyReqs['min_length'] ?? 10) : 6);
+$_rUpper   = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_uppercase']);
+$_rLower   = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_lowercase']);
+$_rNumber  = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_number']);
+$_rSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_special']);
+?>
+              <div id="pwd-requirements" class="mt-2 small lh-lg"
+                   data-min="<?= $_rMinLen ?>"
+                   data-upper="<?= $_rUpper ? '1' : '0' ?>"
+                   data-lower="<?= $_rLower ? '1' : '0' ?>"
+                   data-number="<?= $_rNumber ? '1' : '0' ?>"
+                   data-special="<?= $_rSpecial ? '1' : '0' ?>">
+                <div id="req-length" class="text-muted">
+                  <i class="ph-duotone ph-circle me-1"></i>Mínimo <?= $_rMinLen ?> caracteres
+                </div>
+                <?php if ($_rUpper): ?><div id="req-upper" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.uppercase') ?></div><?php endif; ?>
+                <?php if ($_rLower): ?><div id="req-lower" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.lowercase') ?></div><?php endif; ?>
+                <?php if ($_rNumber): ?><div id="req-number" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.number') ?></div><?php endif; ?>
+                <?php if ($_rSpecial): ?><div id="req-special" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.special') ?></div><?php endif; ?>
               </div>
             </div>
 
@@ -147,14 +161,14 @@ preset_change('preset-1');
 (function () {
   var pwdEl = document.getElementById('new_password');
   var cfmEl = document.getElementById('confirm_password');
-  if (!pwdEl || !cfmEl) return;
-  var rules = [
-    { id: 'req-length',  fn: function(v){ return v.length >= 10; } },
-    { id: 'req-upper',   fn: function(v){ return /[A-Z]/.test(v); } },
-    { id: 'req-lower',   fn: function(v){ return /[a-z]/.test(v); } },
-    { id: 'req-number',  fn: function(v){ return /[0-9]/.test(v); } },
-    { id: 'req-special', fn: function(v){ return /[\W_]/.test(v); } }
-  ];
+  var reqs  = document.getElementById('pwd-requirements');
+  if (!pwdEl || !cfmEl || !reqs) return;
+  var minLen = parseInt(reqs.getAttribute('data-min') || '6', 10);
+  var rules = [{ id: 'req-length', fn: function(v){ return v.length >= minLen; } }];
+  if (reqs.getAttribute('data-upper')   === '1') rules.push({ id: 'req-upper',   fn: function(v){ return /[A-Z]/.test(v); } });
+  if (reqs.getAttribute('data-lower')   === '1') rules.push({ id: 'req-lower',   fn: function(v){ return /[a-z]/.test(v); } });
+  if (reqs.getAttribute('data-number')  === '1') rules.push({ id: 'req-number',  fn: function(v){ return /[0-9]/.test(v); } });
+  if (reqs.getAttribute('data-special') === '1') rules.push({ id: 'req-special', fn: function(v){ return /[\W_]/.test(v); } });
   pwdEl.addEventListener('input', function () {
     var val = this.value;
     rules.forEach(function (r) {

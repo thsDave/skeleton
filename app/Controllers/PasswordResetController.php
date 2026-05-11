@@ -14,6 +14,7 @@ use App\Models\AuthenticationSettings;
 use App\Models\User;
 use App\Models\PasswordReset;
 use App\Services\Mailer;
+use App\Services\PasswordPolicyService;
 
 class PasswordResetController extends Controller
 {
@@ -204,7 +205,8 @@ class PasswordResetController extends Controller
             Redirect::to('/forgot-password');
         }
 
-        $this->view('auth.reset_password', ['token' => $token]);
+        $policyReqs = (new PasswordPolicyService())->getRequirements();
+        $this->view('auth.reset_password', ['token' => $token, 'policyReqs' => $policyReqs]);
     }
 
     // ─── POST /reset-password ────────────────────────────────────────────────
@@ -226,7 +228,7 @@ class PasswordResetController extends Controller
 
         $validator = new Validator();
         $validator->required('new_password', $newPassword, 'Nueva contraseña')
-                  ->strongPassword('new_password', $newPassword)
+                  ->required('confirm_password', $confirmPassword, 'Confirmar contraseña')
                   ->matches('confirm_password', $confirmPassword, $newPassword);
 
         if ($validator->fails()) {
@@ -249,10 +251,44 @@ class PasswordResetController extends Controller
         }
 
         $userId = (int)$record['user_id'];
+        $user   = $this->userModel->findById($userId);
+
+        // ── Política de contraseñas ───────────────────────────────────────────
+        $policySvc    = new PasswordPolicyService();
+        $policyResult = $policySvc->validate($newPassword, [
+            'email'     => $user['email']     ?? '',
+            'nombres'   => $user['nombres']   ?? '',
+            'apellidos' => $user['apellidos'] ?? '',
+        ]);
+        if (!$policyResult['valid']) {
+            Audit::log([
+                'module'      => 'password_reset',
+                'action'      => 'password_reset.policy_validation_failed',
+                'entity'      => 'user',
+                'entity_id'   => $userId,
+                'description' => 'Restablecimiento rechazado por política de contraseñas',
+                'status'      => 'denied',
+                'user_id'     => null,
+            ]);
+            Redirect::withErrors('/reset-password/' . $token, ['new_password' => implode(' ', $policyResult['errors'])]);
+        }
+        if ($policySvc->isPasswordReused($newPassword, $userId)) {
+            Audit::log([
+                'module'      => 'password_reset',
+                'action'      => 'password_reset.history_reuse_blocked',
+                'entity'      => 'user',
+                'entity_id'   => $userId,
+                'description' => 'Restablecimiento rechazado por reutilización de contraseña',
+                'status'      => 'denied',
+                'user_id'     => null,
+            ]);
+            Redirect::withErrors('/reset-password/' . $token, ['new_password' => __('password_policy.error_reused', ['count' => (string)(int)($policySvc->getPolicy()['password_history_count'] ?? 3)])]);
+        }
 
         // Actualizar contraseña
-        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT, ['cost' => 12]);
+        $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
         $this->userModel->updatePassword($userId, $hashedPassword);
+        $policySvc->saveHistory($userId, $hashedPassword);
 
         // Marcar token como usado + invalidar otros tokens del mismo usuario
         $this->resetModel->markAsUsed((int)$record['id']);
@@ -261,7 +297,7 @@ class PasswordResetController extends Controller
         Logger::security("Password reset completed for user ID {$userId}");
         Audit::log([
             'module'      => 'password_reset',
-            'action'      => 'password_reset.completed',
+            'action'      => 'password_reset.reset_completed',
             'entity'      => 'user',
             'entity_id'   => $userId,
             'description' => 'Contraseña restablecida mediante enlace de recuperación',
