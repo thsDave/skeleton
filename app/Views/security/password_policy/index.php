@@ -3,7 +3,7 @@ $pageTitle  = __('password_policy.title');
 $activeMenu = 'security_password_policy';
 $policy     = $policy ?? [];
 
-require dirname(dirname(dirname(__DIR__))) . '/layouts/main.php';
+require dirname(dirname(__DIR__)) . '/layouts/main.php';
 ?>
 
 <div class="page-header">
@@ -347,5 +347,5 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 JS;
 
-require dirname(dirname(dirname(__DIR__))) . '/layouts/footer.php';
+require dirname(dirname(__DIR__)) . '/layouts/footer.php';
 ?>
