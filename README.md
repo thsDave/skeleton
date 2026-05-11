@@ -354,6 +354,8 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 
 El dashboard muestra información diferente según el rol del usuario.
 
+La presentación visual del dashboard se refuerza con clases acotadas en `public/assets/css/custom.css`, cargado después de DashboardKit. Los estilos mejoran tarjetas, secciones, gráficas y estados vacíos sin cambiar las consultas ni agregar tablas.
+
 ### Qué ve el administrador (o usuario con `users.view`)
 - **KPIs** (8 tarjetas): total usuarios, activos, inactivos, con 2FA, sin 2FA, perfil incompleto, idiomas activos, estado SMTP.
 - **Gráficas** (Chart.js 4): usuarios por rol (doughnut), estado 2FA (doughnut), métodos 2FA activos (doughnut), estado de usuarios (barra).

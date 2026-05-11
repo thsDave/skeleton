@@ -24,6 +24,11 @@ $withoutMfa = (int)($userStats['without_mfa']  ?? 0);
 $withImage  = (int)($userStats['with_image']   ?? 0);
 $withoutImg = (int)($userStats['without_image']?? 0);
 $incomplete = (int)($userStats['incomplete']   ?? 0);
+$activePct  = $total > 0 ? (int) round(($active / $total) * 100) : 0;
+$inactivePct = $total > 0 ? (int) round(($inactive / $total) * 100) : 0;
+$mfaPct     = $total > 0 ? (int) round(($withMfa / $total) * 100) : 0;
+$profilePct = $total > 0 ? (int) round(($withImage / $total) * 100) : 0;
+$lastUpdated = date('d/m/Y H:i');
 
 // Chart data arrays (no SMS)
 $chartRoleLabels       = array_values(array_column($roleStats, 'role_name'));
@@ -39,10 +44,7 @@ foreach ($mfaMethodStats as $m) {
 }
 
 // Avatar
-$_img    = $freshUser['profile_image'] ?? ($authUser['profile_image'] ?? null);
-$_avatar = $_img
-    ? BASE_URL . '/uploads/profiles/' . htmlspecialchars($_img, ENT_QUOTES, 'UTF-8')
-    : null;
+$_avatar = current_user_avatar_url($freshUser ?: $authUser);
 $_name   = htmlspecialchars(
     trim(($freshUser['nombres'] ?? $authUser['nombres'] ?? '') . ' ' . ($freshUser['apellidos'] ?? $authUser['apellidos'] ?? '')),
     ENT_QUOTES, 'UTF-8'
@@ -70,26 +72,18 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
   </div>
 </div>
 
+<div class="dashboard-shell">
+
 <!-- [ Welcome card ] -->
 <div class="row mb-3">
   <div class="col-12">
-    <div class="card border-0 shadow-sm">
+    <div class="card border-0 shadow-sm dashboard-hero">
       <div class="card-body py-3">
         <div class="d-flex align-items-center gap-3">
           <div class="flex-shrink-0">
-            <?php if ($_avatar): ?>
               <img src="<?= $_avatar ?>" alt="avatar"
-                   class="rounded-circle"
-                   style="width:56px;height:56px;object-fit:cover;"
-                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-              <div class="avtar avtar-l bg-light-primary" style="display:none;">
-                <i class="ph-duotone ph-user-circle text-primary" style="font-size:2rem;"></i>
-              </div>
-            <?php else: ?>
-              <div class="avtar avtar-l bg-light-primary">
-                <i class="ph-duotone ph-user-circle text-primary" style="font-size:2rem;"></i>
-              </div>
-            <?php endif; ?>
+                   class="rounded-circle dashboard-avatar"
+                   onerror="this.src='<?= BASE_URL ?>/assets/images/user/avatar-1.jpg';">
           </div>
           <div class="flex-grow-1">
             <h5 class="mb-1 fw-bold">
@@ -102,6 +96,13 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
                 &mdash; <span class="badge bg-primary bg-opacity-10 text-primary"><?= htmlspecialchars($freshUser['role_name'], ENT_QUOTES, 'UTF-8') ?></span>
               <?php endif; ?>
             </p>
+          </div>
+          <div class="dashboard-updated d-none d-lg-flex align-items-center gap-2">
+            <i class="ph-duotone ph-clock-clockwise"></i>
+            <div>
+              <span><?= __('dashboard.last_updated') ?></span>
+              <strong><?= htmlspecialchars($lastUpdated, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
           </div>
           <?php if ($showAdminDash && $total > 0): ?>
           <div class="d-none d-md-flex gap-4 text-center">
@@ -126,9 +127,15 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 </div>
 
 <!-- [ Quick action cards ] -->
+<div class="dashboard-section-heading">
+  <div>
+    <span><?= __('dashboard.quick_actions') ?></span>
+    <h6><?= __('dashboard.quick_actions_desc') ?></h6>
+  </div>
+</div>
 <div class="row g-3 mb-4">
   <div class="col-md-4">
-    <div class="card prod-p-card border-0 shadow-sm">
+    <div class="card prod-p-card border-0 shadow-sm dashboard-action-card">
       <div class="card-body">
         <div class="row align-items-center m-b-0">
           <div class="col">
@@ -147,7 +154,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card prod-p-card border-0 shadow-sm">
+    <div class="card prod-p-card border-0 shadow-sm dashboard-action-card">
       <div class="card-body">
         <div class="row align-items-center m-b-0">
           <div class="col">
@@ -166,7 +173,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card prod-p-card border-0 shadow-sm">
+    <div class="card prod-p-card border-0 shadow-sm dashboard-action-card">
       <div class="card-body">
         <div class="row align-items-center m-b-0">
           <div class="col">
@@ -202,15 +209,22 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 <!-- ═══════════════════════════════════════════════════════════════════════════ -->
 
 <!-- [ KPI Row 1 ] -->
+<div class="dashboard-section-heading">
+  <div>
+    <span><?= __('dashboard.summary') ?></span>
+    <h6><?= __('dashboard.summary_desc') ?></h6>
+  </div>
+</div>
 <div class="row g-3 mb-3">
   <!-- Total usuarios -->
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div>
             <p class="text-muted small mb-1"><?= __('dashboard.total_users') ?></p>
             <h3 class="mb-0 fw-bold"><?= $total ?></h3>
+            <span class="dashboard-stat-note"><?= __('dashboard.users_total_hint') ?></span>
           </div>
           <div class="avtar avtar-s bg-light-primary rounded-2 flex-shrink-0">
             <i class="ph-duotone ph-users text-primary" style="font-size:1.3rem;"></i>
@@ -221,12 +235,13 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
   </div>
   <!-- Activos -->
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div>
             <p class="text-muted small mb-1"><?= __('dashboard.active_users') ?></p>
             <h3 class="mb-0 fw-bold text-success"><?= $active ?></h3>
+            <span class="dashboard-stat-note"><?= __('dashboard.active_ratio', ['percent' => $activePct]) ?></span>
           </div>
           <div class="avtar avtar-s bg-light-success rounded-2 flex-shrink-0">
             <i class="ph-duotone ph-user-check text-success" style="font-size:1.3rem;"></i>
@@ -237,12 +252,13 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
   </div>
   <!-- Inactivos -->
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div>
             <p class="text-muted small mb-1"><?= __('dashboard.inactive_users') ?></p>
             <h3 class="mb-0 fw-bold text-danger"><?= $inactive ?></h3>
+            <span class="dashboard-stat-note"><?= __('dashboard.inactive_ratio', ['percent' => $inactivePct]) ?></span>
           </div>
           <div class="avtar avtar-s bg-light-danger rounded-2 flex-shrink-0">
             <i class="ph-duotone ph-user-minus text-danger" style="font-size:1.3rem;"></i>
@@ -253,12 +269,13 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
   </div>
   <!-- Con MFA -->
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div>
             <p class="text-muted small mb-1"><?= __('dashboard.users_with_mfa') ?></p>
             <h3 class="mb-0 fw-bold text-info"><?= $withMfa ?></h3>
+            <span class="dashboard-stat-note"><?= $mfaPct ?>% <?= __('dashboard.protected_users') ?></span>
           </div>
           <div class="avtar avtar-s bg-light-info rounded-2 flex-shrink-0">
             <i class="ph-duotone ph-shield-check text-info" style="font-size:1.3rem;"></i>
@@ -273,12 +290,13 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 <div class="row g-3 mb-4">
   <!-- Sin MFA -->
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div>
             <p class="text-muted small mb-1"><?= __('dashboard.users_without_mfa') ?></p>
             <h3 class="mb-0 fw-bold text-warning"><?= $withoutMfa ?></h3>
+            <span class="dashboard-stat-note"><?= __('dashboard.pending_mfa') ?></span>
           </div>
           <div class="avtar avtar-s bg-light-warning rounded-2 flex-shrink-0">
             <i class="ph-duotone ph-shield-slash text-warning" style="font-size:1.3rem;"></i>
@@ -289,12 +307,13 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
   </div>
   <!-- Perfil incompleto -->
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div>
             <p class="text-muted small mb-1"><?= __('dashboard.incomplete_profiles') ?></p>
             <h3 class="mb-0 fw-bold"><?= $incomplete ?></h3>
+            <span class="dashboard-stat-note"><?= __('dashboard.profile_completion', ['percent' => $profilePct]) ?></span>
           </div>
           <div class="avtar avtar-s bg-light-secondary rounded-2 flex-shrink-0">
             <i class="ph-duotone ph-warning text-secondary" style="font-size:1.3rem;"></i>
@@ -305,12 +324,13 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
   </div>
   <!-- Idiomas activos -->
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div>
             <p class="text-muted small mb-1"><?= __('dashboard.active_languages') ?></p>
             <h3 class="mb-0 fw-bold"><?= $activeLanguages ?></h3>
+            <span class="dashboard-stat-note"><?= __('dashboard.languages_ready') ?></span>
           </div>
           <div class="avtar avtar-s bg-light-primary rounded-2 flex-shrink-0">
             <i class="ph-duotone ph-translate text-primary" style="font-size:1.3rem;"></i>
@@ -321,7 +341,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
   </div>
   <!-- Estado SMTP -->
   <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-stat-card">
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div>
@@ -331,6 +351,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
                 <?= __('dashboard.' . $smtpStatus) ?>
               </span>
             </h5>
+            <span class="dashboard-stat-note"><?= __('dashboard.smtp_ready_short') ?></span>
           </div>
           <div class="avtar avtar-s bg-light-<?= $smtpBadgeClass ?> rounded-2 flex-shrink-0">
             <i class="ph-duotone ph-envelope text-<?= $smtpBadgeClass ?>" style="font-size:1.3rem;"></i>
@@ -342,10 +363,16 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 </div>
 
 <!-- [ Charts Row ] -->
+<div class="dashboard-section-heading">
+  <div>
+    <span><?= __('dashboard.security_overview') ?></span>
+    <h6><?= __('dashboard.security_overview_desc') ?></h6>
+  </div>
+</div>
 <div class="row g-3 mb-4">
   <!-- Usuarios por rol -->
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-chart-card">
       <div class="card-header border-0 pb-0">
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.users_by_role') ?></h6>
       </div>
@@ -353,7 +380,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <div style="position:relative;height:210px;">
           <canvas id="chartRoles"></canvas>
         </div>
-        <div id="chartRolesEmpty" class="d-none text-center text-muted py-4 small">
+        <div id="chartRolesEmpty" class="d-none text-center text-muted py-4 small dashboard-empty-state">
           <i class="ph-duotone ph-chart-pie-slice text-muted mb-2" style="font-size:2rem;display:block;"></i>
           <?= __('dashboard.no_data') ?>
         </div>
@@ -362,7 +389,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
   </div>
   <!-- Estado MFA -->
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-chart-card">
       <div class="card-header border-0 pb-0">
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.mfa_status_chart') ?></h6>
       </div>
@@ -370,12 +397,16 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <div style="position:relative;height:210px;">
           <canvas id="chartMfaStatus"></canvas>
         </div>
+        <div id="chartMfaStatusEmpty" class="d-none text-center text-muted py-4 small dashboard-empty-state">
+          <i class="ph-duotone ph-shield-warning text-muted mb-2" style="font-size:2rem;display:block;"></i>
+          <?= __('dashboard.no_data') ?>
+        </div>
       </div>
     </div>
   </div>
   <!-- Métodos MFA -->
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-chart-card">
       <div class="card-header border-0 pb-0">
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.mfa_methods_chart') ?></h6>
       </div>
@@ -383,7 +414,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <div style="position:relative;height:210px;">
           <canvas id="chartMfaMethods"></canvas>
         </div>
-        <div id="chartMfaMethodsEmpty" class="d-none text-center text-muted py-4 small">
+        <div id="chartMfaMethodsEmpty" class="d-none text-center text-muted py-4 small dashboard-empty-state">
           <i class="ph-duotone ph-shield-slash text-muted mb-2" style="font-size:2rem;display:block;"></i>
           <?= __('dashboard.no_mfa_users') ?>
         </div>
@@ -393,10 +424,16 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 </div>
 
 <!-- [ Estado usuarios + Actividad reciente ] -->
+<div class="dashboard-section-heading">
+  <div>
+    <span><?= __('dashboard.activity_overview') ?></span>
+    <h6><?= __('dashboard.activity_overview_desc') ?></h6>
+  </div>
+</div>
 <div class="row g-3 mb-4">
   <!-- Bar chart: Estado de usuarios -->
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-chart-card">
       <div class="card-header border-0 pb-0">
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.user_status_chart') ?></h6>
       </div>
@@ -410,7 +447,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 
   <!-- Actividad reciente -->
   <div class="col-lg-8">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-panel-card">
       <div class="card-header border-0 d-flex align-items-center justify-content-between">
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.recent_activity') ?></h6>
         <?php if ($canViewAudit): ?>
@@ -421,7 +458,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
       </div>
       <div class="card-body p-0">
         <?php if (empty($recentActivity)): ?>
-          <div class="text-center text-muted py-5 small">
+          <div class="text-center text-muted py-5 small dashboard-empty-state m-3">
             <i class="ph-duotone ph-clock-clockwise mb-2" style="font-size:2.5rem;display:block;"></i>
             <?= __('dashboard.no_recent_activity') ?>
           </div>
@@ -475,11 +512,17 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 </div>
 
 <!-- [ Seguridad + Estado del sistema + Usuarios y perfiles ] -->
+<div class="dashboard-section-heading">
+  <div>
+    <span><?= __('dashboard.system_status') ?></span>
+    <h6><?= __('dashboard.system_status_desc') ?></h6>
+  </div>
+</div>
 <div class="row g-3 mb-4">
 
   <!-- Seguridad del sistema -->
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-panel-card">
       <div class="card-header border-0">
         <h6 class="mb-0 fw-semibold">
           <i class="ph-duotone ph-shield-check me-2 text-success"></i><?= __('dashboard.system_security') ?>
@@ -535,7 +578,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 
   <!-- Estado del sistema -->
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-panel-card">
       <div class="card-header border-0">
         <h6 class="mb-0 fw-semibold">
           <i class="ph-duotone ph-info me-2 text-info"></i><?= __('dashboard.system_status') ?>
@@ -588,7 +631,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 
   <!-- Usuarios y perfiles -->
   <div class="col-lg-4">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-panel-card">
       <div class="card-header border-0">
         <h6 class="mb-0 fw-semibold">
           <i class="ph-duotone ph-users me-2 text-primary"></i><?= __('dashboard.users_profiles') ?>
@@ -654,7 +697,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 <div class="row g-3 mb-4">
   <!-- Mi seguridad personal -->
   <div class="col-md-6">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-panel-card">
       <div class="card-header border-0">
         <h6 class="mb-0 fw-semibold">
           <i class="ph-duotone ph-shield-check me-2 text-success"></i><?= __('dashboard.personal_security') ?>
@@ -695,7 +738,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 
   <!-- Información de la cuenta -->
   <div class="col-md-6">
-    <div class="card border-0 shadow-sm h-100">
+    <div class="card border-0 shadow-sm h-100 dashboard-panel-card">
       <div class="card-header border-0">
         <h6 class="mb-0 fw-semibold">
           <i class="ph-duotone ph-info me-2 text-info"></i><?= __('dashboard.general_info') ?>
@@ -721,6 +764,8 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
 </div>
 
 <?php endif; ?>
+
+</div>
 
 <?php
 // Chart.js — only injected for the admin dashboard
