@@ -2,27 +2,32 @@
 
 namespace App\Controllers;
 
+use App\Models\AuthenticationSettings;
+use App\Models\EmailChangeVerification;
+use App\Models\ExternalAuthProvider;
+use App\Models\SmtpSettings;
+use App\Models\User;
+use App\Models\UserExternalAccount;
+use App\Services\Mailer;
+use App\Services\PasswordPolicyService;
 use Core\Audit;
-use Core\Controller;
 use Core\Auth;
+use Core\Controller;
 use Core\CSRF;
+use Core\Logger;
 use Core\Redirect;
 use Core\Session;
 use Core\Validator;
-use Core\Logger;
-use App\Models\User;
-use App\Models\AuthenticationSettings;
-use App\Models\ExternalAuthProvider;
-use App\Models\UserExternalAccount;
-use App\Services\PasswordPolicyService;
 
 class AccountController extends Controller
 {
     private User $userModel;
+    private EmailChangeVerification $emailChangeModel;
 
     public function __construct()
     {
         $this->userModel = new User();
+        $this->emailChangeModel = new EmailChangeVerification();
     }
 
     public function index(): void
@@ -42,7 +47,9 @@ class AccountController extends Controller
         Auth::requireAuth();
         $authUser = Auth::user();
         $user = $this->userModel->findById(Auth::id());
-        $this->view('account.edit_email', compact('authUser', 'user'));
+        $pending = $this->emailChangeModel->findPendingForUser(Auth::id());
+        $maskedPendingEmail = $pending ? $this->maskEmail($pending['new_email']) : null;
+        $this->view('account.edit_email', compact('authUser', 'user', 'pending', 'maskedPendingEmail'));
     }
 
     public function updateEmail(): void
@@ -57,32 +64,257 @@ class AccountController extends Controller
 
         $email = trim($this->input('email', ''));
         $id    = Auth::id();
+        $user  = $this->userModel->findById($id);
+
+        if (!$user || ($user['status_slug'] ?? '') !== 'active') {
+            Logger::security("Email change rejected for inactive/missing user ID {$id}");
+            Audit::log([
+                'module'      => 'account',
+                'action'      => 'account.email_change_failed',
+                'entity'      => 'user',
+                'entity_id'   => $id,
+                'description' => 'Solicitud de cambio de correo rechazada: usuario no activo',
+                'status'      => 'denied',
+            ]);
+            Redirect::withError('/account/edit-email', __('account.email_change_error'));
+        }
 
         $validator = new Validator();
-        $validator->required('email', $email, 'Correo electrónico')
+        $validator->required('email', $email, __('account.new_email'))
                   ->email('email', $email)
-                  ->maxLength('email', $email, 150, 'Correo electrónico');
+                  ->maxLength('email', $email, 150, __('account.new_email'));
 
         if ($validator->fails()) {
             Redirect::withErrors('/account/edit-email', $validator->errors(), ['email' => $email]);
         }
 
-        if ($this->userModel->emailExists($email, $id)) {
-            Redirect::withErrors('/account/edit-email', ['email' => 'Este correo electrónico ya está en uso.'], ['email' => $email]);
+        if (strcasecmp($email, (string) $user['email']) === 0) {
+            Redirect::withErrors('/account/edit-email', ['email' => __('account.email_change_same_email')], ['email' => $email]);
         }
 
-        if ($this->userModel->updateEmail($id, $email)) {
-            Auth::updateSession(['email' => $email]);
-            Logger::security("Email actualizado - ID {$id} nuevo: {$email}");
-            Audit::log(['module' => 'account', 'action' => 'email_updated',
-                'entity' => 'user', 'entity_id' => $id,
-                'description' => 'Correo electrónico actualizado',
-                'new_values' => ['email' => $email],
-                'status' => 'success']);
-            Redirect::withSuccess('/account', 'Correo electrónico actualizado correctamente.');
-        } else {
-            Redirect::withError('/account/edit-email', 'No se pudo actualizar el correo. Intenta de nuevo.');
+        if ($this->userModel->emailExists($email, $id)) {
+            Redirect::withErrors('/account/edit-email', ['email' => __('account.email_change_email_exists')], ['email' => $email]);
         }
+
+        if (!(new AuthenticationSettings())->isDomainAllowed($email)) {
+            Logger::security("Email change domain denied for user ID {$id}");
+            Audit::log([
+                'module'      => 'account',
+                'action'      => 'account.email_change_failed',
+                'entity'      => 'user',
+                'entity_id'   => $id,
+                'description' => 'Solicitud de cambio de correo rechazada por dominio no permitido',
+                'old_values'  => ['email' => $user['email']],
+                'new_values'  => ['email' => $email],
+                'status'      => 'denied',
+            ]);
+            Redirect::withErrors('/account/edit-email', ['email' => __('account.email_change_domain_not_allowed')], ['email' => $email]);
+        }
+
+        if (!$this->isSmtpReady()) {
+            Logger::error("Email change rejected because SMTP is unavailable for user ID {$id}");
+            Audit::log([
+                'module'      => 'account',
+                'action'      => 'account.email_change_failed',
+                'entity'      => 'user',
+                'entity_id'   => $id,
+                'description' => 'Solicitud de cambio de correo rechazada: SMTP no disponible',
+                'status'      => 'failed',
+            ]);
+            Redirect::withError('/account/edit-email', __('account.email_change_smtp_required'));
+        }
+
+        if (!$this->createAndSendEmailChangeCode($user, $email, false)) {
+            Redirect::withError('/account/edit-email', __('account.email_change_error'));
+        }
+
+        Redirect::withSuccess('/account/email/verify', __('account.email_change_code_sent'));
+    }
+
+    public function verifyEmailChangeForm(): void
+    {
+        Auth::requireAuth();
+        $authUser = Auth::user();
+        $pending = $this->emailChangeModel->findPendingForUser(Auth::id());
+
+        if (!$pending) {
+            Session::flash('error', __('account.email_change_no_pending'));
+            Redirect::to('/account/edit-email');
+        }
+
+        $maskedEmail = $this->maskEmail($pending['new_email']);
+        $this->view('account.verify_email', compact('authUser', 'pending', 'maskedEmail'));
+    }
+
+    public function verifyEmailChange(): void
+    {
+        Auth::requireAuth();
+        CSRF::validateOrFail();
+
+        $userId = Auth::id();
+        $code = preg_replace('/\D+/', '', (string) $this->input('code', ''));
+        $pending = $this->emailChangeModel->findPendingForUser($userId);
+
+        if (!$pending) {
+            Logger::security("Email change verification without pending request - user ID {$userId}");
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_failed',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Verificacion de cambio de correo sin solicitud pendiente',
+                'status' => 'failed',
+            ]);
+            Redirect::withError('/account/edit-email', __('account.email_change_no_pending'));
+        }
+
+        if ($this->emailChangeModel->isExpired($pending)) {
+            $this->emailChangeModel->markUsed((int) $pending['id']);
+            Logger::security("Expired email change code - user ID {$userId}");
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_failed',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Codigo de cambio de correo expirado',
+                'old_values' => ['email' => $pending['current_email']],
+                'new_values' => ['email' => $pending['new_email']],
+                'status' => 'failed',
+            ]);
+            Redirect::withError('/account/email/verify', __('account.email_change_expired_code'));
+        }
+
+        if ($this->emailChangeModel->hasTooManyAttempts($pending)) {
+            $this->emailChangeModel->markUsed((int) $pending['id']);
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_failed',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Cambio de correo bloqueado por demasiados intentos',
+                'old_values' => ['email' => $pending['current_email']],
+                'new_values' => ['email' => $pending['new_email']],
+                'status' => 'denied',
+            ]);
+            Redirect::withError('/account/edit-email', __('account.email_change_too_many_attempts'));
+        }
+
+        if (strlen($code) !== 6 || !password_verify($code, $pending['code_hash'])) {
+            $this->emailChangeModel->incrementAttempts((int) $pending['id']);
+            $updatedAttempts = (int) $pending['attempts'] + 1;
+            Logger::security("Invalid email change code - user ID {$userId}, attempt {$updatedAttempts}");
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_failed',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Codigo de cambio de correo incorrecto',
+                'old_values' => ['email' => $pending['current_email']],
+                'new_values' => ['email' => $pending['new_email'], 'attempts' => $updatedAttempts],
+                'status' => 'failed',
+            ]);
+
+            if ($updatedAttempts >= $this->emailChangeModel->maxAttempts()) {
+                $this->emailChangeModel->markUsed((int) $pending['id']);
+                Redirect::withError('/account/edit-email', __('account.email_change_too_many_attempts'));
+            }
+
+            Redirect::withErrors('/account/email/verify', ['code' => __('account.email_change_invalid_code')]);
+        }
+
+        $user = $this->userModel->findById($userId);
+        if (!$user || ($user['status_slug'] ?? '') !== 'active') {
+            Redirect::withError('/account/edit-email', __('account.email_change_error'));
+        }
+        if ($this->userModel->emailExists($pending['new_email'], $userId)) {
+            $this->emailChangeModel->markUsed((int) $pending['id']);
+            Redirect::withError('/account/edit-email', __('account.email_change_email_exists'));
+        }
+        if (!(new AuthenticationSettings())->isDomainAllowed($pending['new_email'])) {
+            $this->emailChangeModel->markUsed((int) $pending['id']);
+            Redirect::withError('/account/edit-email', __('account.email_change_domain_not_allowed'));
+        }
+
+        try {
+            $this->emailChangeModel->completeEmailChange((int) $pending['id'], $userId, $pending['new_email']);
+            Auth::updateSession(['email' => $pending['new_email']]);
+            Logger::security("Email change completed - user ID {$userId}");
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_verified',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Codigo de cambio de correo verificado',
+                'old_values' => ['email' => $pending['current_email']],
+                'new_values' => ['email' => $pending['new_email']],
+                'status' => 'success',
+            ]);
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_completed',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Correo electronico actualizado despues de verificacion',
+                'old_values' => ['email' => $pending['current_email']],
+                'new_values' => ['email' => $pending['new_email']],
+                'status' => 'success',
+            ]);
+            Redirect::withSuccess('/account', __('account.email_change_success'));
+        } catch (\Throwable $e) {
+            Logger::error('AccountController::verifyEmailChange update failed - ' . $e->getMessage());
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_failed',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Error tecnico al completar cambio de correo',
+                'status' => 'failed',
+            ]);
+            Redirect::withError('/account/email/verify', __('account.email_change_error'));
+        }
+    }
+
+    public function resendEmailChangeCode(): void
+    {
+        Auth::requireAuth();
+        CSRF::validateOrFail();
+
+        $userId = Auth::id();
+        $pending = $this->emailChangeModel->findPendingForUser($userId);
+
+        if (!$pending) {
+            Logger::security("Email change resend without pending request - user ID {$userId}");
+            Redirect::withError('/account/edit-email', __('account.email_change_no_pending'));
+        }
+
+        if ($this->emailChangeModel->countRecentRequests($userId, $pending['new_email'], 10) >= 3) {
+            Logger::security("Email change resend rate limited - user ID {$userId}");
+            Redirect::withError('/account/email/verify', __('account.email_change_resend_limited'));
+        }
+
+        $user = $this->userModel->findById($userId);
+        if (!$user || ($user['status_slug'] ?? '') !== 'active') {
+            Redirect::withError('/account/edit-email', __('account.email_change_error'));
+        }
+
+        if (!$this->isSmtpReady()) {
+            Redirect::withError('/account/email/verify', __('account.email_change_smtp_required'));
+        }
+
+        if (!$this->createAndSendEmailChangeCode($user, $pending['new_email'], true)) {
+            Redirect::withError('/account/email/verify', __('account.email_change_error'));
+        }
+
+        Redirect::withSuccess('/account/email/verify', __('account.email_change_code_resent'));
+    }
+
+    public function cancelEmailChange(): void
+    {
+        Auth::requireAuth();
+        CSRF::validateOrFail();
+
+        $userId = Auth::id();
+        $pending = $this->emailChangeModel->findPendingForUser($userId);
+        $this->emailChangeModel->invalidatePendingForUser($userId);
+
+        if ($pending) {
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_cancelled',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Cambio de correo cancelado',
+                'old_values' => ['email' => $pending['current_email']],
+                'new_values' => ['email' => $pending['new_email']],
+                'status' => 'success',
+            ]);
+        }
+
+        Redirect::withSuccess('/account', __('account.email_change_cancelled'));
     }
 
     public function editPassword(): void
@@ -129,7 +361,6 @@ class AccountController extends Controller
             Redirect::withErrors('/account/edit-password', ['current_password' => 'La contraseña actual es incorrecta.']);
         }
 
-        // ── Política de contraseñas ───────────────────────────────────────────
         $policySvc    = new PasswordPolicyService();
         $policyResult = $policySvc->validate($newPassword, [
             'email'     => $user['email'],
@@ -213,10 +444,104 @@ class AccountController extends Controller
             ]);
             Session::flash('success', __('account.provider_unlinked'));
         } else {
-            Logger::error("AccountController::unlinkAccount — failed to delete link id={$id}");
+            Logger::error("AccountController::unlinkAccount - failed to delete link id={$id}");
             Session::flash('error', __('account.unlink_error'));
         }
 
         Redirect::to('/account');
+    }
+
+    private function createAndSendEmailChangeCode(array $user, string $newEmail, bool $resent): bool
+    {
+        $userId = (int) $user['id'];
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expiresInMinutes = 10;
+        $expiresAt = date('Y-m-d H:i:s', time() + ($expiresInMinutes * 60));
+
+        $this->emailChangeModel->invalidatePendingForUser($userId);
+        $verificationId = $this->emailChangeModel->create([
+            'user_id'       => $userId,
+            'current_email' => $user['email'],
+            'new_email'     => $newEmail,
+            'code_hash'     => password_hash($code, PASSWORD_BCRYPT, ['cost' => 12]),
+            'expires_at'    => $expiresAt,
+        ]);
+
+        if (!$verificationId) {
+            Logger::error("Email change verification create failed for user ID {$userId}");
+            return false;
+        }
+
+        Audit::log([
+            'module' => 'account', 'action' => 'account.email_change_requested',
+            'entity' => 'user', 'entity_id' => $userId,
+            'description' => 'Solicitud de cambio de correo creada',
+            'old_values' => ['email' => $user['email']],
+            'new_values' => ['email' => $newEmail],
+            'status' => 'success',
+        ]);
+
+        $appName = (string) env('APP_NAME', 'Skeleton');
+        $userName = trim(($user['nombres'] ?? '') . ' ' . ($user['apellidos'] ?? ''));
+
+        ob_start();
+        require dirname(__DIR__, 2) . '/app/Views/emails/email_change_code.php';
+        $htmlBody = ob_get_clean();
+
+        $subject = $appName . ' - ' . __('mail.email_change_subject');
+        $plainBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $htmlBody));
+        $sent = Mailer::send($newEmail, $userName, $subject, $htmlBody, $plainBody);
+
+        if (!$sent) {
+            $this->emailChangeModel->markUsed((int) $verificationId);
+            Logger::error("Email change code send failed for user ID {$userId}");
+            Audit::log([
+                'module' => 'account', 'action' => 'account.email_change_failed',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'No se pudo enviar codigo de cambio de correo',
+                'old_values' => ['email' => $user['email']],
+                'new_values' => ['email' => $newEmail],
+                'status' => 'failed',
+            ]);
+            return false;
+        }
+
+        Audit::log([
+            'module' => 'account',
+            'action' => $resent ? 'account.email_change_code_resent' : 'account.email_change_code_sent',
+            'entity' => 'user',
+            'entity_id' => $userId,
+            'description' => $resent ? 'Codigo de cambio de correo reenviado' : 'Codigo de cambio de correo enviado',
+            'old_values' => ['email' => $user['email']],
+            'new_values' => ['email' => $newEmail],
+            'status' => 'success',
+        ]);
+
+        return true;
+    }
+
+    private function isSmtpReady(): bool
+    {
+        try {
+            $settings = (new SmtpSettings())->get();
+            return trim((string) ($settings['host'] ?? '')) !== ''
+                && trim((string) ($settings['username'] ?? '')) !== ''
+                && trim((string) ($settings['password_enc'] ?? '')) !== ''
+                && (int) ($settings['is_verified'] ?? 0) === 1;
+        } catch (\Throwable $e) {
+            Logger::error('AccountController::isSmtpReady - ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function maskEmail(string $email): string
+    {
+        [$local, $domain] = array_pad(explode('@', $email, 2), 2, '');
+        if ($local === '' || $domain === '') {
+            return $email;
+        }
+
+        $first = substr($local, 0, 1);
+        return $first . str_repeat('*', max(3, strlen($local) - 1)) . '@' . $domain;
     }
 }

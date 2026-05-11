@@ -113,6 +113,10 @@ $router->post('/profile/theme',            [ProfileController::class, 'updateThe
 $router->get('/account',                  [AccountController::class, 'index']);
 $router->get('/account/edit-email',       [AccountController::class, 'editEmail']);
 $router->post('/account/update-email',    [AccountController::class, 'updateEmail']);
+$router->get('/account/email/verify',     [AccountController::class, 'verifyEmailChangeForm']);
+$router->post('/account/email/verify',    [AccountController::class, 'verifyEmailChange']);
+$router->post('/account/email/resend-code', [AccountController::class, 'resendEmailChangeCode']);
+$router->post('/account/email/cancel-change', [AccountController::class, 'cancelEmailChange']);
 $router->get('/account/edit-password',    [AccountController::class, 'editPassword']);
 $router->post('/account/update-password', [AccountController::class, 'updatePassword']);
 
