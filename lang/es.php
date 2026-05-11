@@ -804,9 +804,9 @@ return [
     'security_authentication.restrict_external_domains'          => 'Restringir por dominio institucional',
     'security_authentication.restrict_external_domains_desc'     => 'Solo permite el acceso externo a correos de dominios institucionales autorizados.',
     'security_authentication.allowed_external_domains'           => 'Dominios autorizados',
-    'security_authentication.allowed_external_domains_help'      => 'Ingresa un dominio por línea o separados por coma. No uses @ ni URLs completas (ej: cristosal.org).',
-    'security_authentication.allowed_external_domains_placeholder' => 'cristosal.org',
-    'security_authentication.invalid_domain_list'                => 'Debes ingresar al menos un dominio autorizado válido. No uses @ ni URLs completas (ej: cristosal.org).',
+    'security_authentication.allowed_external_domains_help'      => 'Ingresa un dominio por línea o separados por coma. No uses @ ni URLs completas. Ejemplo: dominio.com.',
+    'security_authentication.allowed_external_domains_placeholder' => 'dominio.com',
+    'security_authentication.invalid_domain_list'                => 'Debes ingresar al menos un dominio autorizado válido. No uses @ ni URLs completas. Ejemplo: dominio.com.',
     'security_authentication.domain_restriction_updated'         => 'Restricción de dominio actualizada correctamente.',
     // Proveedores externos
     'security_authentication.external_providers'            => 'Proveedores externos',

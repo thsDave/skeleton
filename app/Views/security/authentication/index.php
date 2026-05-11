@@ -182,8 +182,7 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
                 class="form-control font-monospace"
                 rows="4"
                 style="font-size:.85rem;"
-                placeholder="<?= htmlspecialchars(__('security_authentication.allowed_external_domains_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
-                <?= ($settings['restrict_external_domains'] ?? 0) ? '' : 'disabled' ?>><?= htmlspecialchars($settings['allowed_external_domains'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                placeholder="<?= htmlspecialchars(__('security_authentication.allowed_external_domains_placeholder'), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($settings['allowed_external_domains'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
               <div class="form-text text-muted mt-1">
                 <i class="ph-duotone ph-info me-1"></i>
                 <?= __('security_authentication.allowed_external_domains_help') ?>
@@ -484,16 +483,18 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function toggleDomainRestriction() {
-    if (restrictDomains && allowedDomainsEl) {
-      allowedDomainsEl.disabled = !restrictDomains.checked;
-      if (restrictDomains.checked) {
-        allowedDomainsEl.focus();
-      }
+    if (allowedDomainsEl) {
+      var on = restrictDomains && restrictDomains.checked;
+      allowedDomainsEl.disabled = !on;
+      allowedDomainsEl.style.opacity = on ? '1' : '0.5';
     }
   }
 
   if (autoCreate)      autoCreate.addEventListener('change', toggleDefaultRole);
   if (restrictDomains) restrictDomains.addEventListener('change', toggleDomainRestriction);
+
+  // Set correct initial state on page load
+  toggleDomainRestriction();
 
   // When toggling external login ON — warn immediately if no providers are ready
   if (externalSwitch) {
