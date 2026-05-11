@@ -377,7 +377,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.users_by_role') ?></h6>
       </div>
       <div class="card-body pt-2">
-        <div style="position:relative;height:210px;">
+        <div class="dashboard-chart-frame">
           <canvas id="chartRoles"></canvas>
         </div>
         <div id="chartRolesEmpty" class="d-none text-center text-muted py-4 small dashboard-empty-state">
@@ -394,7 +394,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.mfa_status_chart') ?></h6>
       </div>
       <div class="card-body pt-2">
-        <div style="position:relative;height:210px;">
+        <div class="dashboard-chart-frame">
           <canvas id="chartMfaStatus"></canvas>
         </div>
         <div id="chartMfaStatusEmpty" class="d-none text-center text-muted py-4 small dashboard-empty-state">
@@ -411,10 +411,10 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.mfa_methods_chart') ?></h6>
       </div>
       <div class="card-body pt-2">
-        <div style="position:relative;height:210px;">
+        <div class="dashboard-chart-frame">
           <canvas id="chartMfaMethods"></canvas>
         </div>
-        <div id="chartMfaMethodsEmpty" class="d-none text-center text-muted py-4 small dashboard-empty-state">
+        <div id="chartMfaMethodsEmpty" class="d-none text-center text-muted py-4 small dashboard-empty-state dashboard-empty-state-center">
           <i class="ph-duotone ph-shield-slash text-muted mb-2" style="font-size:2rem;display:block;"></i>
           <?= __('dashboard.no_mfa_users') ?>
         </div>
@@ -438,7 +438,7 @@ $_email  = htmlspecialchars($authUser['email'] ?? '', ENT_QUOTES, 'UTF-8');
         <h6 class="mb-0 fw-semibold"><?= __('dashboard.user_status_chart') ?></h6>
       </div>
       <div class="card-body pt-2">
-        <div style="position:relative;height:210px;">
+        <div class="dashboard-chart-frame dashboard-chart-frame-bars">
           <canvas id="chartUserStatus"></canvas>
         </div>
       </div>
@@ -806,6 +806,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!el) return;
     if (!data || data.length === 0 || data.every(function(v){ return v === 0; })) {
       el.style.display = 'none';
+      if (el.parentElement && el.parentElement.classList.contains('dashboard-chart-frame')) {
+        el.parentElement.style.display = 'none';
+      }
       var empty = document.getElementById(id + 'Empty');
       if (empty) empty.classList.remove('d-none');
       return;

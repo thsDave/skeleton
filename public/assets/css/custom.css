@@ -149,7 +149,16 @@
 }
 
 .dashboard-chart-card .card-body {
-  min-height: 275px;
+  min-height: 265px;
+}
+
+.dashboard-chart-frame {
+  position: relative;
+  height: 220px;
+}
+
+.dashboard-chart-frame-bars {
+  height: 250px;
 }
 
 .dashboard-empty-state {
@@ -157,6 +166,15 @@
   border: 1px dashed var(--bs-border-color);
   border-radius: 8px;
   background: var(--bs-tertiary-bg);
+}
+
+.dashboard-empty-state-center:not(.d-none) {
+  display: flex;
+  min-height: 220px;
+  margin-top: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
 }
 
 .dashboard-panel-card .table > :not(caption) > * > * {
@@ -205,6 +223,13 @@
 
   .dashboard-chart-card .card-body {
     min-height: 245px;
+  }
+
+  .dashboard-chart-frame,
+  .dashboard-chart-frame-bars,
+  .dashboard-empty-state-center:not(.d-none) {
+    height: 220px;
+    min-height: 220px;
   }
 }
 
