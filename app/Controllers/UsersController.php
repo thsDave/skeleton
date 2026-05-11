@@ -127,17 +127,19 @@ class UsersController extends Controller
             $uploadedImage = $result['filename'];
         }
 
+        $forcePasswordChange = !empty($_POST['force_password_change']) ? 1 : 0;
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
         $newId = $this->userModel->create([
-            'nombres'       => $nombres,
-            'apellidos'     => $apellidos,
-            'telefono'      => $telefono ?: null,
-            'direccion'     => $direccion ?: null,
-            'email'         => $email,
-            'password'      => $hashedPassword,
-            'status_id'     => $statusId,
-            'role_id'       => $roleId,
-            'profile_image' => $uploadedImage,
+            'nombres'               => $nombres,
+            'apellidos'             => $apellidos,
+            'telefono'              => $telefono ?: null,
+            'direccion'             => $direccion ?: null,
+            'email'                 => $email,
+            'password'              => $hashedPassword,
+            'status_id'             => $statusId,
+            'role_id'               => $roleId,
+            'profile_image'         => $uploadedImage,
+            'force_password_change' => $forcePasswordChange,
         ]);
 
         if ($newId) {
@@ -153,11 +155,18 @@ class UsersController extends Controller
                 }
             }
             Logger::security("Usuario creado ID {$newId} por admin ID " . Auth::id());
+            if ($forcePasswordChange) {
+                Audit::log(['module' => 'users', 'action' => 'user.force_password_change_enabled',
+                    'entity' => 'user', 'entity_id' => $newId,
+                    'description' => "Cambio obligatorio de contraseña activado al crear usuario ID {$newId}",
+                    'status' => 'info', 'user_id' => Auth::id()]);
+            }
             Audit::log(['module' => 'users', 'action' => 'created',
                 'entity' => 'user', 'entity_id' => $newId,
                 'description' => "Usuario creado: {$email}",
                 'new_values' => ['nombres' => $nombres, 'apellidos' => $apellidos,
-                    'email' => $email, 'role_id' => $roleId, 'status_id' => $statusId],
+                    'email' => $email, 'role_id' => $roleId, 'status_id' => $statusId,
+                    'force_password_change' => $forcePasswordChange],
                 'status' => 'success']);
             Redirect::withSuccess('/users', 'Usuario creado correctamente.');
         } else {
@@ -285,14 +294,16 @@ class UsersController extends Controller
             $uploadSvc->delete($user['profile_image'] ?? null, 'profile_images');
         }
 
+        $forcePasswordChange = !empty($_POST['force_password_change']) ? 1 : 0;
         $data = [
-            'nombres'   => $nombres,
-            'apellidos' => $apellidos,
-            'telefono'  => $telefono ?: null,
-            'direccion' => $direccion ?: null,
-            'email'     => $email,
-            'status_id' => $statusId,
-            'role_id'   => $roleId,
+            'nombres'               => $nombres,
+            'apellidos'             => $apellidos,
+            'telefono'              => $telefono ?: null,
+            'direccion'             => $direccion ?: null,
+            'email'                 => $email,
+            'status_id'             => $statusId,
+            'role_id'               => $roleId,
+            'force_password_change' => $forcePasswordChange,
         ];
 
         $newHash = null;
@@ -313,11 +324,20 @@ class UsersController extends Controller
                     'description' => "Contraseña de usuario ID {$userId} cambiada por admin ID " . Auth::id(),
                     'status' => 'success']);
             }
+            $prevForce = (int)($user['force_password_change'] ?? 0);
+            if ($forcePasswordChange !== $prevForce) {
+                $forceAction = $forcePasswordChange ? 'user.force_password_change_enabled' : 'user.force_password_change_disabled';
+                Audit::log(['module' => 'users', 'action' => $forceAction,
+                    'entity' => 'user', 'entity_id' => $userId,
+                    'description' => ($forcePasswordChange ? 'Activado' : 'Desactivado') . " cambio obligatorio de contraseña para usuario ID {$userId}",
+                    'status' => 'info', 'user_id' => Auth::id()]);
+            }
             Logger::security("Usuario ID {$userId} actualizado por admin ID " . Auth::id());
             $oldAudit = ['nombres' => $user['nombres'], 'apellidos' => $user['apellidos'],
                 'email' => $user['email'], 'role_id' => $user['role_id'], 'status_id' => $user['status_id']];
             $newAudit = ['nombres' => $nombres, 'apellidos' => $apellidos,
-                'email' => $email, 'role_id' => $roleId, 'status_id' => $statusId];
+                'email' => $email, 'role_id' => $roleId, 'status_id' => $statusId,
+                'force_password_change' => $forcePasswordChange];
             if ($password !== '') {
                 $newAudit['password_changed'] = true;
             }

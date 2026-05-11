@@ -211,6 +211,7 @@ DB_PASSWORD=
 | `015_add_appearance_settings.sql` | Apariencia del sistema (logo, favicon, colores) |
 | `016_add_external_domain_restrictions.sql` | Restricción por dominio institucional |
 | `017_add_password_policy.sql` | Política de contraseñas e historial |
+| `018_add_force_password_change.sql` | Columna `force_password_change` en `tbl_users` |
 
 ### Paso 5 — Acceder al sistema
 
@@ -936,6 +937,7 @@ La política se valida en todos los flujos de cambio de contraseña:
 - **Editar usuario** (admin, si se ingresa nueva contraseña)
 - **Mi Cuenta → Cambiar contraseña** (usuario autenticado)
 - **Restablecer contraseña por correo** (flujo público)
+- **Cambio obligatorio** (`/account/password/required-change`) — ver sección siguiente
 
 Los formularios muestran un widget visual de requisitos que se actualiza en tiempo real mientras el usuario escribe.
 
@@ -943,15 +945,39 @@ Los formularios muestran un widget visual de requisitos que se actualiza en tiem
 
 Los hashes de contraseñas anteriores se almacenan en `tbl_password_histories`. Al cambiar la contraseña, el sistema verifica contra los últimos N hashes usando `password_verify()`. Las entradas antiguas se eliminan automáticamente para mantener solo las N más recientes.
 
+### Cambio obligatorio de contraseña
+
+El sistema puede forzar a un usuario a cambiar su contraseña en dos escenarios:
+
+**1. Expiración automática**
+
+Si `password_expiration_days > 0` y han pasado más días desde `password_changed_at`, el usuario es redirigido a `/account/password/required-change` en su próxima solicitud autenticada. La verificación se realiza con caché de 60 segundos en sesión para evitar una consulta a BD por cada petición.
+
+Si `password_changed_at` es `NULL` (cuenta sin contraseña establecida), el sistema trata la contraseña como expirada.
+
+**2. Forzar por administrador (`force_password_change = 1`)**
+
+En el módulo Usuarios, al crear o editar un usuario, un administrador puede activar la casilla **"Forzar cambio de contraseña en próximo inicio"**. La columna `force_password_change` se establece en `1` y el usuario verá la pantalla obligatoria al iniciar sesión.
+
+**Flujo centralizado**
+
+La verificación ocurre en `Auth::checkPasswordChangeRequired()`, llamado desde `Auth::requireAuth()` — el punto de entrada de todos los controladores protegidos. No requiere lógica adicional en cada controlador.
+
+Rutas involucradas:
+- `GET  /account/password/required-change` — pantalla de actualización
+- `POST /account/password/required-change` — procesar cambio
+
+Al completar el cambio, se actualiza `password_changed_at`, se pone `force_password_change = 0`, se guarda en el historial y se limpian los flags de sesión.
+
 ### Migraciones SQL
 
 ```
 database/017_add_password_policy.sql
+database/018_add_force_password_change.sql
 ```
 
-Crea las tablas `tbl_password_policies` y `tbl_password_histories`, registra el módulo y permisos, y agrega la columna `force_password_change` a `tbl_users`.
-
-> **Nota:** La redirección automática por contraseña expirada (`password_expiration_days`) y la redirección por `force_password_change` están **pendientes de implementación** en el flujo de login.
+`017` crea las tablas `tbl_password_policies` y `tbl_password_histories` y registra el módulo y permisos.
+`018` agrega la columna `force_password_change TINYINT(1) DEFAULT 0` a `tbl_users`.
 
 ---
 

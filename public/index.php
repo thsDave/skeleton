@@ -75,6 +75,7 @@ use App\Controllers\TwoFactorController;
 use App\Controllers\TwoFactorChallengeController;
 use App\Controllers\AppearanceController;
 use App\Controllers\PasswordPolicyController;
+use App\Controllers\RequiredPasswordChangeController;
 
 $router = new Router();
 
@@ -88,6 +89,10 @@ $router->get('/forgot-password',         [PasswordResetController::class, 'showF
 $router->post('/forgot-password',        [PasswordResetController::class, 'sendResetLink']);
 $router->get('/reset-password/{token}',  [PasswordResetController::class, 'showResetForm']);
 $router->post('/reset-password',         [PasswordResetController::class, 'resetPassword']);
+
+// Required password change
+$router->get('/account/password/required-change',  [RequiredPasswordChangeController::class, 'show']);
+$router->post('/account/password/required-change', [RequiredPasswordChangeController::class, 'process']);
 
 // Session lock
 $router->get('/lock',          [LockController::class, 'show']);

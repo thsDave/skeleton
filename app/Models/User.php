@@ -177,19 +177,21 @@ class User extends Model
         $stmt = $this->db->prepare(
             'INSERT INTO ' . self::TABLE . '
              (nombres, apellidos, telefono, direccion, email, password,
-              status_id, role_id, profile_image, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+              status_id, role_id, profile_image, force_password_change,
+              password_changed_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
         );
         $ok = $stmt->execute([
             $data['nombres'],
             $data['apellidos'],
-            $data['telefono']      ?? null,
-            $data['direccion']     ?? null,
+            $data['telefono']             ?? null,
+            $data['direccion']            ?? null,
             $data['email'],
             $data['password'],
-            $data['status_id']     ?? 1,
-            $data['role_id']       ?? 2,
-            $data['profile_image'] ?? null,
+            $data['status_id']            ?? 1,
+            $data['role_id']              ?? 2,
+            $data['profile_image']        ?? null,
+            (int)($data['force_password_change'] ?? 0),
         ]);
         return $ok ? (int)$this->db->lastInsertId() : false;
     }
@@ -211,10 +213,15 @@ class User extends Model
         if (!empty($data['password'])) {
             $fields[] = 'password=?';
             $params[] = $data['password'];
+            $fields[] = 'password_changed_at=NOW()';
         }
         if (array_key_exists('profile_image', $data) && $data['profile_image'] !== null) {
             $fields[] = 'profile_image=?';
             $params[] = $data['profile_image'];
+        }
+        if (array_key_exists('force_password_change', $data)) {
+            $fields[] = 'force_password_change=?';
+            $params[] = (int)$data['force_password_change'];
         }
 
         $params[] = $id;
@@ -222,6 +229,16 @@ class User extends Model
             'UPDATE ' . self::TABLE . ' SET ' . implode(', ', $fields) . ' WHERE id = ?'
         );
         return $stmt->execute($params);
+    }
+
+    public function updatePasswordAndClearForce(int $id, string $hashedPassword): bool
+    {
+        $stmt = $this->db->prepare(
+            'UPDATE ' . self::TABLE . '
+             SET password = ?, password_changed_at = NOW(), force_password_change = 0, updated_at = NOW()
+             WHERE id = ?'
+        );
+        return $stmt->execute([$hashedPassword, $id]);
     }
 
     public function inactivate(int $id): bool

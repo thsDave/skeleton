@@ -83,6 +83,11 @@ require dirname(__DIR__) . '/layouts/main.php';
                       <i class="ph-duotone ph-lock me-1"></i><?= __('users.locked') ?>
                     </span>
                   <?php endif; ?>
+                  <?php if (!empty($u['force_password_change'])): ?>
+                    <span class="badge bg-warning text-dark ms-1">
+                      <i class="ph-duotone ph-warning me-1"></i><?= __('users.force_password_change_badge') ?>
+                    </span>
+                  <?php endif; ?>
                 </td>
                 <td><?= htmlspecialchars($u['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars($u['telefono'] ?? '—', ENT_QUOTES, 'UTF-8') ?></td>

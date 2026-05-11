@@ -212,9 +212,9 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
             </div>
             <div class="form-text text-muted"><?= __('password_policy.expiration_help') ?></div>
             <?php if (($policy['password_expiration_days'] ?? 0) > 0): ?>
-            <div class="alert alert-warning small py-2 mt-2">
-              <i class="ph-duotone ph-warning me-1"></i>
-              <?= __('password_policy.expiration_pending') ?>
+            <div class="alert alert-info small py-2 mt-2">
+              <i class="ph-duotone ph-info me-1"></i>
+              <?= __('password_policy.expiration_redirect_enabled') ?>
             </div>
             <?php endif; ?>
           </div>

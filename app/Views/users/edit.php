@@ -261,6 +261,23 @@ $_eSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
             </div>
           </div>
 
+          <div class="mb-4">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="force_password_change" value="1"
+                     id="forcePasswordChange"
+                     <?= !empty($old['force_password_change'] ?? $user['force_password_change'] ?? 0) ? 'checked' : '' ?>>
+              <label class="form-check-label fw-semibold" for="forcePasswordChange">
+                <?= __('users.force_password_change') ?>
+              </label>
+              <div class="form-text text-muted"><?= __('users.force_password_change_help') ?></div>
+            </div>
+            <?php if (!empty($user['force_password_change'])): ?>
+            <span class="badge bg-warning text-dark mt-1">
+              <i class="ph-duotone ph-warning me-1"></i><?= __('users.force_password_change_badge') ?>
+            </span>
+            <?php endif; ?>
+          </div>
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">
               <i class="ph-duotone ph-floppy-disk me-1"></i> Guardar Cambios

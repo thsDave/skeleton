@@ -7,18 +7,20 @@ class Auth
     public static function login(array $user): void
     {
         Session::regenerate();
-        Session::set('user_id',            $user['id']);
-        Session::set('user_email',         $user['email']);
-        Session::set('user_name',          $user['nombres'] . ' ' . $user['apellidos']);
-        Session::set('user_nombres',       $user['nombres']);
-        Session::set('user_apellidos',     $user['apellidos']);
-        Session::set('user_role_slug',     $user['role_slug']   ?? 'user');
-        Session::set('user_role_name',     $user['role_name']   ?? 'Usuario');
-        Session::set('user_profile_image', $user['profile_image'] ?? null);
-        Session::set('user_theme',         $user['theme_preference'] ?? 'light');
-        Session::set('user_lang',          $user['lang_code'] ?? 'es');
-        Session::set('user_lang_id',       $user['language_id'] ?? null);
-        Session::set('_last_activity',     time());
+        Session::set('user_id',                    $user['id']);
+        Session::set('user_email',                 $user['email']);
+        Session::set('user_name',                  $user['nombres'] . ' ' . $user['apellidos']);
+        Session::set('user_nombres',               $user['nombres']);
+        Session::set('user_apellidos',             $user['apellidos']);
+        Session::set('user_role_slug',             $user['role_slug']   ?? 'user');
+        Session::set('user_role_name',             $user['role_name']   ?? 'Usuario');
+        Session::set('user_profile_image',         $user['profile_image'] ?? null);
+        Session::set('user_theme',                 $user['theme_preference'] ?? 'light');
+        Session::set('user_lang',                  $user['lang_code'] ?? 'es');
+        Session::set('user_lang_id',               $user['language_id'] ?? null);
+        Session::set('user_force_password_change', (int)($user['force_password_change'] ?? 0));
+        Session::set('user_password_changed_at',   $user['password_changed_at'] ?? null);
+        Session::set('_last_activity',             time());
         self::loadPermissions();
     }
 
@@ -47,6 +49,96 @@ class Auth
         }
 
         self::checkSessionLock($lastActivity);
+        self::checkPasswordChangeRequired();
+    }
+
+    private static function checkPasswordChangeRequired(): void
+    {
+        $uri = self::currentUri();
+        foreach (['/account/password/required-change', '/logout', '/lock', '/unlock'] as $exempt) {
+            if ($uri === $exempt || str_starts_with($uri, $exempt . '/')) {
+                return;
+            }
+        }
+
+        if ((int)Session::get('user_force_password_change', 0) === 1) {
+            Session::set('pwd_change_reason', 'forced');
+            Redirect::to('/account/password/required-change');
+            exit;
+        }
+
+        $checkedAt = (int)Session::get('_pwd_exp_at', 0);
+        if ((time() - $checkedAt) >= 60) {
+            $expired = self::isPasswordExpiredInternal();
+            Session::set('_pwd_exp_result', $expired ? 1 : 0);
+            Session::set('_pwd_exp_at', time());
+        } else {
+            $expired = (int)Session::get('_pwd_exp_result', 0) === 1;
+        }
+
+        if ($expired) {
+            Session::set('pwd_change_reason', 'expired');
+            Redirect::to('/account/password/required-change');
+            exit;
+        }
+    }
+
+    private static function isPasswordExpiredInternal(): bool
+    {
+        try {
+            $policy         = (new \App\Services\PasswordPolicyService())->getPolicy();
+            if (empty($policy['is_enabled'])) {
+                return false;
+            }
+            $expirationDays = (int)($policy['password_expiration_days'] ?? 0);
+            if ($expirationDays <= 0) {
+                return false;
+            }
+            $changedAt = Session::get('user_password_changed_at');
+            if ($changedAt === null) {
+                return true;
+            }
+            $changedAtTs = strtotime($changedAt);
+            if ($changedAtTs === false) {
+                return true;
+            }
+            return (int)floor((time() - $changedAtTs) / 86400) >= $expirationDays;
+        } catch (\Throwable $e) {
+            \Core\Logger::error('Auth::isPasswordExpiredInternal — ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    private static function currentUri(): string
+    {
+        $uri       = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
+        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+        if ($scriptDir && $scriptDir !== '/' && str_starts_with($uri, $scriptDir)) {
+            $uri = substr($uri, strlen($scriptDir));
+        }
+        $uri = '/' . ltrim($uri, '/');
+        return rtrim($uri, '/') ?: '/';
+    }
+
+    public static function requiresPasswordChange(): bool
+    {
+        if ((int)Session::get('user_force_password_change', 0) === 1) {
+            return true;
+        }
+        $checkedAt = (int)Session::get('_pwd_exp_at', 0);
+        if ((time() - $checkedAt) < 60 && Session::has('_pwd_exp_result')) {
+            return (int)Session::get('_pwd_exp_result', 0) === 1;
+        }
+        return self::isPasswordExpiredInternal();
+    }
+
+    public static function clearPasswordChangeRequired(): void
+    {
+        Session::set('user_force_password_change', 0);
+        Session::set('user_password_changed_at',   date('Y-m-d H:i:s'));
+        Session::delete('pwd_change_reason');
+        Session::delete('_pwd_exp_result');
+        Session::delete('_pwd_exp_at');
     }
 
     private static function checkSessionLock(int $lastActivity): void
@@ -293,6 +385,14 @@ class Auth
         }
         if (array_key_exists('lang_id', $data)) {
             Session::set('user_lang_id', $data['lang_id']);
+        }
+        if (isset($data['force_password_change'])) {
+            Session::set('user_force_password_change', (int)$data['force_password_change']);
+        }
+        if (isset($data['password_changed_at'])) {
+            Session::set('user_password_changed_at', $data['password_changed_at']);
+            Session::delete('_pwd_exp_result');
+            Session::delete('_pwd_exp_at');
         }
     }
 }
