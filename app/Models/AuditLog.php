@@ -39,6 +39,17 @@ class AuditLog extends Model
      */
     public function getAll(array $filters = []): array
     {
+        return $this->getFiltered($filters, self::LIMIT);
+    }
+
+    public function getForExport(array $filters = [], int $limit = 5000): array
+    {
+        return $this->getFiltered($filters, $limit);
+    }
+
+    private function getFiltered(array $filters, int $limit): array
+    {
+        $limit = max(1, min(5000, $limit));
         $sql    = "
             SELECT a.*,
                    CONCAT(u.nombres, ' ', u.apellidos) AS user_name,
@@ -74,7 +85,7 @@ class AuditLog extends Model
             $params[] = $filters['date_to'];
         }
 
-        $sql .= ' ORDER BY a.created_at DESC LIMIT ' . self::LIMIT;
+        $sql .= ' ORDER BY a.created_at DESC LIMIT ' . $limit;
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);

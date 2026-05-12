@@ -219,6 +219,11 @@ return [
     'users.col_status'          => 'Estado',
     'users.col_registered'      => 'Registro',
     'users.col_actions'              => 'Acciones',
+    'users.last_name'           => 'Apellido',
+    'users.last_login'          => 'Último login',
+    'users.mfa_enabled'         => 'MFA activo',
+    'users.export_excel'        => 'Exportar Excel',
+    'users.export_error'        => 'No se pudo exportar la lista de usuarios.',
     'users.force_password_change'      => 'Forzar cambio de contraseña en próximo inicio',
     'users.force_password_change_help' => 'El usuario deberá establecer una nueva contraseña al iniciar sesión.',
     'users.force_password_change_badge'=> 'Cambio requerido',
@@ -352,6 +357,17 @@ return [
     'alerts.validation_title'    => 'Revisa los datos ingresados',
     'alerts.access_denied'       => 'Acceso denegado. No tienes permisos.',
 
+    // ── Exportaciones ─────────────────────────────────────────────────────────
+    'export.excel'               => 'Excel',
+    'export.download_excel'      => 'Exportar Excel',
+    'export.no_records'          => 'No hay registros para exportar.',
+    'export.error'               => 'No se pudo generar el archivo Excel. Intenta nuevamente.',
+    'export.generated_at'        => 'Generado el',
+    'export.generated_by'        => 'Generado por',
+    'export.records_count'       => 'Cantidad de registros',
+    'export.filters'             => 'Filtros aplicados',
+    'export.updated_at'          => 'Última actualización',
+
     // ── Contraseña (validación visual) ──────────────────────────────────────────
     'password.min_length'        => 'Mínimo 10 caracteres',
     'password.uppercase'         => 'Al menos una mayúscula',
@@ -474,6 +490,7 @@ return [
     'permissions.users.create'             => 'Crear Usuarios',
     'permissions.users.edit'               => 'Editar Usuarios',
     'permissions.users.delete'             => 'Eliminar / Inactivar Usuarios',
+    'permissions.users.export'             => 'Exportar Usuarios',
     'permissions.languages.view'           => 'Ver Idiomas',
     'permissions.languages.create'         => 'Crear Idiomas',
     'permissions.languages.edit'           => 'Editar Idiomas',
@@ -534,6 +551,10 @@ return [
     // ── Permisos de Auditoría ─────────────────────────────────────────────────────
     'permissions.audit_logs.view'  => 'Ver Auditoría',
     'permissions.audit_logs.show'  => 'Ver Detalle de Auditoría',
+    'permissions.audit_logs.export'=> 'Exportar Auditoría',
+    'permissions.audit.export'     => 'Exportar Auditoría',
+    'audit.export_excel'           => 'Exportar Excel',
+    'audit.export_error'           => 'No se pudo exportar la auditoría.',
 
     // ── Acciones auditadas ────────────────────────────────────────────────────────
     'actions.created'              => 'Creado',

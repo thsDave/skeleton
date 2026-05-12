@@ -29,11 +29,18 @@ require dirname(__DIR__) . '/layouts/main.php';
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="ph-duotone ph-users-three me-2 text-primary"></i><?= __('users.system_users') ?></h5>
+        <div class="d-flex gap-2 flex-wrap">
+        <?php if (can('users.export')): ?>
+        <a href="<?= BASE_URL ?>/users/export/excel" class="btn btn-outline-success btn-sm">
+          <i class="ph-duotone ph-file-xls me-1"></i> <?= __('users.export_excel') ?>
+        </a>
+        <?php endif; ?>
         <?php if (can('users.create')): ?>
         <a href="<?= BASE_URL ?>/users/create" class="btn btn-primary btn-sm">
           <i class="ph-duotone ph-user-plus me-1"></i> <?= __('users.new_user') ?>
         </a>
         <?php endif; ?>
+        </div>
       </div>
       <div class="card-body">
         <div class="table-responsive">

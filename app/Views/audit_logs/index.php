@@ -9,6 +9,8 @@ $statusColors = [
     'denied'  => 'warning',
     'warning' => 'warning',
 ];
+$exportQuery = http_build_query(array_filter($filters ?? [], static fn($value) => $value !== '' && $value !== null));
+$exportUrl   = BASE_URL . '/audit-logs/export/excel' . ($exportQuery ? '?' . $exportQuery : '');
 ?>
 
 <!-- [ breadcrumb ] start -->
@@ -134,9 +136,16 @@ $statusColors = [
         <h5 class="mb-0">
           <i class="ph-duotone ph-clipboard-text me-2"></i><?= __('audit_logs.list') ?>
         </h5>
-        <small class="text-muted">
-          <?= __('audit_logs.showing', ['n' => count($logs), 'total' => $total]) ?>
-        </small>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <small class="text-muted">
+            <?= __('audit_logs.showing', ['n' => count($logs), 'total' => $total]) ?>
+          </small>
+          <?php if (can('audit_logs.export')): ?>
+          <a href="<?= htmlspecialchars($exportUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn btn-outline-success btn-sm">
+            <i class="ph-duotone ph-file-xls me-1"></i><?= __('audit.export_excel') ?>
+          </a>
+          <?php endif; ?>
+        </div>
       </div>
       <div class="card-body">
         <div class="table-responsive">

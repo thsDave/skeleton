@@ -50,6 +50,15 @@ class User extends Model
         return $stmt->fetchAll();
     }
 
+    public function getForExport(): array
+    {
+        $stmt = $this->db->prepare(
+            $this->withDetails() . ' ORDER BY u.created_at DESC'
+        );
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
     // ─── Auth ─────────────────────────────────────────────────────────────────
 
     public function updateLastLogin(int $id, string $ip): void

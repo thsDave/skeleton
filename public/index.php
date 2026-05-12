@@ -122,6 +122,7 @@ $router->post('/account/update-password', [AccountController::class, 'updatePass
 
 // Users (admin only)
 $router->get('/users',                    [UsersController::class, 'index']);
+$router->get('/users/export/excel',       [UsersController::class, 'exportExcel']);
 $router->get('/users/create',             [UsersController::class, 'create']);
 $router->post('/users/store',             [UsersController::class, 'store']);
 $router->get('/users/edit/{id}',          [UsersController::class, 'edit']);
@@ -190,6 +191,7 @@ $router->post('/roles-permissions/update/{id}',       [RolesPermissionsControlle
 
 // Audit Logs
 $router->get('/audit-logs',             [AuditLogsController::class, 'index']);
+$router->get('/audit-logs/export/excel', [AuditLogsController::class, 'exportExcel']);
 $router->get('/audit-logs/show/{id}',   [AuditLogsController::class, 'show']);
 
 // Two-Factor Authentication — profile management

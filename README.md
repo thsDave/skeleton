@@ -213,6 +213,7 @@ DB_PASSWORD=
 | `017_add_password_policy.sql` | Política de contraseñas e historial |
 | `018_add_force_password_change.sql` | Columna `force_password_change` en `tbl_users` |
 | `020_update_system_manuals_management.sql` | Eliminacion logica y permiso para administrar manuales |
+| `021_add_excel_export_permissions.sql` | Permisos para exportar Usuarios y Auditoria a Excel |
 
 ### Paso 5 — Acceder al sistema
 
@@ -327,6 +328,7 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | POST | `/manuals/delete/{id}` | Eliminar manual con borrado logico | Solo admin |
 | GET | `/manuals/download/{id}` | Descargar manual | Autenticado |
 | GET | `/users` | Listado de usuarios (DataTables) | Solo admin |
+| GET | `/users/export/excel` | Exportar usuarios a Excel | Solo admin |
 | GET | `/users/create` | Formulario nuevo usuario | Solo admin |
 | POST | `/users/store` | Crear usuario | Solo admin |
 | GET | `/users/edit/{id}` | Formulario editar usuario | Solo admin |
@@ -350,6 +352,9 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | POST | `/security/authconfig/login-security/update` | Guardar configuración de intentos fallidos | `security_mfa.edit` |
 | GET | `/security/mfa` | Redirige a `/security/authconfig` (compatibilidad) | — |
 | POST | `/users/unlock/{id}` | Desbloquear usuario | `users.unlock` |
+| GET | `/audit-logs` | Listado de auditoría | Solo admin |
+| GET | `/audit-logs/export/excel` | Exportar auditoría a Excel | Solo admin |
+| GET | `/audit-logs/show/{id}` | Ver detalle auditoría | Solo admin |
 
 ---
 
@@ -429,6 +434,13 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 - Los archivos se almacenan con nombre único en `public/uploads/manuals/`.
 - La subida y reemplazo usan `UploadService` con el perfil `user_manuals`.
 - Para habilitar eliminacion logica importa `database/020_update_system_manuals_management.sql` solo si `tbl_user_manuals.deleted_at` no existe.
+
+### Exportaciones a Excel
+- Usuarios y Auditoría incluyen botón **Exportar Excel**.
+- Requiere permisos `users.export` y `audit_logs.export`; se agregan con `database/021_add_excel_export_permissions.sql`.
+- La exportación usa `app/Services/ExcelExportService.php` y genera archivos `.xls` compatibles con Excel sin depender de `vendor/`.
+- Auditoría respeta los filtros GET actuales y limita la exportación a 5,000 registros.
+- Usuarios exporta el listado administrativo completo; no incluye contraseñas, tokens ni secretos MFA.
 
 ### Configuración SMTP administrable
 - El administrador puede configurar el servidor de correo saliente desde **Seguridad → SMTP** sin editar archivos.

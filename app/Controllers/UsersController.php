@@ -16,6 +16,7 @@ use App\Models\Status;
 use App\Models\LoginAttempt;
 use App\Services\PasswordPolicyService;
 use App\Services\UploadService;
+use App\Services\ExcelExportService;
 
 class UsersController extends Controller
 {
@@ -36,6 +37,72 @@ class UsersController extends Controller
         $authUser = Auth::user();
         $users    = $this->userModel->getAll();
         $this->view('users.index', compact('authUser', 'users'));
+    }
+
+    public function exportExcel(): void
+    {
+        Auth::requirePermission('users.export');
+
+        try {
+            $users = $this->userModel->getForExport();
+            if (empty($users)) {
+                Redirect::withError('/users', __('export.no_records'));
+            }
+
+            $rows = array_map(function (array $user): array {
+                $locked = !empty($user['locked_until']) && strtotime($user['locked_until']) > time();
+                return [
+                    'id' => (int)$user['id'],
+                    'nombres' => $user['nombres'] ?? '',
+                    'apellidos' => $user['apellidos'] ?? '',
+                    'email' => $user['email'] ?? '',
+                    'telefono' => $user['telefono'] ?? '',
+                    'rol' => $user['role_name'] ?? '',
+                    'estado' => $user['status_name'] ?? '',
+                    'mfa_activo' => !empty($user['two_factor_enabled']) ? __('common.yes') : __('common.no'),
+                    'bloqueado' => $locked ? __('common.yes') : __('common.no'),
+                    'creado' => $user['created_at'] ?? '',
+                    'actualizado' => $user['updated_at'] ?? '',
+                    'ultimo_login' => $user['last_login_at'] ?? '',
+                ];
+            }, $users);
+
+            Audit::log(['module' => 'users', 'action' => 'exported',
+                'entity' => 'user',
+                'description' => 'Exportacion Excel de usuarios',
+                'new_values' => ['records_count' => count($rows)],
+                'status' => 'success']);
+
+            (new ExcelExportService())->download(
+                'usuarios_' . date('Ymd_His') . '.xls',
+                [
+                    'id' => 'ID',
+                    'nombres' => __('users.col_name'),
+                    'apellidos' => __('users.last_name'),
+                    'email' => __('users.col_email'),
+                    'telefono' => __('users.col_phone'),
+                    'rol' => __('users.col_role'),
+                    'estado' => __('users.col_status'),
+                    'mfa_activo' => __('users.mfa_enabled'),
+                    'bloqueado' => __('users.locked'),
+                    'creado' => __('users.col_registered'),
+                    'actualizado' => __('export.updated_at'),
+                    'ultimo_login' => __('users.last_login'),
+                ],
+                $rows,
+                [
+                    __('export.generated_at') => date('Y-m-d H:i:s'),
+                    __('export.generated_by') => Auth::user()['email'] ?? '',
+                    __('export.records_count') => (string)count($rows),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Logger::error('UsersController::exportExcel: ' . $e->getMessage());
+            Audit::log(['module' => 'users', 'action' => 'export_failed',
+                'description' => 'Error al exportar usuarios',
+                'status' => 'failed']);
+            Redirect::withError('/users', __('export.error'));
+        }
     }
 
     public function create(): void
