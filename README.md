@@ -438,7 +438,7 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 ### Exportaciones a Excel
 - Usuarios y Auditoría incluyen botón **Exportar Excel**.
 - Requiere permisos `users.export` y `audit_logs.export`; se agregan con `database/021_add_excel_export_permissions.sql`.
-- La exportación usa `app/Services/ExcelExportService.php` y genera archivos `.xls` compatibles con Excel sin depender de `vendor/`.
+- La exportación usa `app/Services/ExcelExportService.php` y genera archivos `.xlsx` reales compatibles con Excel sin advertencia de formato/extensión.
 - Auditoría respeta los filtros GET actuales y limita la exportación a 5,000 registros.
 - Usuarios exporta el listado administrativo completo; no incluye contraseñas, tokens ni secretos MFA.
 

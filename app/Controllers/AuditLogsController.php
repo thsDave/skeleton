@@ -88,7 +88,7 @@ class AuditLogsController extends Controller
                 'status' => 'success']);
 
             (new ExcelExportService())->download(
-                'auditoria_' . date('Ymd_His') . '.xls',
+                'auditoria_' . date('Ymd_His') . '.xlsx',
                 [
                     'id' => 'ID',
                     'fecha' => __('audit_logs.created_at'),

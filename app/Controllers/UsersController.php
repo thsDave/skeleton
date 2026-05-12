@@ -74,7 +74,7 @@ class UsersController extends Controller
                 'status' => 'success']);
 
             (new ExcelExportService())->download(
-                'usuarios_' . date('Ymd_His') . '.xls',
+                'usuarios_' . date('Ymd_His') . '.xlsx',
                 [
                     'id' => 'ID',
                     'nombres' => __('users.col_name'),
