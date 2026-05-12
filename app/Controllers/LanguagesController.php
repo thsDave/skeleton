@@ -82,7 +82,7 @@ class LanguagesController extends Controller
 
             if ($newId) {
                 Logger::security("Idioma creado ID {$newId} por admin ID " . Auth::id());
-                Audit::log(['module' => 'languages', 'action' => 'created',
+                Audit::log(['module' => 'languages', 'action' => 'languages.created',
                     'entity' => 'language', 'entity_id' => $newId,
                     'description' => "Idioma creado: {$name} ({$code})",
                     'new_values' => ['name' => $name, 'native_name' => $nativeName, 'code' => $code, 'status_id' => $statusId],
@@ -169,7 +169,7 @@ class LanguagesController extends Controller
                 'status_id'   => $statusId,
             ])) {
                 Logger::security("Idioma ID {$langId} actualizado por admin ID " . Auth::id());
-                Audit::log(['module' => 'languages', 'action' => 'updated',
+                Audit::log(['module' => 'languages', 'action' => 'languages.updated',
                     'entity' => 'language', 'entity_id' => $langId,
                     'description' => "Idioma ID {$langId} actualizado",
                     'old_values' => ['name' => $language['name'], 'code' => $language['code'], 'status_id' => $language['status_id']],
@@ -208,7 +208,7 @@ class LanguagesController extends Controller
         }
 
         if ($language['is_default']) {
-            Audit::log(['module' => 'languages', 'action' => 'deactivated',
+            Audit::log(['module' => 'languages', 'action' => 'languages.deactivate_denied',
                 'entity' => 'language', 'entity_id' => $langId,
                 'description' => "Intento de desactivar idioma por defecto ID {$langId}",
                 'status' => 'denied']);
@@ -229,7 +229,7 @@ class LanguagesController extends Controller
 
         try {
             if ($this->langModel->setStatus($langId, $newStatus)) {
-                $action = $isActive ? 'deactivated' : 'activated';
+                $action = $isActive ? 'languages.deactivated' : 'languages.activated';
                 $msg    = $isActive ? __('languages.deactivated_ok') : __('languages.activated_ok');
                 Logger::security("Idioma ID {$langId} " . ($isActive ? 'desactivado' : 'activado') . " por admin ID " . Auth::id());
                 Audit::log(['module' => 'languages', 'action' => $action,

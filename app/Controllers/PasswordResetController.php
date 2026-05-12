@@ -181,7 +181,7 @@ class PasswordResetController extends Controller
         if (!$this->isValidTokenFormat($token)) {
             Audit::log([
                 'module'      => 'password_reset',
-                'action'      => 'password_reset.invalid_token',
+                'action'      => 'password_reset.token_invalid',
                 'description' => 'Token con formato inválido en GET',
                 'status'      => 'warning',
                 'user_id'     => null,
@@ -196,7 +196,7 @@ class PasswordResetController extends Controller
         if (!$record) {
             Audit::log([
                 'module'      => 'password_reset',
-                'action'      => 'password_reset.invalid_token',
+                'action'      => 'password_reset.token_invalid',
                 'description' => 'Token no encontrado, expirado o ya usado en GET',
                 'status'      => 'warning',
                 'user_id'     => null,
@@ -241,7 +241,7 @@ class PasswordResetController extends Controller
         if (!$record) {
             Audit::log([
                 'module'      => 'password_reset',
-                'action'      => 'password_reset.invalid_token',
+                'action'      => 'password_reset.token_invalid',
                 'description' => 'Token inválido o expirado en POST',
                 'status'      => 'warning',
                 'user_id'     => null,
@@ -297,7 +297,7 @@ class PasswordResetController extends Controller
         Logger::security("Password reset completed for user ID {$userId}");
         Audit::log([
             'module'      => 'password_reset',
-            'action'      => 'password_reset.reset_completed',
+            'action'      => 'password_reset.completed',
             'entity'      => 'user',
             'entity_id'   => $userId,
             'description' => 'Contraseña restablecida mediante enlace de recuperación',

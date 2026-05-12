@@ -53,7 +53,7 @@ class MfaSettingsController
             try {
                 Audit::log([
                     'module'      => 'security_mfa',
-                    'action'      => 'settings_updated',
+                    'action'      => 'mfa.settings_updated',
                     'description' => 'Configuración MFA actualizada',
                     'new_values'  => [
                         'email_enabled'         => $emailEnabled,

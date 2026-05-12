@@ -76,7 +76,7 @@ class SmtpSettingsController
         if ($saved) {
             Audit::log([
                 'module'      => 'security_smtp',
-                'action'      => 'settings_updated',
+                'action'      => 'smtp.updated',
                 'description' => 'Configuración SMTP actualizada',
                 'new_values'  => [
                     'host'         => $host,
@@ -117,9 +117,9 @@ class SmtpSettingsController
                 $model->markTested(false, __('smtp.test.status_fail'));
                 Audit::log([
                     'module'      => 'security_smtp',
-                    'action'      => 'smtp_tested',
+                    'action'      => 'smtp.test_failed',
                     'description' => 'Prueba SMTP fallida — contraseña no configurada',
-                    'status'      => 'error',
+                    'status'      => 'failed',
                 ]);
                 Session::flash('error', __('smtp.error.password_empty'));
                 Redirect::to('/security/smtp');
@@ -131,9 +131,9 @@ class SmtpSettingsController
                 Logger::error('Mailer test: password decryption failed — APP_KEY may have changed');
                 Audit::log([
                     'module'      => 'security_smtp',
-                    'action'      => 'smtp_tested',
+                    'action'      => 'smtp.test_failed',
                     'description' => 'Prueba SMTP fallida — no se pudo descifrar la contraseña',
-                    'status'      => 'error',
+                    'status'      => 'failed',
                 ]);
                 Session::flash('error', __('smtp.error.password_decrypt_fail'));
                 Redirect::to('/security/smtp');
@@ -173,11 +173,11 @@ class SmtpSettingsController
 
             Audit::log([
                 'module'      => 'security_smtp',
-                'action'      => 'smtp_tested',
+                'action'      => $sent ? 'smtp.test_success' : 'smtp.test_failed',
                 'description' => $sent
                     ? 'Prueba SMTP exitosa — enviado a ' . $testEmail
                     : 'Prueba SMTP fallida — ' . Mailer::$lastError,
-                'status'      => $sent ? 'success' : 'error',
+                'status'      => $sent ? 'success' : 'failed',
             ]);
 
             if ($sent) {

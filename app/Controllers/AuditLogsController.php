@@ -81,7 +81,7 @@ class AuditLogsController extends Controller
                 ];
             }, $logs);
 
-            Audit::log(['module' => 'audit_logs', 'action' => 'exported',
+            Audit::log(['module' => 'audit_logs', 'action' => 'audit.exported',
                 'entity' => 'audit_log',
                 'description' => 'Exportacion Excel de auditoria',
                 'new_values' => ['records_count' => count($rows), 'filters' => array_filter($filters)],
@@ -115,7 +115,7 @@ class AuditLogsController extends Controller
             );
         } catch (\Throwable $e) {
             Logger::error('AuditLogsController::exportExcel: ' . $e->getMessage());
-            Audit::log(['module' => 'audit_logs', 'action' => 'export_failed',
+            Audit::log(['module' => 'audit_logs', 'action' => 'audit.export_failed',
                 'description' => 'Error al exportar auditoria',
                 'new_values' => ['filters' => array_filter($filters)],
                 'status' => 'failed']);

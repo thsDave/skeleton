@@ -85,7 +85,7 @@ class ProfileController extends Controller
             ]);
 
             Logger::info("Preferencias actualizadas - ID {$id} tema={$theme} lang={$langCode}");
-            Audit::log(['module' => 'profile', 'action' => 'preferences_updated',
+            Audit::log(['module' => 'profile', 'action' => 'profile.preferences_updated',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Preferencias de perfil actualizadas',
                 'new_values' => ['theme_preference' => $theme, 'language_id' => $langIdInt, 'lang_code' => $langCode],
@@ -174,8 +174,12 @@ class ProfileController extends Controller
                 'telefono' => $telefono ?: null, 'direccion' => $direccion ?: null];
             if ($uploadedImage) {
                 $newVals['profile_image_updated'] = true;
+                Audit::log(['module' => 'profile', 'action' => 'profile.avatar_updated',
+                    'entity' => 'user', 'entity_id' => $id,
+                    'description' => 'Imagen de perfil actualizada',
+                    'status' => 'success']);
             }
-            Audit::log(['module' => 'profile', 'action' => 'profile_updated',
+            Audit::log(['module' => 'profile', 'action' => 'profile.updated',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Perfil de usuario actualizado',
                 'new_values' => $newVals,
@@ -219,7 +223,7 @@ class ProfileController extends Controller
         try {
             $this->userModel->updatePreferences($id, $theme, $user['language_id'] ?? null);
             Auth::updateSession(['theme' => $theme]);
-            Audit::log(['module' => 'profile', 'action' => 'theme_updated',
+            Audit::log(['module' => 'profile', 'action' => 'profile.theme_updated',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => "Tema actualizado a '{$theme}'",
                 'new_values' => ['theme_preference' => $theme],

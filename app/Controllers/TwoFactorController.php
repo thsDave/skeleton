@@ -58,6 +58,14 @@ class TwoFactorController extends Controller
         $user     = $this->userModel->findById($authUser['id']);
 
         if (!$this->sendEmailCode($authUser['id'], $user['email'], $user['nombres'])) {
+            Audit::log([
+                'module'      => 'profile',
+                'action'      => 'mfa.user_enable_failed',
+                'entity'      => 'user',
+                'entity_id'   => $authUser['id'],
+                'description' => 'No se pudo enviar codigo para habilitar 2FA por correo',
+                'status'      => 'failed',
+            ]);
             Session::flash('error', __('2fa.code_send_failed'));
             Redirect::to('/profile/two-factor');
         }
@@ -102,6 +110,14 @@ class TwoFactorController extends Controller
         if (!$row) {
             Session::delete('tf_pending_method');
             Session::delete('tf_pending_action');
+            Audit::log([
+                'module'      => 'profile',
+                'action'      => 'mfa.user_enable_failed',
+                'entity'      => 'user',
+                'entity_id'   => $authUser['id'],
+                'description' => 'Codigo para habilitar 2FA expirado o inexistente',
+                'status'      => 'failed',
+            ]);
             Session::flash('error', __('2fa.code_expired'));
             Redirect::to('/profile/two-factor');
         }
@@ -111,12 +127,28 @@ class TwoFactorController extends Controller
             $this->codeModel->markUsed((int) $row['id']);
             Session::delete('tf_pending_method');
             Session::delete('tf_pending_action');
+            Audit::log([
+                'module'      => 'profile',
+                'action'      => 'mfa.user_enable_failed',
+                'entity'      => 'user',
+                'entity_id'   => $authUser['id'],
+                'description' => 'Habilitacion de 2FA bloqueada por maximo de intentos',
+                'status'      => 'denied',
+            ]);
             Session::flash('error', __('2fa.max_attempts'));
             Redirect::to('/profile/two-factor');
         }
 
         if (!$this->tf->verifyCode($code, $row['code_hash'])) {
             $this->codeModel->incrementAttempts((int) $row['id']);
+            Audit::log([
+                'module'      => 'profile',
+                'action'      => 'mfa.user_enable_failed',
+                'entity'      => 'user',
+                'entity_id'   => $authUser['id'],
+                'description' => 'Codigo incorrecto para habilitar 2FA por correo',
+                'status'      => 'failed',
+            ]);
             Session::flash('error', __('2fa.code_invalid'));
             Redirect::to('/profile/two-factor/confirm');
         }
@@ -129,7 +161,7 @@ class TwoFactorController extends Controller
 
         Audit::log([
             'module'      => 'profile',
-            'action'      => '2fa_enabled',
+            'action'      => 'mfa.user_enabled',
             'entity'      => 'user',
             'entity_id'   => $authUser['id'],
             'description' => '2FA habilitado (email)',
@@ -163,6 +195,15 @@ class TwoFactorController extends Controller
 
         $user = $this->userModel->findById($authUser['id']);
         $sent = $this->sendEmailCode($authUser['id'], $user['email'], $user['nombres']);
+
+        Audit::log([
+            'module'      => 'profile',
+            'action'      => $sent ? 'mfa.code_resent' : 'mfa.code_resend_failed',
+            'entity'      => 'user',
+            'entity_id'   => $authUser['id'],
+            'description' => $sent ? 'Codigo para 2FA reenviado' : 'No se pudo reenviar codigo para 2FA',
+            'status'      => $sent ? 'success' : 'failed',
+        ]);
 
         Session::flash($sent ? 'success' : 'error', $sent ? __('2fa.code_resent') : __('2fa.code_send_failed'));
         Redirect::to('/profile/two-factor/confirm');
@@ -207,6 +248,14 @@ class TwoFactorController extends Controller
         }
 
         if (!$this->tf->verifyTotp($secret, $code)) {
+            Audit::log([
+                'module'      => 'profile',
+                'action'      => 'mfa.user_enable_failed',
+                'entity'      => 'user',
+                'entity_id'   => $authUser['id'],
+                'description' => 'Codigo incorrecto para habilitar 2FA por autenticador',
+                'status'      => 'failed',
+            ]);
             Session::flash('error', __('2fa.code_invalid'));
             Redirect::to('/profile/two-factor/setup-authenticator');
         }
@@ -217,7 +266,7 @@ class TwoFactorController extends Controller
 
         Audit::log([
             'module'      => 'profile',
-            'action'      => '2fa_enabled',
+            'action'      => 'mfa.user_enabled',
             'entity'      => 'user',
             'entity_id'   => $authUser['id'],
             'description' => '2FA habilitado (authenticator)',
@@ -239,7 +288,7 @@ class TwoFactorController extends Controller
 
         Audit::log([
             'module'      => 'profile',
-            'action'      => '2fa_disabled',
+            'action'      => 'mfa.user_disabled',
             'entity'      => 'user',
             'entity_id'   => $authUser['id'],
             'description' => '2FA deshabilitado',

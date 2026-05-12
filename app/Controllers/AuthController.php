@@ -51,7 +51,7 @@ class AuthController extends Controller
         if (!$authSettings['local_login_enabled']) {
             Audit::log([
                 'module'      => 'auth',
-                'action'      => 'external_login.no_login_methods_available',
+                'action'      => 'auth.local_login_disabled',
                 'description' => 'Intento de login local cuando está deshabilitado',
                 'status'      => 'denied',
                 'user_id'     => null,
@@ -88,7 +88,7 @@ class AuthController extends Controller
             try {
                 Audit::log([
                     'module'      => 'auth',
-                    'action'      => 'login_blocked_ip',
+                    'action'      => 'login_attempts.ip_locked',
                     'description' => "Login bloqueado por IP: {$ip}",
                     'status'      => 'denied',
                     'user_id'     => null,
@@ -119,7 +119,7 @@ class AuthController extends Controller
                 ]);
             }
             Logger::security("Login fallido - email no existe: {$email}");
-            Audit::log(['module' => 'auth', 'action' => 'login_failed',
+            Audit::log(['module' => 'auth', 'action' => 'auth.login_failed',
                 'description' => "Intento de login con email desconocido: {$email}", 'status' => 'failed',
                 'user_id' => null]);
             Redirect::withErrors('/login', ['general' => __('auth.login_invalid_credentials')], ['email' => $email]);
@@ -135,7 +135,7 @@ class AuthController extends Controller
                 ]);
             }
             Logger::security("Login bloqueado para usuario ID {$user['id']}");
-            Audit::log(['module' => 'auth', 'action' => 'login_blocked',
+            Audit::log(['module' => 'auth', 'action' => 'auth.user_blocked',
                 'entity' => 'user', 'entity_id' => $user['id'],
                 'description' => 'Intento de login con cuenta bloqueada', 'status' => 'denied',
                 'user_id' => $user['id']]);
@@ -152,7 +152,7 @@ class AuthController extends Controller
                 ]);
             }
             Logger::security("Login fallido - cuenta inactiva ID {$user['id']}");
-            Audit::log(['module' => 'auth', 'action' => 'login_failed',
+            Audit::log(['module' => 'auth', 'action' => 'auth.user_inactive',
                 'entity' => 'user', 'entity_id' => $user['id'],
                 'description' => 'Intento de login con cuenta inactiva', 'status' => 'failed',
                 'user_id' => $user['id']]);
@@ -179,7 +179,7 @@ class AuthController extends Controller
                 $this->userModel->lockAccount($user['id'], $lockoutMinutes);
                 $this->logModel->record($user['id'], $email, 'blocked', 'Máximo de intentos alcanzado');
                 Logger::security("Cuenta bloqueada por intentos fallidos - ID {$user['id']}");
-                Audit::log(['module' => 'auth', 'action' => 'login_blocked',
+                Audit::log(['module' => 'auth', 'action' => 'auth.account_locked',
                     'entity' => 'user', 'entity_id' => $user['id'],
                     'description' => 'Cuenta bloqueada por máximo de intentos fallidos', 'status' => 'warning',
                     'user_id' => $user['id']]);
@@ -188,7 +188,7 @@ class AuthController extends Controller
 
             $this->logModel->record($user['id'], $email, 'failed', 'Contraseña incorrecta');
             Logger::security("Login fallido - contraseña incorrecta ID {$user['id']}");
-            Audit::log(['module' => 'auth', 'action' => 'login_failed',
+            Audit::log(['module' => 'auth', 'action' => 'auth.login_failed',
                 'entity' => 'user', 'entity_id' => $user['id'],
                 'description' => 'Login fallido: contraseña incorrecta', 'status' => 'failed',
                 'user_id' => $user['id']]);
@@ -201,7 +201,7 @@ class AuthController extends Controller
             Logger::security("AuthController::loginProcess — domain not allowed: {$emailDomain}");
             Audit::log([
                 'module'      => 'auth',
-                'action'      => 'local_login.domain_denied',
+                'action'      => 'auth.domain_denied',
                 'description' => "Login local rechazado por dominio no autorizado: {$emailDomain}",
                 'status'      => 'denied',
                 'user_id'     => $user['id'],
@@ -223,7 +223,7 @@ class AuthController extends Controller
         // ── Verificación 2FA ──────────────────────────────────────────────────────
         if (!empty($user['two_factor_enabled']) && !empty($user['two_factor_method'])) {
             if ($user['two_factor_method'] === 'sms') {
-                Audit::log(['module' => 'auth', 'action' => 'login_2fa_method_unavailable',
+                Audit::log(['module' => 'auth', 'action' => 'mfa.method_unavailable',
                     'entity' => 'user', 'entity_id' => $user['id'],
                     'description' => "Login bloqueado — método 2FA 'sms' ya no disponible desde {$ip}",
                     'status' => 'denied']);
@@ -254,17 +254,17 @@ class AuthController extends Controller
                     Mailer::send($user['email'], $user['nombres'], __('2fa.email_subject'), $html);
                 }
 
-                Audit::log(['module' => 'auth', 'action' => 'login_2fa_required',
+                Audit::log(['module' => 'auth', 'action' => 'mfa.challenge_required',
                     'entity' => 'user', 'entity_id' => $user['id'],
                     'description' => "2FA requerido ({$user['two_factor_method']}) desde {$ip}",
-                    'status' => 'pending']);
+                    'status' => 'info']);
                 Redirect::to('/two-factor/challenge');
             }
         }
 
         Auth::login($user);
 
-        Audit::log(['module' => 'auth', 'action' => 'login_success',
+        Audit::log(['module' => 'auth', 'action' => 'auth.login_success',
             'entity' => 'user', 'entity_id' => $user['id'],
             'description' => "Login exitoso desde {$ip}", 'status' => 'success']);
 
@@ -295,7 +295,7 @@ class AuthController extends Controller
 
         $userId = Auth::id();
         Logger::security("Logout - ID {$userId}");
-        Audit::log(['module' => 'auth', 'action' => 'logout',
+        Audit::log(['module' => 'auth', 'action' => 'auth.logout',
             'entity' => 'user', 'entity_id' => $userId,
             'description' => 'Cierre de sesión', 'status' => 'success']);
         Auth::logout();

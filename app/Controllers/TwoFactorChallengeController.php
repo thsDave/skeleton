@@ -113,6 +113,15 @@ class TwoFactorChallengeController extends Controller
         $user = $this->userModel->findById((int) $userId);
         $sent = $this->sendEmailCode((int) $userId, $user['email'], $user['nombres']);
 
+        Audit::log([
+            'module'      => 'auth',
+            'action'      => $sent ? 'mfa.code_resent' : 'mfa.code_resend_failed',
+            'entity'      => 'user',
+            'entity_id'   => (int)$userId,
+            'description' => $sent ? 'Codigo MFA reenviado por correo' : 'No se pudo reenviar codigo MFA por correo',
+            'status'      => $sent ? 'success' : 'failed',
+        ]);
+
         Session::flash($sent ? 'success' : 'error', $sent ? __('2fa.code_resent') : __('2fa.code_send_failed'));
         Redirect::to('/two-factor/challenge');
     }
@@ -125,6 +134,14 @@ class TwoFactorChallengeController extends Controller
         $secret    = $secretEnc !== '' ? Crypt::decrypt($secretEnc) : '';
 
         if ($secret === '' || !$this->tf->verifyTotp($secret, $code)) {
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'mfa.challenge_failed',
+                'entity'      => 'user',
+                'entity_id'   => $user['id'],
+                'description' => 'Verificacion MFA fallida (authenticator)',
+                'status'      => 'failed',
+            ]);
             Session::flash('error', __('2fa.code_invalid'));
             Redirect::to('/two-factor/challenge');
         }
@@ -137,6 +154,14 @@ class TwoFactorChallengeController extends Controller
         $row = $this->codeModel->findValid((int) $user['id'], $method);
 
         if (!$row) {
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'mfa.challenge_failed',
+                'entity'      => 'user',
+                'entity_id'   => $user['id'],
+                'description' => "Codigo MFA expirado o inexistente ({$method})",
+                'status'      => 'failed',
+            ]);
             Session::flash('error', __('2fa.code_expired'));
             Redirect::to('/two-factor/challenge');
         }
@@ -145,12 +170,28 @@ class TwoFactorChallengeController extends Controller
         if ((int) $row['attempts'] >= $maxAttempts) {
             $this->codeModel->markUsed((int) $row['id']);
             $this->clearPendingState();
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'mfa.challenge_failed',
+                'entity'      => 'user',
+                'entity_id'   => $user['id'],
+                'description' => "MFA bloqueado por maximo de intentos ({$method})",
+                'status'      => 'denied',
+            ]);
             Session::flash('error', __('2fa.max_attempts'));
             Redirect::to('/login');
         }
 
         if (!$this->tf->verifyCode($code, $row['code_hash'])) {
             $this->codeModel->incrementAttempts((int) $row['id']);
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'mfa.challenge_failed',
+                'entity'      => 'user',
+                'entity_id'   => $user['id'],
+                'description' => "Verificacion MFA fallida ({$method})",
+                'status'      => 'failed',
+            ]);
             Session::flash('error', __('2fa.code_invalid'));
             Redirect::to('/two-factor/challenge');
         }
@@ -169,7 +210,7 @@ class TwoFactorChallengeController extends Controller
 
         Audit::log([
             'module'      => 'auth',
-            'action'      => 'login_2fa_success',
+            'action'      => 'mfa.challenge_success',
             'entity'      => 'user',
             'entity_id'   => $user['id'],
             'description' => "Login con 2FA completado ({$method}) desde {$ip}",

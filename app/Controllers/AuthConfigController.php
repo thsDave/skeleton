@@ -60,7 +60,7 @@ class AuthConfigController
             try {
                 Audit::log([
                     'module'      => 'security_mfa',
-                    'action'      => 'settings_updated',
+                    'action'      => 'mfa.settings_updated',
                     'description' => 'Configuración MFA actualizada',
                     'new_values'  => [
                         'email_enabled'         => $emailEnabled,
@@ -110,7 +110,7 @@ class AuthConfigController
             try {
                 Audit::log([
                     'module'      => 'security_mfa',
-                    'action'      => 'login_security_settings_updated',
+                    'action'      => 'login_attempts.settings_updated',
                     'description' => 'Configuración de intentos fallidos actualizada',
                     'new_values'  => $data,
                     'status'      => 'success',

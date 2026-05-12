@@ -76,7 +76,7 @@ class ExternalAuthController extends Controller
             'module'      => 'auth',
             'action'      => 'external_login.started',
             'description' => "Inicio OAuth con proveedor: {$provider} (acción: {$action})",
-            'status'      => 'pending',
+            'status'      => 'info',
             'user_id'     => Auth::check() ? Auth::id() : null,
         ]);
 

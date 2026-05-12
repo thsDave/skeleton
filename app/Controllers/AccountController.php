@@ -354,7 +354,7 @@ class AccountController extends Controller
         $user = $this->userModel->findById($id);
 
         if (!password_verify($currentPassword, $user['password'])) {
-            Audit::log(['module' => 'account', 'action' => 'password_change_failed',
+            Audit::log(['module' => 'account', 'action' => 'account.password_change_failed',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Intento de cambio de contraseña fallido: contraseña actual incorrecta',
                 'status' => 'failed']);
@@ -368,14 +368,14 @@ class AccountController extends Controller
             'apellidos' => $user['apellidos'],
         ]);
         if (!$policyResult['valid']) {
-            Audit::log(['module' => 'account', 'action' => 'password.policy_validation_failed',
+            Audit::log(['module' => 'account', 'action' => 'password_policy.validation_failed',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Cambio de contraseña rechazado por política',
                 'status' => 'denied']);
             Redirect::withErrors('/account/edit-password', ['new_password' => implode(' ', $policyResult['errors'])]);
         }
         if ($policySvc->isPasswordReused($newPassword, $id)) {
-            Audit::log(['module' => 'account', 'action' => 'password.history_reuse_blocked',
+            Audit::log(['module' => 'account', 'action' => 'password_policy.history_reuse_blocked',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Cambio de contraseña rechazado por reutilización',
                 'status' => 'denied']);
@@ -388,7 +388,7 @@ class AccountController extends Controller
             $policySvc->saveHistory($id, $hashed);
             Session::regenerate();
             Logger::security("Contraseña actualizada - ID {$id}");
-            Audit::log(['module' => 'account', 'action' => 'password.changed',
+            Audit::log(['module' => 'account', 'action' => 'account.password_changed',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Contraseña de cuenta actualizada',
                 'status' => 'success']);

@@ -96,7 +96,7 @@ class RolesPermissionsController extends Controller
         Logger::security(
             "Permisos del rol '{$role['name']}' (ID {$roleId}) actualizados por usuario ID " . Auth::id()
         );
-        Audit::log(['module' => 'roles_permissions', 'action' => 'permissions_updated',
+        Audit::log(['module' => 'roles_permissions', 'action' => 'roles.permissions_updated',
             'entity' => 'role', 'entity_id' => $roleId,
             'description' => "Permisos del rol '{$role['name']}' actualizados",
             'old_values' => ['permission_ids' => $oldPermIds],

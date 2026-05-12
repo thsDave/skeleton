@@ -311,8 +311,8 @@ class Auth
             // Audit: log denied access (catch-all to avoid loops)
             try {
                 \Core\Audit::log([
-                    'module'      => explode('.', $permission)[0] ?? null,
-                    'action'      => 'access_denied',
+                    'module'      => 'security',
+                    'action'      => 'security.access_denied',
                     'entity'      => 'permission',
                     'description' => "Acceso denegado: permiso '{$permission}' requerido",
                     'new_values'  => [

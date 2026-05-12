@@ -54,7 +54,7 @@ class LoginAttemptsSettingsController
             try {
                 Audit::log([
                     'module'      => 'security_attempts',
-                    'action'      => 'login_security_settings_updated',
+                    'action'      => 'login_attempts.settings_updated',
                     'description' => 'Configuración de intentos fallidos actualizada',
                     'new_values'  => $data,
                     'status'      => 'success',

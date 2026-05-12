@@ -37,7 +37,7 @@ class SecurityController
         if ($model->updateSettings((bool) $enabled, $seconds)) {
             Session::delete('_sec_settings');
             Session::delete('_sec_settings_at');
-            Audit::log(['module' => 'security_sessions', 'action' => 'settings_updated',
+            Audit::log(['module' => 'security_sessions', 'action' => 'security_sessions.settings_updated',
                 'description' => 'Configuración de sesiones actualizada',
                 'new_values' => ['session_lock_enabled' => $enabled, 'session_inactivity_seconds' => $seconds],
                 'status' => 'success']);

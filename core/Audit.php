@@ -12,7 +12,22 @@ class Audit
     private static array $sensitiveKeys = [
         'password', 'password_confirmation', 'current_password',
         'new_password', 'confirm_password', '_csrf_token', 'csrf_token',
-        'token', 'remember_token', 'session_id',
+        'password_hash', 'hash', 'token', 'token_hash', 'remember_token',
+        'session_id', 'client_secret', 'access_token', 'refresh_token',
+        'id_token', 'authorization_code', 'code_hash', 'verification_code',
+        'recovery_code', 'mfa_code', 'two_factor_code', 'totp_secret',
+        'two_factor_secret', 'two_factor_secret_enc', 'qr_secret',
+        'smtp_password', 'mail_password',
+    ];
+
+    private static array $allowedStatuses = [
+        'success', 'failed', 'denied', 'warning', 'info',
+    ];
+
+    private static array $sensitiveKeyPatterns = [
+        'secret', 'token', 'password_hash', 'password_enc', 'code_hash',
+        'verification_code', 'recovery_code', 'mfa_code', 'two_factor_code',
+        'totp_secret', 'two_factor_secret', 'qr_secret',
     ];
 
     /**
@@ -49,7 +64,7 @@ class Audit
                                     : null,
                 'route'       => self::currentRoute(),
                 'method'      => $_SERVER['REQUEST_METHOD'] ?? null,
-                'status'      => $data['status'] ?? 'success',
+                'status'      => self::normalizeStatus($data['status'] ?? 'success'),
             ]);
         } catch (\Throwable $e) {
             Logger::error('Audit::log failed: ' . $e->getMessage());
@@ -61,14 +76,7 @@ class Audit
      */
     public static function sanitize(array $data): array
     {
-        $lower = array_map('strtolower', self::$sensitiveKeys);
-        $result = [];
-        foreach ($data as $k => $v) {
-            if (!in_array(strtolower((string)$k), $lower, true)) {
-                $result[$k] = $v;
-            }
-        }
-        return $result;
+        return self::sanitizeArray($data);
     }
 
     // ── Privados ────────────────────────────────────────────────────────────
@@ -82,6 +90,82 @@ class Audit
     private static function currentRoute(): string
     {
         $uri = $_SERVER['REQUEST_URI'] ?? '/';
-        return parse_url($uri, PHP_URL_PATH) ?: '/';
+        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+        return self::redactRoute($path);
+    }
+
+    private static function sanitizeArray(array $data, int $depth = 0): array
+    {
+        if ($depth > 5) {
+            return ['_truncated' => true];
+        }
+
+        $result = [];
+        foreach ($data as $key => $value) {
+            $keyString = (string)$key;
+            if (self::isSensitiveKey($keyString)) {
+                $result[$key] = '[REDACTED]';
+                continue;
+            }
+
+            if (strtolower($keyString) === 'route' && is_string($value)) {
+                $result[$key] = self::redactRoute($value);
+                continue;
+            }
+
+            if (is_array($value)) {
+                $result[$key] = self::sanitizeArray($value, $depth + 1);
+                continue;
+            }
+
+            if (is_object($value)) {
+                $result[$key] = '[OBJECT]';
+                continue;
+            }
+
+            if (is_string($value) && strlen($value) > 1000) {
+                $result[$key] = substr($value, 0, 1000) . '... [TRUNCATED]';
+                continue;
+            }
+
+            $result[$key] = $value;
+        }
+
+        return $result;
+    }
+
+    private static function isSensitiveKey(string $key): bool
+    {
+        $key = strtolower($key);
+        foreach (self::$sensitiveKeys as $sensitive) {
+            if ($key === $sensitive) {
+                return true;
+            }
+        }
+        foreach (self::$sensitiveKeyPatterns as $pattern) {
+            if (str_contains($key, $pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function normalizeStatus(string $status): string
+    {
+        $status = strtolower(trim($status));
+        $status = match ($status) {
+            'error', 'fail' => 'failed',
+            'pending' => 'info',
+            default => $status,
+        };
+
+        return in_array($status, self::$allowedStatuses, true) ? $status : 'info';
+    }
+
+    private static function redactRoute(string $route): string
+    {
+        $route = preg_replace('#(/reset-password/)[a-f0-9]{64}#i', '$1[REDACTED]', $route) ?? $route;
+        $route = preg_replace('#([?&](?:token|code|state)=)[^&]+#i', '$1[REDACTED]', $route) ?? $route;
+        return $route;
     }
 }

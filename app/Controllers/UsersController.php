@@ -67,7 +67,7 @@ class UsersController extends Controller
                 ];
             }, $users);
 
-            Audit::log(['module' => 'users', 'action' => 'exported',
+            Audit::log(['module' => 'users', 'action' => 'users.exported',
                 'entity' => 'user',
                 'description' => 'Exportacion Excel de usuarios',
                 'new_values' => ['records_count' => count($rows)],
@@ -98,7 +98,7 @@ class UsersController extends Controller
             );
         } catch (\Throwable $e) {
             Logger::error('UsersController::exportExcel: ' . $e->getMessage());
-            Audit::log(['module' => 'users', 'action' => 'export_failed',
+            Audit::log(['module' => 'users', 'action' => 'users.export_failed',
                 'description' => 'Error al exportar usuarios',
                 'status' => 'failed']);
             Redirect::withError('/users', __('export.error'));
@@ -223,12 +223,12 @@ class UsersController extends Controller
             }
             Logger::security("Usuario creado ID {$newId} por admin ID " . Auth::id());
             if ($forcePasswordChange) {
-                Audit::log(['module' => 'users', 'action' => 'user.force_password_change_enabled',
+                Audit::log(['module' => 'users', 'action' => 'users.force_password_change_enabled',
                     'entity' => 'user', 'entity_id' => $newId,
                     'description' => "Cambio obligatorio de contraseña activado al crear usuario ID {$newId}",
                     'status' => 'info', 'user_id' => Auth::id()]);
             }
-            Audit::log(['module' => 'users', 'action' => 'created',
+            Audit::log(['module' => 'users', 'action' => 'users.created',
                 'entity' => 'user', 'entity_id' => $newId,
                 'description' => "Usuario creado: {$email}",
                 'new_values' => ['nombres' => $nombres, 'apellidos' => $apellidos,
@@ -237,7 +237,7 @@ class UsersController extends Controller
                 'status' => 'success']);
             Redirect::withSuccess('/users', 'Usuario creado correctamente.');
         } else {
-            Audit::log(['module' => 'users', 'action' => 'created',
+            Audit::log(['module' => 'users', 'action' => 'users.create_failed',
                 'description' => "Error al crear usuario: {$email}", 'status' => 'failed']);
             Redirect::withError('/users/create', 'No se pudo crear el usuario. Intenta de nuevo.');
         }
@@ -386,18 +386,35 @@ class UsersController extends Controller
             // Guardar en historial si hubo cambio de contraseña
             if ($newHash !== null) {
                 $policySvc->saveHistory($userId, $newHash);
-                Audit::log(['module' => 'users', 'action' => 'user.password_changed_by_admin',
+                Audit::log(['module' => 'users', 'action' => 'users.password_changed_by_admin',
                     'entity' => 'user', 'entity_id' => $userId,
                     'description' => "Contraseña de usuario ID {$userId} cambiada por admin ID " . Auth::id(),
                     'status' => 'success']);
             }
             $prevForce = (int)($user['force_password_change'] ?? 0);
             if ($forcePasswordChange !== $prevForce) {
-                $forceAction = $forcePasswordChange ? 'user.force_password_change_enabled' : 'user.force_password_change_disabled';
+                $forceAction = $forcePasswordChange ? 'users.force_password_change_enabled' : 'users.force_password_change_disabled';
                 Audit::log(['module' => 'users', 'action' => $forceAction,
                     'entity' => 'user', 'entity_id' => $userId,
                     'description' => ($forcePasswordChange ? 'Activado' : 'Desactivado') . " cambio obligatorio de contraseña para usuario ID {$userId}",
                     'status' => 'info', 'user_id' => Auth::id()]);
+            }
+            if ((int)$user['role_id'] !== $roleId) {
+                Audit::log(['module' => 'users', 'action' => 'users.role_changed',
+                    'entity' => 'user', 'entity_id' => $userId,
+                    'description' => "Rol de usuario ID {$userId} actualizado",
+                    'old_values' => ['role_id' => (int)$user['role_id']],
+                    'new_values' => ['role_id' => $roleId],
+                    'status' => 'success']);
+            }
+            if ((int)$user['status_id'] !== $statusId) {
+                $statusAction = $statusId === 1 ? 'users.activated' : 'users.deactivated';
+                Audit::log(['module' => 'users', 'action' => $statusAction,
+                    'entity' => 'user', 'entity_id' => $userId,
+                    'description' => "Estado de usuario ID {$userId} actualizado",
+                    'old_values' => ['status_id' => (int)$user['status_id']],
+                    'new_values' => ['status_id' => $statusId],
+                    'status' => 'success']);
             }
             Logger::security("Usuario ID {$userId} actualizado por admin ID " . Auth::id());
             $oldAudit = ['nombres' => $user['nombres'], 'apellidos' => $user['apellidos'],
@@ -408,13 +425,13 @@ class UsersController extends Controller
             if ($password !== '') {
                 $newAudit['password_changed'] = true;
             }
-            Audit::log(['module' => 'users', 'action' => 'updated',
+            Audit::log(['module' => 'users', 'action' => 'users.updated',
                 'entity' => 'user', 'entity_id' => $userId,
                 'description' => "Usuario ID {$userId} actualizado",
                 'old_values' => $oldAudit, 'new_values' => $newAudit, 'status' => 'success']);
             Redirect::withSuccess('/users', 'Usuario actualizado correctamente.');
         } else {
-            Audit::log(['module' => 'users', 'action' => 'updated',
+            Audit::log(['module' => 'users', 'action' => 'users.update_failed',
                 'entity' => 'user', 'entity_id' => $userId,
                 'description' => "Error al actualizar usuario ID {$userId}", 'status' => 'failed']);
             Redirect::withError("/users/edit/{$userId}", 'No se pudo actualizar el usuario.');
@@ -448,7 +465,7 @@ class UsersController extends Controller
 
         if ($this->userModel->inactivate($userId)) {
             Logger::security("Usuario ID {$userId} inactivado por admin ID " . Auth::id());
-            Audit::log(['module' => 'users', 'action' => 'inactivated',
+            Audit::log(['module' => 'users', 'action' => 'users.deactivated',
                 'entity' => 'user', 'entity_id' => $userId,
                 'description' => "Usuario ID {$userId} inactivado", 'status' => 'success']);
             Redirect::withSuccess('/users', 'Usuario inactivado correctamente.');
@@ -501,7 +518,7 @@ class UsersController extends Controller
             try {
                 Audit::log([
                     'module'      => 'users',
-                    'action'      => 'user_unlocked',
+                    'action'      => 'users.unlocked',
                     'entity'      => 'user',
                     'entity_id'   => $userId,
                     'description' => "Usuario ID {$userId} desbloqueado manualmente por admin ID " . Auth::id(),

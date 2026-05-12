@@ -51,7 +51,7 @@ class AuthenticationController extends Controller
                 try {
                     Audit::log([
                         'module'      => 'security_authentication',
-                        'action'      => 'authentication_settings.update_failed',
+                        'action'      => 'authentication.settings_update_failed',
                         'description' => 'Intento de activar login externo sin proveedor verificado activo',
                         'status'      => 'warning',
                     ]);
@@ -99,7 +99,7 @@ class AuthenticationController extends Controller
         if ((new AuthenticationSettings())->save($data)) {
             Audit::log([
                 'module'      => 'security_authentication',
-                'action'      => 'authentication_settings.updated',
+                'action'      => 'authentication.settings_updated',
                 'description' => 'Configuración de métodos de autenticación actualizada',
                 'new_values'  => [
                     'local_login_enabled'       => $data['local_login_enabled'],
@@ -290,7 +290,7 @@ class AuthenticationController extends Controller
             'entity'      => 'external_auth_provider',
             'entity_id'   => $id,
             'description' => "Prueba OAuth iniciada para {$provider['name']}",
-            'status'      => 'pending',
+            'status'      => 'info',
             'user_id'     => Auth::id(),
         ]);
 
