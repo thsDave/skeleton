@@ -146,6 +146,8 @@ $router->post('/system-information/update',  [SystemInformationController::class
 $router->get('/manuals/create',              [SystemInformationController::class, 'createManual']);
 $router->post('/manuals/store',              [SystemInformationController::class, 'storeManual']);
 $router->post('/manuals/toggle/{id}',        [SystemInformationController::class, 'toggleManual']);
+$router->post('/manuals/replace/{id}',       [SystemInformationController::class, 'replaceManual']);
+$router->post('/manuals/delete/{id}',        [SystemInformationController::class, 'deleteManual']);
 $router->get('/manuals/download/{id}',       [SystemInformationController::class, 'downloadManual']);
 
 // Security

@@ -34,7 +34,7 @@ class SystemInformationController extends Controller
         Auth::requirePermission('system_information.view');
         $authUser    = Auth::user();
         $setting     = $this->settingModel->get();
-        $canManage   = can('manuals.upload') || can('manuals.edit') || can('manuals.activate') || can('manuals.deactivate');
+        $canManage   = can('manuals.upload') || can('manuals.edit') || can('manuals.activate') || can('manuals.deactivate') || can('manuals.delete');
         $manuals     = $canManage ? $this->manualModel->getAll() : $this->manualModel->getActive();
         $this->view('system_information.index', compact('authUser', 'setting', 'manuals'));
     }
@@ -149,7 +149,8 @@ class SystemInformationController extends Controller
                 compact('title', 'description'));
         }
 
-        $result = (new UploadService())->upload(
+        $uploadSvc = new UploadService();
+        $result = $uploadSvc->upload(
             $_FILES['manual_file'],
             'user_manuals',
             ['prefix' => 'manual_' . Auth::id() . '_']
@@ -173,16 +174,20 @@ class SystemInformationController extends Controller
 
             if ($newId) {
                 Logger::security("Manual subido ID {$newId} por admin ID " . Auth::id());
-                Audit::log(['module' => 'manuals', 'action' => 'uploaded',
+                Audit::log(['module' => 'system_manual', 'action' => 'uploaded',
                     'entity' => 'manual', 'entity_id' => $newId,
                     'description' => "Manual subido: {$title}",
                     'new_values' => ['title' => $title, 'file_name' => $result['original_name'], 'file_size' => $result['size']],
                     'status' => 'success']);
                 Redirect::withSuccess('/system-information', __('manuals.uploaded_ok'));
             } else {
+                $uploadSvc->delete($result['filename'], 'user_manuals');
                 Redirect::withError('/manuals/create', __('alerts.internal'));
             }
         } catch (\PDOException $e) {
+            if (!empty($result['filename'])) {
+                $uploadSvc->delete($result['filename'], 'user_manuals');
+            }
             Logger::error('SystemInformationController::storeManual PDOException: ' . $e->getMessage());
             Redirect::withError('/manuals/create', __('alerts.internal'));
         }
@@ -219,9 +224,11 @@ class SystemInformationController extends Controller
             if ($this->manualModel->setStatus($manualId, $newStatus)) {
                 $action = $isActive ? 'deactivated' : 'activated';
                 $msg    = $isActive ? __('manuals.deactivated_ok') : __('manuals.activated_ok');
-                Audit::log(['module' => 'manuals', 'action' => $action,
+                Audit::log(['module' => 'system_manual', 'action' => $action,
                     'entity' => 'manual', 'entity_id' => $manualId,
-                    'description' => "Manual ID {$manualId} " . ($isActive ? 'desactivado' : 'activado'),
+                    'description' => "Manual {$manual['title']} " . ($isActive ? 'desactivado' : 'activado'),
+                    'old_values' => ['status' => $manual['status_slug'] ?? null],
+                    'new_values' => ['status' => $isActive ? 'inactive' : 'active'],
                     'status' => 'success']);
                 Redirect::withSuccess('/system-information', $msg);
             } else {
@@ -233,19 +240,143 @@ class SystemInformationController extends Controller
         }
     }
 
+    public function replaceManual(string $id): void
+    {
+        Auth::requirePermission('manuals.edit');
+
+        if (!$this->isPost()) {
+            Redirect::to('/system-information');
+        }
+
+        CSRF::validateOrFail();
+
+        $manualId = (int)$id;
+        $manual   = $this->manualModel->findById($manualId);
+
+        if (!$manual) {
+            Redirect::withError('/system-information', __('manuals.not_found'));
+        }
+
+        if (!isset($_FILES['manual_file']) || $_FILES['manual_file']['error'] === UPLOAD_ERR_NO_FILE) {
+            Audit::log(['module' => 'system_manual', 'action' => 'replace_failed',
+                'entity' => 'manual', 'entity_id' => $manualId,
+                'description' => "Reemplazo fallido para manual {$manual['title']}: archivo no recibido",
+                'status' => 'failed']);
+            Redirect::withError('/system-information', __('manuals.file_required'));
+        }
+
+        $uploadSvc = new UploadService();
+        $result = $uploadSvc->upload(
+            $_FILES['manual_file'],
+            'user_manuals',
+            ['prefix' => 'manual_' . Auth::id() . '_']
+        );
+
+        if (!$result['success']) {
+            Audit::log(['module' => 'system_manual', 'action' => 'replace_failed',
+                'entity' => 'manual', 'entity_id' => $manualId,
+                'description' => "Reemplazo fallido para manual {$manual['title']}",
+                'new_values' => ['error' => $result['error']],
+                'status' => 'failed']);
+            Redirect::withError('/system-information', $result['error'] ?: __('manuals.error'));
+        }
+
+        try {
+            $updated = $this->manualModel->replaceFile($manualId, [
+                'file_name' => $result['original_name'],
+                'file_path' => $result['filename'],
+                'file_type' => $result['mime'],
+                'file_size' => $result['size'],
+            ]);
+
+            if (!$updated) {
+                $uploadSvc->delete($result['filename'], 'user_manuals');
+                Audit::log(['module' => 'system_manual', 'action' => 'replace_failed',
+                    'entity' => 'manual', 'entity_id' => $manualId,
+                    'description' => "Reemplazo fallido para manual {$manual['title']}",
+                    'status' => 'failed']);
+                Redirect::withError('/system-information', __('alerts.internal'));
+            }
+
+            $uploadSvc->delete($manual['file_path'] ?? null, 'user_manuals');
+            Audit::log(['module' => 'system_manual', 'action' => 'replaced',
+                'entity' => 'manual', 'entity_id' => $manualId,
+                'description' => "Manual reemplazado: {$manual['title']}",
+                'old_values' => ['file_name' => $manual['file_name'] ?? null, 'file_size' => $manual['file_size'] ?? null],
+                'new_values' => ['file_name' => $result['original_name'], 'file_size' => $result['size']],
+                'status' => 'success']);
+            Redirect::withSuccess('/system-information', __('manuals.replaced_ok'));
+        } catch (\PDOException $e) {
+            $uploadSvc->delete($result['filename'], 'user_manuals');
+            Logger::error('SystemInformationController::replaceManual PDOException: ' . $e->getMessage());
+            Audit::log(['module' => 'system_manual', 'action' => 'replace_failed',
+                'entity' => 'manual', 'entity_id' => $manualId,
+                'description' => "Reemplazo fallido para manual {$manual['title']}",
+                'status' => 'failed']);
+            Redirect::withError('/system-information', __('alerts.internal'));
+        }
+    }
+
+    public function deleteManual(string $id): void
+    {
+        Auth::requirePermission('manuals.delete');
+
+        if (!$this->isPost()) {
+            Redirect::to('/system-information');
+        }
+
+        CSRF::validateOrFail();
+
+        $manualId = (int)$id;
+        $manual   = $this->manualModel->findById($manualId);
+
+        if (!$manual) {
+            Audit::log(['module' => 'system_manual', 'action' => 'delete_failed',
+                'entity' => 'manual', 'entity_id' => $manualId,
+                'description' => "Eliminacion fallida: manual no encontrado",
+                'status' => 'failed']);
+            Redirect::withError('/system-information', __('manuals.not_found'));
+        }
+
+        try {
+            if ($this->manualModel->softDelete($manualId)) {
+                Audit::log(['module' => 'system_manual', 'action' => 'deleted',
+                    'entity' => 'manual', 'entity_id' => $manualId,
+                    'description' => "Manual eliminado logicamente: {$manual['title']}",
+                    'old_values' => ['title' => $manual['title'], 'file_name' => $manual['file_name'], 'status' => $manual['status_slug'] ?? null],
+                    'status' => 'success']);
+                Redirect::withSuccess('/system-information', __('manuals.deleted_ok'));
+            }
+
+            Audit::log(['module' => 'system_manual', 'action' => 'delete_failed',
+                'entity' => 'manual', 'entity_id' => $manualId,
+                'description' => "Eliminacion fallida para manual {$manual['title']}",
+                'status' => 'failed']);
+            Redirect::withError('/system-information', __('alerts.internal'));
+        } catch (\PDOException $e) {
+            Logger::error('SystemInformationController::deleteManual PDOException: ' . $e->getMessage());
+            Audit::log(['module' => 'system_manual', 'action' => 'delete_failed',
+                'entity' => 'manual', 'entity_id' => $manualId,
+                'description' => "Eliminacion fallida para manual {$manual['title']}",
+                'status' => 'failed']);
+            Redirect::withError('/system-information', __('alerts.internal'));
+        }
+    }
+
     public function downloadManual(string $id): void
     {
         Auth::requirePermission('manuals.view');
 
         $manualId = (int)$id;
         $manual   = $this->manualModel->findById($manualId);
+        $canManage = can('manuals.edit') || can('manuals.activate') || can('manuals.deactivate') || can('manuals.delete');
 
-        if (!$manual || ($manual['status_slug'] ?? '') !== 'active') {
+        if (!$manual || (($manual['status_slug'] ?? '') !== 'active' && !$canManage)) {
             Redirect::withError('/system-information', __('manuals.not_found'));
         }
 
         $config   = require dirname(__DIR__, 2) . '/config/app.php';
-        $filePath = $config['upload_manuals_path'] . $manual['file_path'];
+        $filePath = $config['upload_manuals_path'] . basename($manual['file_path']);
 
         if (!file_exists($filePath)) {
             Redirect::withError('/system-information', __('manuals.not_found'));
@@ -254,7 +385,7 @@ class SystemInformationController extends Controller
         $originalName = $manual['file_name'];
         $mimeType     = $manual['file_type'] ?: 'application/octet-stream';
 
-        Audit::log(['module' => 'manuals', 'action' => 'downloaded',
+        Audit::log(['module' => 'system_manual', 'action' => 'downloaded',
             'entity' => 'manual', 'entity_id' => $manualId,
             'description' => "Manual descargado: {$originalName}",
             'status' => 'success']);

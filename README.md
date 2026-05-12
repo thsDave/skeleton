@@ -212,6 +212,7 @@ DB_PASSWORD=
 | `016_add_external_domain_restrictions.sql` | Restricción por dominio institucional |
 | `017_add_password_policy.sql` | Política de contraseñas e historial |
 | `018_add_force_password_change.sql` | Columna `force_password_change` en `tbl_users` |
+| `020_update_system_manuals_management.sql` | Eliminacion logica y permiso para administrar manuales |
 
 ### Paso 5 — Acceder al sistema
 
@@ -322,6 +323,8 @@ La contraseña está almacenada con `password_hash()` bcrypt (cost=12) en la bas
 | GET | `/manuals/create` | Formulario subir manual | Solo admin |
 | POST | `/manuals/store` | Subir manual | Solo admin |
 | POST | `/manuals/toggle/{id}` | Activar/Desactivar manual | Solo admin |
+| POST | `/manuals/replace/{id}` | Reemplazar archivo de manual | Solo admin |
+| POST | `/manuals/delete/{id}` | Eliminar manual con borrado logico | Solo admin |
 | GET | `/manuals/download/{id}` | Descargar manual | Autenticado |
 | GET | `/users` | Listado de usuarios (DataTables) | Solo admin |
 | GET | `/users/create` | Formulario nuevo usuario | Solo admin |
@@ -419,9 +422,13 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 
 ### Manuales de Usuario
 - El admin puede subir archivos PDF, DOC o DOCX (máx. 10 MB).
-- Todos los usuarios autenticados pueden descargarlos.
-- El admin puede activar/desactivar manuales desde la misma vista.
+- Todos los usuarios autenticados pueden descargar manuales activos.
+- El admin puede activar/desactivar, reemplazar archivo y eliminar manuales desde la misma vista.
+- La eliminacion es logica mediante `deleted_at`; no borra fisicamente el archivo del manual eliminado.
+- Permisos aplicables: `manuals.view`, `manuals.upload`, `manuals.edit`, `manuals.activate`, `manuals.deactivate`, `manuals.delete`.
 - Los archivos se almacenan con nombre único en `public/uploads/manuals/`.
+- La subida y reemplazo usan `UploadService` con el perfil `user_manuals`.
+- Para habilitar eliminacion logica importa `database/020_update_system_manuals_management.sql` solo si `tbl_user_manuals.deleted_at` no existe.
 
 ### Configuración SMTP administrable
 - El administrador puede configurar el servidor de correo saliente desde **Seguridad → SMTP** sin editar archivos.

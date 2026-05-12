@@ -46,6 +46,8 @@ desktop.ini
 # ─── Uploads de usuarios (no versionar imágenes reales) ──────
 public/uploads/profiles/*
 !public/uploads/profiles/.gitkeep
+public/uploads/manuals/*
+!public/uploads/manuals/.gitkeep
 
 # NOTA: database/db_skeleton.sql SÍ se incluye en el repo
 # porque contiene solo la estructura base (sin datos reales sensibles).
