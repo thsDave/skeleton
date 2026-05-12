@@ -299,6 +299,9 @@ class Auth
         self::requireAuth();
 
         if (!self::can($permission)) {
+            $route  = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+            $method = $_SERVER['REQUEST_METHOD'] ?? null;
+
             \Core\Logger::security(
                 "Acceso denegado: permiso '{$permission}' requerido — usuario ID "
                 . (self::id() ?? 'anon')
@@ -310,7 +313,13 @@ class Auth
                 \Core\Audit::log([
                     'module'      => explode('.', $permission)[0] ?? null,
                     'action'      => 'access_denied',
+                    'entity'      => 'permission',
                     'description' => "Acceso denegado: permiso '{$permission}' requerido",
+                    'new_values'  => [
+                        'required_permission' => $permission,
+                        'route'               => $route,
+                        'method'              => $method,
+                    ],
                     'status'      => 'denied',
                 ]);
             } catch (\Throwable) { /* never break the flow */ }
