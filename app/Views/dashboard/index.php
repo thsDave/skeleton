@@ -795,9 +795,10 @@ if ($showAdminDash):
     $jsUserPlural      = json_encode(__('dashboard.user_plural'),       JSON_UNESCAPED_UNICODE);
     $jsNoData          = json_encode(__('dashboard.no_data'),           JSON_UNESCAPED_UNICODE);
     $jsNoMfa           = json_encode(__('dashboard.no_mfa_users'),      JSON_UNESCAPED_UNICODE);
+    $jsChartSrc        = htmlspecialchars(BASE_URL . '/assets/js/plugins/chart.umd.min.js', ENT_QUOTES, 'UTF-8');
 
     $extraScript = <<<JS
-<script src="<?= BASE_URL ?>/assets/js/plugins/chart.umd.min.js"></script>
+<script src="{$jsChartSrc}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var isDark = document.body.getAttribute('data-pc-theme') === 'dark'
