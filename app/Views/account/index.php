@@ -122,6 +122,12 @@ require dirname(__DIR__) . '/layouts/main.php';
               <i class="ph-duotone ph-devices me-1"></i>
               <?= __('sessions.view_my_sessions') ?>
             </a>
+            <?php if (can('account.sessions.history')): ?>
+              <a href="<?= BASE_URL ?>/account/sessions/history" class="btn btn-outline-secondary btn-sm ms-1">
+                <i class="ph-duotone ph-clock-counter-clockwise me-1"></i>
+                <?= __('sessions.view_history') ?>
+              </a>
+            <?php endif; ?>
           </div>
         <?php endif; ?>
       </div>

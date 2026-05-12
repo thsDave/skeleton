@@ -48,6 +48,21 @@ class UserSession extends Model
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
+    public function findById(int $id): array|false
+    {
+        $stmt = $this->db->prepare(
+            'SELECT s.*, u.email, CONCAT(u.nombres, " ", u.apellidos) AS user_name,
+                    ru.email AS revoked_by_email, CONCAT(ru.nombres, " ", ru.apellidos) AS revoked_by_name
+             FROM ' . self::TABLE . ' s
+             JOIN tbl_users u ON u.id = s.user_id
+             LEFT JOIN tbl_users ru ON ru.id = s.revoked_by
+             WHERE s.id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$id]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
     public function touch(string $hash): bool
     {
         $stmt = $this->db->prepare(
@@ -130,6 +145,28 @@ class UserSession extends Model
         }
 
         $sql .= ' ORDER BY COALESCE(s.last_activity_at, s.created_at) DESC LIMIT 1000';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function getHistoryByUser(int $userId, array $filters = [], int $limit = 100): array
+    {
+        $sql = 'SELECT s.*, ru.email AS revoked_by_email,
+                       CONCAT(ru.nombres, " ", ru.apellidos) AS revoked_by_name
+                FROM ' . self::TABLE . ' s
+                LEFT JOIN tbl_users ru ON ru.id = s.revoked_by
+                WHERE s.user_id = ?';
+        $params = [$userId];
+
+        if (($filters['status'] ?? '') === 'active') {
+            $sql .= ' AND s.revoked_at IS NULL';
+        } elseif (($filters['status'] ?? '') === 'closed') {
+            $sql .= ' AND s.revoked_at IS NOT NULL';
+        }
+
+        $sql .= ' ORDER BY s.created_at DESC, s.id DESC LIMIT ' . max(1, min(500, $limit));
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);

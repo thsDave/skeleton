@@ -369,6 +369,57 @@ class AccountController extends Controller
         Redirect::to('/account/sessions');
     }
 
+    public function sessionHistory(): void
+    {
+        Auth::requirePermission('account.sessions.history');
+
+        $authUser = Auth::user();
+        $status = in_array($_GET['status'] ?? '', ['active', 'closed'], true) ? $_GET['status'] : '';
+        $sessions = (new UserSessionService())->getCurrentUserSessionHistory((int)Auth::id(), ['status' => $status]);
+
+        Audit::log([
+            'module' => 'account',
+            'action' => 'account.sessions_history_viewed',
+            'entity' => 'user',
+            'entity_id' => Auth::id(),
+            'description' => 'Historial propio de sesiones consultado',
+            'new_values' => ['status_filter' => $status ?: 'all'],
+            'status' => 'info',
+        ]);
+
+        $this->view('account.sessions_history', compact('authUser', 'sessions', 'status'));
+    }
+
+    public function revokeHistorySession(string $id): void
+    {
+        Auth::requirePermission('account.sessions.revoke');
+        CSRF::validateOrFail();
+
+        $service = new UserSessionService();
+        $session = $service->findSession((int)$id);
+        if (!$session || (int)$session['user_id'] !== (int)Auth::id() || !empty($session['revoked_at'])) {
+            Redirect::withError('/account/sessions/history', __('sessions.closed_error'));
+        }
+
+        if (hash_equals((string)$session['session_hash'], $service->getCurrentSessionHash())) {
+            Redirect::withError('/account/sessions/history', __('sessions.closed_error'));
+        }
+
+        $ok = $service->revokeSession((int)$id, Auth::id(), 'user_revoke');
+        Audit::log([
+            'module' => 'sessions',
+            'action' => 'sessions.revoked_from_history',
+            'entity' => 'user_session',
+            'entity_id' => (int)$id,
+            'description' => 'Sesion propia revocada desde historial',
+            'new_values' => ['user_id' => Auth::id()],
+            'status' => $ok ? 'success' : 'failed',
+        ]);
+
+        Session::flash($ok ? 'success' : 'error', $ok ? __('sessions.closed_success') : __('sessions.closed_error'));
+        Redirect::to('/account/sessions/history');
+    }
+
     public function updatePassword(): void
     {
         Auth::requireAuth();

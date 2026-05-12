@@ -106,6 +106,90 @@ class UsersController extends Controller
         }
     }
 
+    public function sessionHistory(string $id): void
+    {
+        Auth::requirePermission('users.sessions.view');
+
+        $userId = (int)$id;
+        $user = $this->userModel->findById($userId);
+        if (!$user) {
+            Redirect::withError('/users', __('users.not_found'));
+        }
+
+        $authUser = Auth::user();
+        $status = in_array($_GET['status'] ?? '', ['active', 'closed'], true) ? $_GET['status'] : '';
+        $sessions = (new UserSessionService())->getUserSessionHistoryForAdmin($userId, ['status' => $status]);
+
+        Audit::log([
+            'module' => 'users',
+            'action' => 'users.sessions_history_viewed',
+            'entity' => 'user',
+            'entity_id' => $userId,
+            'description' => 'Historial de sesiones de usuario consultado',
+            'new_values' => ['status_filter' => $status ?: 'all'],
+            'status' => 'info',
+        ]);
+
+        $this->view('users.sessions_history', compact('authUser', 'user', 'sessions', 'status'));
+    }
+
+    public function revokeSessionFromHistory(string $id): void
+    {
+        Auth::requirePermission('users.sessions.revoke');
+        CSRF::validateOrFail();
+
+        $service = new UserSessionService();
+        $session = $service->findSession((int)$id);
+        if (!$session || !empty($session['revoked_at'])) {
+            Redirect::withError('/users', __('sessions.closed_error'));
+        }
+
+        if (hash_equals((string)$session['session_hash'], $service->getCurrentSessionHash())) {
+            Redirect::withError('/users/' . (int)$session['user_id'] . '/sessions', __('sessions.closed_error'));
+        }
+
+        $ok = $service->revokeSession((int)$id, Auth::id(), 'admin_revoke');
+        Audit::log([
+            'module' => 'sessions',
+            'action' => 'sessions.revoked_from_history',
+            'entity' => 'user_session',
+            'entity_id' => (int)$id,
+            'description' => 'Sesion revocada desde historial administrativo',
+            'new_values' => ['target_user_id' => (int)$session['user_id']],
+            'status' => $ok ? 'success' : 'failed',
+        ]);
+
+        Session::flash($ok ? 'success' : 'error', $ok ? __('sessions.closed_success') : __('sessions.closed_error'));
+        Redirect::to('/users/' . (int)$session['user_id'] . '/sessions');
+    }
+
+    public function revokeAllSessionsFromHistory(string $id): void
+    {
+        Auth::requirePermission('users.sessions.revoke_all');
+        CSRF::validateOrFail();
+
+        $userId = (int)$id;
+        $user = $this->userModel->findById($userId);
+        if (!$user) {
+            Redirect::withError('/users', __('users.not_found'));
+        }
+
+        $keepCurrent = $userId === (int)Auth::id();
+        $count = (new UserSessionService())->revokeAllUserSessions($userId, Auth::id(), 'admin_revoke_user_all', $keepCurrent);
+        Audit::log([
+            'module' => 'sessions',
+            'action' => 'sessions.revoked_all_from_user_history',
+            'entity' => 'user',
+            'entity_id' => $userId,
+            'description' => 'Sesiones activas revocadas desde historial de usuario',
+            'new_values' => ['revoked_count' => $count],
+            'status' => 'success',
+        ]);
+
+        Session::flash('success', __('sessions.closed_all_success', ['count' => (string)$count]));
+        Redirect::to('/users/' . $userId . '/sessions');
+    }
+
     public function create(): void
     {
         Auth::requirePermission('users.create');

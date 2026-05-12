@@ -120,7 +120,9 @@ $router->post('/account/email/cancel-change', [AccountController::class, 'cancel
 $router->get('/account/edit-password',    [AccountController::class, 'editPassword']);
 $router->post('/account/update-password', [AccountController::class, 'updatePassword']);
 $router->get('/account/sessions',         [AccountController::class, 'sessions']);
+$router->get('/account/sessions/history', [AccountController::class, 'sessionHistory']);
 $router->post('/account/sessions/revoke/{id}', [AccountController::class, 'revokeSession']);
+$router->post('/account/sessions/history/revoke/{id}', [AccountController::class, 'revokeHistorySession']);
 $router->post('/account/sessions/revoke-others', [AccountController::class, 'revokeOtherSessions']);
 
 // Users (admin only)
@@ -132,6 +134,9 @@ $router->get('/users/edit/{id}',          [UsersController::class, 'edit']);
 $router->post('/users/update/{id}',       [UsersController::class, 'update']);
 $router->post('/users/delete/{id}',       [UsersController::class, 'delete']);
 $router->post('/users/unlock/{id}',       [UsersController::class, 'unlock']);
+$router->get('/users/{id}/sessions',      [UsersController::class, 'sessionHistory']);
+$router->post('/users/sessions/revoke/{id}', [UsersController::class, 'revokeSessionFromHistory']);
+$router->post('/users/{id}/sessions/revoke-all', [UsersController::class, 'revokeAllSessionsFromHistory']);
 
 // Languages (admin)
 $router->get('/languages',                   [LanguagesController::class, 'index']);

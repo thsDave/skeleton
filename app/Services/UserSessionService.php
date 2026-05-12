@@ -206,6 +206,11 @@ class UserSessionService
         return $this->markCurrent($this->sessions->getActiveByUser($userId));
     }
 
+    public function getCurrentUserSessionHistory(int $userId, array $filters = []): array
+    {
+        return $this->decorateHistory($this->sessions->getHistoryByUser($userId, $filters));
+    }
+
     public function getActiveSessionsForAdmin(array $filters = []): array
     {
         return $this->markCurrent($this->sessions->getActiveForAdmin($filters));
@@ -214,6 +219,16 @@ class UserSessionService
     public function findActiveSession(int $id): array|false
     {
         return $this->sessions->findActiveById($id);
+    }
+
+    public function findSession(int $id): array|false
+    {
+        return $this->sessions->findById($id);
+    }
+
+    public function getUserSessionHistoryForAdmin(int $userId, array $filters = []): array
+    {
+        return $this->decorateHistory($this->sessions->getHistoryByUser($userId, $filters));
     }
 
     public function parseUserAgent(string $ua): array
@@ -260,5 +275,45 @@ class UserSessionService
         }
         unset($session);
         return $sessions;
+    }
+
+    private function decorateHistory(array $sessions): array
+    {
+        $hash = $this->getCurrentSessionHash();
+        foreach ($sessions as &$session) {
+            $session['is_current'] = empty($session['revoked_at'])
+                && hash_equals((string)$session['session_hash'], $hash);
+            $session['display_status'] = $this->resolveDisplayStatus($session);
+            $session['display_reason'] = empty($session['revoked_at'])
+                ? '-'
+                : $this->resolveDisplayReason((string)($session['revoke_reason'] ?? ''));
+        }
+        unset($session);
+        return $sessions;
+    }
+
+    private function resolveDisplayStatus(array $session): string
+    {
+        if (!empty($session['is_current'])) {
+            return __('sessions.current_session');
+        }
+        if (empty($session['revoked_at'])) {
+            return __('sessions.active');
+        }
+        return __('sessions.closed');
+    }
+
+    private function resolveDisplayReason(string $reason): string
+    {
+        return match ($reason) {
+            'logout' => __('sessions.reason_logout'),
+            'user_revoke', 'user_revoke_others' => __('sessions.reason_user'),
+            'admin_revoke', 'admin_revoke_user_all' => __('sessions.reason_admin'),
+            'password_change', 'required_password_change', 'admin_password_change' => __('sessions.reason_password_change'),
+            'password_reset' => __('sessions.reason_password_reset'),
+            'mfa_change' => __('sessions.reason_mfa_change'),
+            'email_change' => __('sessions.reason_email_change'),
+            default => $reason !== '' ? $reason : __('sessions.reason_unknown'),
+        };
     }
 }

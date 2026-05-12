@@ -215,6 +215,7 @@ DB_PASSWORD=
 | `020_update_system_manuals_management.sql` | Eliminacion logica y permiso para administrar manuales |
 | `021_add_excel_export_permissions.sql` | Permisos para exportar Usuarios y Auditoria a Excel |
 | `022_add_user_sessions.sql` | Sesiones activas por usuario y permisos de revocacion |
+| `023_add_session_history_permissions.sql` | Permisos para historial de sesiones propio y administrativo |
 
 ### Paso 5 — Acceder al sistema
 
@@ -1085,14 +1086,18 @@ Para agregar un nuevo perfil, define una entrada en `config/uploads.php` siguien
 El sistema registra las sesiones activas en `tbl_user_sessions` usando un HMAC SHA-256 del `session_id`; no se guarda el ID de sesion ni cookies en texto plano.
 
 - El usuario puede revisar sus sesiones en **Mi Cuenta > Ver sesiones activas** y cerrar sesiones especificas o todas las demas.
+- El usuario puede revisar su historial reciente en **Mi Cuenta > Ver historial de sesiones**.
 - El administrador puede revisar sesiones desde **Seguridad > Sesiones** y cerrar una sesion concreta o todas las sesiones de un usuario.
+- El administrador puede abrir **Historial de sesiones** desde el listado de Usuarios para revisar actividad reciente de una cuenta.
 - Cada request autenticado valida si la sesion actual fue revocada; si lo fue, se destruye la sesion y se redirige al login con un mensaje amigable.
 - La actividad se actualiza con una ventana minima de 60 segundos para evitar escrituras excesivas.
 - Eventos auditados principales: `sessions.created`, `sessions.revoked_by_user`, `sessions.revoked_by_admin`, `sessions.revoked_others`, `sessions.revoked_all_user`, `sessions.revoked_due_password_change`, `sessions.revoked_due_password_reset`, `sessions.revoked_due_mfa_change`, `sessions.revoked_due_email_change` y `sessions.revoked_detected_on_request`.
 - Acciones sensibles que cierran otras sesiones: cambio de contrasena propio, restablecimiento por correo, cambio obligatorio de contrasena, cambio de contrasena por administrador, cambio de correo completado y activacion/desactivacion de MFA.
-- Permisos de usuario: `account.sessions.view`, `account.sessions.revoke`.
-- Permisos administrativos: `security_sessions.view_active`, `security_sessions.revoke`, `security_sessions.revoke_user_all`.
+- Permisos de usuario: `account.sessions.view`, `account.sessions.revoke`, `account.sessions.history`.
+- Permisos administrativos: `security_sessions.view_active`, `security_sessions.revoke`, `security_sessions.revoke_user_all`, `users.sessions.view`, `users.sessions.revoke`, `users.sessions.revoke_all`.
 - Migracion a importar: `database/022_add_user_sessions.sql`. Ejecutala solo si la tabla `tbl_user_sessions` no existe.
+- Migracion adicional para permisos de historial: `database/023_add_session_history_permissions.sql`. Ejecutala solo si esos permisos no existen.
+- Las vistas de historial muestran IP, navegador, plataforma, dispositivo, estado, motivo de cierre y usuario revocador cuando aplica. No muestran `session_hash`, cookies, tokens ni IDs reales de sesion PHP.
 
 ---
 

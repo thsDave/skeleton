@@ -118,6 +118,14 @@ require dirname(__DIR__) . '/layouts/main.php';
                   </a>
                   <?php endif; ?>
 
+                  <?php if (can('users.sessions.view')): ?>
+                  <a href="<?= BASE_URL ?>/users/<?= (int)$u['id'] ?>/sessions"
+                     class="btn btn-sm btn-outline-info me-1"
+                     title="<?= __('users.session_history') ?>">
+                    <i class="ph-duotone ph-clock-counter-clockwise"></i>
+                  </a>
+                  <?php endif; ?>
+
                   <?php if ($isLocked && can('users.unlock')): ?>
                   <form action="<?= BASE_URL ?>/users/unlock/<?= (int)$u['id'] ?>"
                         method="POST"
