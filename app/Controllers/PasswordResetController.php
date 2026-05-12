@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\PasswordReset;
 use App\Services\Mailer;
 use App\Services\PasswordPolicyService;
+use App\Services\UserSessionService;
 
 class PasswordResetController extends Controller
 {
@@ -293,6 +294,7 @@ class PasswordResetController extends Controller
         // Marcar token como usado + invalidar otros tokens del mismo usuario
         $this->resetModel->markAsUsed((int)$record['id']);
         $this->resetModel->invalidatePreviousTokens($userId);
+        (new UserSessionService())->revokeAllUserSessions($userId, null, 'password_reset');
 
         Logger::security("Password reset completed for user ID {$userId}");
         Audit::log([

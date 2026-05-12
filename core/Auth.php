@@ -22,6 +22,12 @@ class Auth
         Session::set('user_password_changed_at',   $user['password_changed_at'] ?? null);
         Session::set('_last_activity',             time());
         self::loadPermissions();
+
+        try {
+            (new \App\Services\UserSessionService())->registerCurrentSession((int)$user['id']);
+        } catch (\Throwable $e) {
+            \Core\Logger::error('Auth::login user session register - ' . $e->getMessage());
+        }
     }
 
     public static function check(): bool
@@ -46,6 +52,16 @@ class Auth
         if (!self::check()) {
             Redirect::to('/login');
             exit;
+        }
+
+        try {
+            if (!(new \App\Services\UserSessionService())->enforceCurrentSession()) {
+                Session::destroy();
+                Redirect::to('/login?session_revoked=1');
+                exit;
+            }
+        } catch (\Throwable $e) {
+            \Core\Logger::error('Auth::requireAuth user session check - ' . $e->getMessage());
         }
 
         self::checkSessionLock($lastActivity);
@@ -367,6 +383,13 @@ class Auth
 
     public static function logout(): void
     {
+        try {
+            if (self::id()) {
+                (new \App\Services\UserSessionService())->revokeCurrentSession(self::id(), 'logout');
+            }
+        } catch (\Throwable $e) {
+            \Core\Logger::error('Auth::logout user session revoke - ' . $e->getMessage());
+        }
         Session::destroy();
     }
 

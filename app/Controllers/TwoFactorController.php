@@ -14,6 +14,7 @@ use App\Models\TwoFactorCode;
 use App\Models\MfaSettings;
 use App\Services\TwoFactorService;
 use App\Services\Mailer;
+use App\Services\UserSessionService;
 
 class TwoFactorController extends Controller
 {
@@ -155,6 +156,7 @@ class TwoFactorController extends Controller
 
         $this->codeModel->markUsed((int) $row['id']);
         $this->userModel->enableTwoFactor($authUser['id'], 'email');
+        (new UserSessionService())->revokeAllUserSessions((int)$authUser['id'], (int)$authUser['id'], 'mfa_change', true);
 
         Session::delete('tf_pending_method');
         Session::delete('tf_pending_action');
@@ -262,6 +264,7 @@ class TwoFactorController extends Controller
 
         $secretEnc = Crypt::encrypt($secret);
         $this->userModel->enableTwoFactor($authUser['id'], 'authenticator', $secretEnc);
+        (new UserSessionService())->revokeAllUserSessions((int)$authUser['id'], (int)$authUser['id'], 'mfa_change', true);
         Session::delete('tf_totp_secret_pending');
 
         Audit::log([
@@ -285,6 +288,7 @@ class TwoFactorController extends Controller
 
         $authUser = Auth::user();
         $this->userModel->disableTwoFactor($authUser['id']);
+        (new UserSessionService())->revokeAllUserSessions((int)$authUser['id'], (int)$authUser['id'], 'mfa_change', true);
 
         Audit::log([
             'module'      => 'profile',

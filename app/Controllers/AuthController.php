@@ -31,6 +31,9 @@ class AuthController extends Controller
     public function loginForm(): void
     {
         Auth::requireGuest();
+        if (isset($_GET['session_revoked'])) {
+            Session::flash('errors', [__('sessions.login_again')]);
+        }
         $authSettings     = (new AuthenticationSettings())->get();
         $enabledProviders = [];
         if ($authSettings['external_login_enabled']) {

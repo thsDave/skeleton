@@ -17,6 +17,7 @@ use App\Models\LoginAttempt;
 use App\Services\PasswordPolicyService;
 use App\Services\UploadService;
 use App\Services\ExcelExportService;
+use App\Services\UserSessionService;
 
 class UsersController extends Controller
 {
@@ -386,6 +387,7 @@ class UsersController extends Controller
             // Guardar en historial si hubo cambio de contraseña
             if ($newHash !== null) {
                 $policySvc->saveHistory($userId, $newHash);
+                (new UserSessionService())->revokeAllUserSessions($userId, Auth::id(), 'admin_password_change');
                 Audit::log(['module' => 'users', 'action' => 'users.password_changed_by_admin',
                     'entity' => 'user', 'entity_id' => $userId,
                     'description' => "Contraseña de usuario ID {$userId} cambiada por admin ID " . Auth::id(),

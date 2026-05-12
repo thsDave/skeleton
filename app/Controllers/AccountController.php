@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserExternalAccount;
 use App\Services\Mailer;
 use App\Services\PasswordPolicyService;
+use App\Services\UserSessionService;
 use Core\Audit;
 use Core\Auth;
 use Core\Controller;
@@ -230,6 +231,7 @@ class AccountController extends Controller
         try {
             $this->emailChangeModel->completeEmailChange((int) $pending['id'], $userId, $pending['new_email']);
             Auth::updateSession(['email' => $pending['new_email']]);
+            (new UserSessionService())->revokeAllUserSessions((int)$userId, (int)$userId, 'email_change', true);
             Logger::security("Email change completed - user ID {$userId}");
             Audit::log([
                 'module' => 'account', 'action' => 'account.email_change_verified',
@@ -326,6 +328,47 @@ class AccountController extends Controller
         $this->view('account.edit_password', compact('authUser', 'user', 'policyReqs'));
     }
 
+    public function sessions(): void
+    {
+        Auth::requirePermission('account.sessions.view');
+        $authUser = Auth::user();
+        $sessions = (new UserSessionService())->getCurrentUserSessions((int)Auth::id());
+        $this->view('account.sessions', compact('authUser', 'sessions'));
+    }
+
+    public function revokeSession(string $id): void
+    {
+        Auth::requirePermission('account.sessions.revoke');
+        CSRF::validateOrFail();
+
+        $sessionId = (int)$id;
+        $service = new UserSessionService();
+        $session = $service->findActiveSession($sessionId);
+
+        if (!$session || (int)$session['user_id'] !== (int)Auth::id()) {
+            Redirect::withError('/account/sessions', __('sessions.closed_error'));
+        }
+
+        $currentHash = $service->getCurrentSessionHash();
+        if (hash_equals((string)$session['session_hash'], $currentHash)) {
+            Redirect::withError('/account/sessions', __('sessions.closed_error'));
+        }
+
+        $ok = $service->revokeSession($sessionId, Auth::id(), 'user_revoke');
+        Session::flash($ok ? 'success' : 'error', $ok ? __('sessions.closed_success') : __('sessions.closed_error'));
+        Redirect::to('/account/sessions');
+    }
+
+    public function revokeOtherSessions(): void
+    {
+        Auth::requirePermission('account.sessions.revoke');
+        CSRF::validateOrFail();
+
+        $count = (new UserSessionService())->revokeOtherSessions((int)Auth::id(), Auth::id(), 'user_revoke_others');
+        Session::flash('success', __('sessions.closed_others_success', ['count' => (string)$count]));
+        Redirect::to('/account/sessions');
+    }
+
     public function updatePassword(): void
     {
         Auth::requireAuth();
@@ -387,6 +430,9 @@ class AccountController extends Controller
         if ($this->userModel->updatePassword($id, $hashed)) {
             $policySvc->saveHistory($id, $hashed);
             Session::regenerate();
+            $sessionService = new UserSessionService();
+            $sessionService->registerCurrentSession((int)$id);
+            $sessionService->revokeOtherSessions((int)$id, (int)$id, 'password_change');
             Logger::security("Contraseña actualizada - ID {$id}");
             Audit::log(['module' => 'account', 'action' => 'account.password_changed',
                 'entity' => 'user', 'entity_id' => $id,

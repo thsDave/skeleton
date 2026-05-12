@@ -119,6 +119,9 @@ $router->post('/account/email/resend-code', [AccountController::class, 'resendEm
 $router->post('/account/email/cancel-change', [AccountController::class, 'cancelEmailChange']);
 $router->get('/account/edit-password',    [AccountController::class, 'editPassword']);
 $router->post('/account/update-password', [AccountController::class, 'updatePassword']);
+$router->get('/account/sessions',         [AccountController::class, 'sessions']);
+$router->post('/account/sessions/revoke/{id}', [AccountController::class, 'revokeSession']);
+$router->post('/account/sessions/revoke-others', [AccountController::class, 'revokeOtherSessions']);
 
 // Users (admin only)
 $router->get('/users',                    [UsersController::class, 'index']);
@@ -154,6 +157,8 @@ $router->get('/manuals/download/{id}',       [SystemInformationController::class
 // Security
 $router->get('/security/sessions',        [SecurityController::class, 'sessions']);
 $router->post('/security/sessions/update',[SecurityController::class, 'updateSessions']);
+$router->post('/security/sessions/revoke/{id}', [SecurityController::class, 'revokeSession']);
+$router->post('/security/sessions/revoke-user/{id}', [SecurityController::class, 'revokeUserSessions']);
 
 // SMTP Settings
 $router->get('/security/smtp',            [SmtpSettingsController::class, 'index']);

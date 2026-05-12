@@ -8,6 +8,7 @@ use Core\Session;
 use Core\CSRF;
 use Core\Redirect;
 use App\Models\SecuritySetting;
+use App\Services\UserSessionService;
 
 class SecurityController
 {
@@ -18,6 +19,9 @@ class SecurityController
         $authUser = Auth::user();
         $model    = new SecuritySetting();
         $settings = $model->getSettings();
+        $activeSessions = can('security_sessions.view_active')
+            ? (new UserSessionService())->getActiveSessionsForAdmin()
+            : [];
 
         require dirname(__DIR__) . '/Views/security/sessions/index.php';
     }
@@ -48,5 +52,37 @@ class SecurityController
 
         Redirect::to('/security/sessions');
         exit;
+    }
+
+    public function revokeSession(string $id): void
+    {
+        Auth::requirePermission('security_sessions.revoke');
+        CSRF::validateOrFail();
+
+        $service = new UserSessionService();
+        $session = $service->findActiveSession((int)$id);
+        if (!$session) {
+            Redirect::withError('/security/sessions', __('sessions.closed_error'));
+        }
+
+        if (hash_equals((string)$session['session_hash'], $service->getCurrentSessionHash())) {
+            Redirect::withError('/security/sessions', __('sessions.closed_error'));
+        }
+
+        $ok = $service->revokeSession((int)$id, Auth::id(), 'admin_revoke');
+        Session::flash($ok ? 'success' : 'error', $ok ? __('sessions.closed_success') : __('sessions.closed_error'));
+        Redirect::to('/security/sessions');
+    }
+
+    public function revokeUserSessions(string $userId): void
+    {
+        Auth::requirePermission('security_sessions.revoke_user_all');
+        CSRF::validateOrFail();
+
+        $targetUserId = (int)$userId;
+        $keepCurrent = $targetUserId === (int)Auth::id();
+        $count = (new UserSessionService())->revokeAllUserSessions($targetUserId, Auth::id(), 'admin_revoke_user_all', $keepCurrent);
+        Session::flash('success', __('sessions.closed_all_success', ['count' => (string)$count]));
+        Redirect::to('/security/sessions');
     }
 }

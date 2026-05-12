@@ -12,6 +12,7 @@ use Core\Session;
 use Core\Validator;
 use App\Models\User;
 use App\Services\PasswordPolicyService;
+use App\Services\UserSessionService;
 
 class RequiredPasswordChangeController extends Controller
 {
@@ -127,6 +128,7 @@ class RequiredPasswordChangeController extends Controller
 
         // ── Limpiar flags de sesión ────────────────────────────────────────────
         Auth::clearPasswordChangeRequired();
+        (new UserSessionService())->revokeAllUserSessions((int)$userId, (int)$userId, 'required_password_change', true);
 
         Logger::security("Required password change completed for user ID {$userId}, reason: {$reason}");
         Audit::log([

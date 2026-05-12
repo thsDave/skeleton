@@ -116,6 +116,14 @@ require dirname(__DIR__) . '/layouts/main.php';
             <p class="mb-0 fw-semibold">30 minutos de inactividad</p>
           </div>
         </div>
+        <?php if (can('account.sessions.view')): ?>
+          <div class="mt-3">
+            <a href="<?= BASE_URL ?>/account/sessions" class="btn btn-outline-primary btn-sm">
+              <i class="ph-duotone ph-devices me-1"></i>
+              <?= __('sessions.view_my_sessions') ?>
+            </a>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
@@ -221,8 +229,6 @@ foreach ($linkedAccounts as $la) {
 </div>
 <?php endif; ?>
 
-<?php require dirname(__DIR__) . '/layouts/footer.php'; ?>
-
 <?php $extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -249,3 +255,5 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 JS;
 ?>
+
+<?php require dirname(__DIR__) . '/layouts/footer.php'; ?>
