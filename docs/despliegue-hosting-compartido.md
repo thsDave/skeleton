@@ -1,114 +1,105 @@
-# Despliegue en hosting compartido
+# Despliegue En Hosting Compartido
 
-Guía para instalar Skeleton MVC en hosting compartido con o sin acceso SSH.
+Guia practica para instalar Skeleton en un hosting compartido con PHP y MySQL.
 
----
+## Requisitos
 
-## Opción A — Con acceso SSH (recomendado)
+- PHP 8.3 o superior.
+- MySQL o MariaDB.
+- Composer en el servidor, o dependencias instaladas localmente.
+- Acceso a phpMyAdmin o herramienta equivalente.
+- Posibilidad de apuntar el dominio a `public/` o usar reglas `.htaccess`.
 
-### Requisitos
-- Hosting con PHP 8.3+, MySQL y acceso SSH.
-- Composer instalado en el servidor (o instalable localmente).
+## Subida De Archivos
 
-### Pasos
+Subir el proyecto sin archivos locales sensibles:
+
+- No subir `.env` local.
+- No subir logs.
+- No subir backups.
+- No subir uploads reales de otro ambiente.
+- No subir `node_modules/`.
+
+Si el hosting tiene SSH, puedes subir el proyecto sin `vendor/` y ejecutar:
 
 ```bash
-# 1. Subir el proyecto al servidor (sin vendor/, sin .env, sin logs/)
-#    Usa FTP, Git o el panel de archivos de tu hosting.
-
-# 2. Conectarse al servidor por SSH
-ssh usuario@tudominio.com
-
-# 3. Navegar al directorio del proyecto
-cd /home/usuario/public_html   # o donde hayas subido el proyecto
-
-# 4. Instalar dependencias
 composer install --no-dev --optimize-autoloader
-
-# 5. Crear el archivo .env
-cp .env.example .env
-nano .env
 ```
 
-Edita `.env` con los datos de tu hosting:
+Si no tiene SSH, ejecuta ese comando localmente y sube tambien `vendor/`.
+
+## Configurar .env
+
+Crear `.env` en la raiz del proyecto a partir de `.env.example`.
+
+Valores minimos:
 
 ```env
 APP_NAME="Mi Sistema"
-APP_URL="https://tudominio.com/public"
+APP_URL="https://tudominio.com"
 APP_ENV=production
 APP_DEBUG=false
 APP_TIMEZONE="America/El_Salvador"
 
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=usuario_db_skeleton
-DB_USERNAME=usuario_db
-DB_PASSWORD=contraseña_segura
-
-SESSION_LIFETIME=1800
-LOG_PATH="logs/error.log"
+DB_DATABASE=nombre_base
+DB_USERNAME=usuario_base
+DB_PASSWORD=contrasena_segura
 ```
 
-```bash
-# 6. Crear la base de datos desde phpMyAdmin del hosting
-#    Importa los archivos SQL de la carpeta database/ en orden.
+`APP_URL` debe apuntar a la URL publica real y no debe terminar con barra.
 
-# 7. Configurar el dominio apuntando a /public
-#    En cPanel: Dominios → directorio raíz → apuntar a /public_html/public
-#    (depende de tu hosting)
+## Base De Datos
+
+1. Crear la base de datos desde el panel del hosting.
+2. Importar el schema consolidado oficial:
+
+```text
+database/schema/skeleton_schema.sql
 ```
 
----
+Para instalaciones nuevas no importes las migraciones incrementales una por una.
 
-## Opción B — Sin acceso SSH
+## Configurar public/
 
-### Pasos
+Opcion recomendada: apuntar el document root del dominio a:
 
-1. **En tu computadora local**, ejecuta:
-   ```bash
-   composer install --no-dev --optimize-autoloader
-   ```
+```text
+/ruta-del-proyecto/public
+```
 
-2. **Sube todo el proyecto** al hosting (incluyendo `vendor/`) usando FTP o el panel de archivos.
+Si el hosting no permite cambiar document root, usar el `.htaccess` raiz y activar el reenvio a `public/` siguiendo los comentarios incluidos en ese archivo.
 
-3. **Crea `.env` manualmente** en el hosting:
-   - Abre el administrador de archivos de tu hosting (cPanel, Plesk, etc.).
-   - Crea un archivo llamado `.env` en la raíz del proyecto.
-   - Copia el contenido de `.env.example` y edita los valores con los datos de tu hosting.
+## Permisos De Carpetas
 
-4. **Importa los archivos SQL** desde phpMyAdmin del hosting, en orden numérico.
+Verificar escritura en:
 
-5. **Configura el dominio** para que apunte a la carpeta `/public`:
-   - Si tu hosting lo permite, cambia el document root a `/public`.
-   - Si no puedes cambiar el document root, activa el reenvío en `.htaccess` raíz:
-     ```apache
-     # Descomenta estas líneas en .htaccess de la raíz:
-     RewriteCond %{REQUEST_URI} !^/public/
-     RewriteCond %{REQUEST_FILENAME} !-f
-     RewriteCond %{REQUEST_FILENAME} !-d
-     RewriteRule ^(.*)$ public/$1 [L,QSA]
-     ```
+- `public/uploads`
+- `public/uploads/profiles`
+- `public/uploads/manuals`
+- `logs`
+- `storage/logs` si existe
+- `storage/cache` si existe
 
----
+## Seguridad
 
-## Protección de archivos sensibles
+- `APP_DEBUG=false` en produccion.
+- Usar HTTPS.
+- Confirmar que `.env` no sea accesible desde navegador.
+- Confirmar que `database/`, `config/`, `core/`, `app/`, `vendor/` y `logs/` no sean accesibles.
+- Cambiar la contrasena inicial del administrador.
+- Configurar SMTP real.
+- Configurar OAuth con Redirect URI del dominio final.
+- Revisar Salud del Sistema.
 
-El `.htaccess` de `public/` ya protege el acceso directo a archivos PHP fuera de `/public`.
+## Verificacion
 
-El `.htaccess` raíz del proyecto bloquea acceso web a:
-- `.env` (credenciales)
-- `composer.json` / `composer.lock`
-- Carpetas: `app/`, `core/`, `config/`, `database/`, `vendor/`, `logs/`
-
-> Verifica siempre que `.env` **no sea accesible** desde el navegador antes de dar el sistema por listo en producción. Intenta acceder a `https://tudominio.com/.env` — debe devolver 403 o 404.
-
----
-
-## Verificación post-despliegue
-
-- [ ] El sistema carga sin errores blancos.
-- [ ] El login funciona con las credenciales de prueba.
-- [ ] El dashboard carga correctamente.
-- [ ] `.env` no es accesible desde el navegador.
-- [ ] `APP_DEBUG=false` en `.env` (no se muestran trazas al usuario).
-- [ ] Los uploads de imágenes funcionan (permisos de escritura en `public/uploads/`).
+- [ ] Login carga.
+- [ ] Dashboard carga.
+- [ ] Assets CSS/JS cargan.
+- [ ] Uploads funcionan.
+- [ ] Recuperacion de contrasena envia correo.
+- [ ] OAuth usa Redirect URI correcta.
+- [ ] Salud del Sistema no muestra errores criticos.
+- [ ] `.env` devuelve 403 o 404 desde navegador.

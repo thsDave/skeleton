@@ -78,7 +78,7 @@ php -r "echo bin2hex(random_bytes(32));"
 6. Importar el SQL consolidado:
 
 ```text
-database/skeleton_schema.sql
+database/schema/skeleton_schema.sql
 ```
 
 7. Verificar permisos de escritura:
@@ -139,7 +139,7 @@ En produccion cambia `APP_URL` al dominio real y actualiza las Redirect URI en c
 | `app/Views/layouts` | Header, sidebar, topbar y footer. |
 | `config` | Configuracion de aplicacion, DB, uploads y auditoria. |
 | `core` | Router, Auth, Controller, Session, CSRF, helpers y base tecnica. |
-| `database` | Migraciones historicas y SQL consolidado. |
+| `database` | SQL consolidado oficial y migraciones incrementales de referencia. |
 | `public` | Punto de entrada y assets publicos. |
 | `public/assets` | CSS, JS, fuentes e imagenes base. |
 | `public/uploads` | Archivos subidos por usuarios, no versionar contenido real. |
@@ -225,7 +225,16 @@ Regla de layout: despues de `.page-header` debe venir una `.row` antes de coloca
 - No usar `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
 - Crear migraciones compatibles con phpMyAdmin.
 - Indicar pasos manuales cuando una migracion dependa del estado previo.
-- Importar `database/skeleton_schema.sql` solo en una base vacia.
+- Importar `database/schema/skeleton_schema.sql` solo en una base vacia.
+
+## Documentacion Adicional
+
+- [Crear nuevo modulo](docs/crear-nuevo-modulo.md)
+- [Convenciones de desarrollo](docs/convenciones-desarrollo.md)
+- [Permisos y auditoria](docs/permisos-y-auditoria.md)
+- [Despliegue en hosting compartido](docs/despliegue-hosting-compartido.md)
+- [Backups y restauracion](docs/backups-restauracion.md)
+- [Base de datos](database/README.md)
 
 ## Seguridad
 
