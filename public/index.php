@@ -260,6 +260,14 @@ $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
 if ($scriptDir !== '/' && str_starts_with($uri, $scriptDir)) {
     $uri = substr($uri, strlen($scriptDir));
 }
+
+// Si se accede directamente a /public/index.php, tratarlo como la raiz publica.
+if ($uri === '/index.php') {
+    $uri = '/';
+} elseif (str_starts_with($uri, '/index.php/')) {
+    $uri = substr($uri, strlen('/index.php'));
+}
+
 $uri = '/' . ltrim($uri, '/');
 $uri = rtrim($uri, '/') ?: '/';
 

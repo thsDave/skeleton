@@ -2,7 +2,7 @@
 
 return [
     'name'            => env('APP_NAME', 'Skeleton MVC'),
-    'url'             => env('APP_URL', 'http://localhost/template/public'),
+    'url'             => env('APP_URL', 'http://localhost/skeleton/public'),
     'env'             => env('APP_ENV', 'production'),
     'debug'           => env('APP_DEBUG', false),
     'timezone'        => env('APP_TIMEZONE', 'America/El_Salvador'),
