@@ -62,6 +62,7 @@ use App\Controllers\UsersController;
 use App\Controllers\LanguagesController;
 use App\Controllers\SystemInformationController;
 use App\Controllers\SystemHealthController;
+use App\Controllers\MaintenanceController;
 use App\Controllers\LockController;
 use App\Controllers\SecurityController;
 use App\Controllers\RolesPermissionsController;
@@ -152,6 +153,10 @@ $router->get('/system-information',          [SystemInformationController::class
 $router->get('/system-information/edit',     [SystemInformationController::class, 'edit']);
 $router->post('/system-information/update',  [SystemInformationController::class, 'update']);
 $router->get('/system-health',               [SystemHealthController::class, 'index']);
+
+// Maintenance
+$router->get('/maintenance/cleanup',         [MaintenanceController::class, 'cleanup']);
+$router->post('/maintenance/cleanup/run',    [MaintenanceController::class, 'runCleanup']);
 
 // Manuals
 $router->get('/manuals/create',              [SystemInformationController::class, 'createManual']);

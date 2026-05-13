@@ -17,7 +17,6 @@ $event = static function (
 };
 
 return [
-    'audit_logs' => $event('Autenticacion', 'Inicio de sesion exitoso', 'Un usuario inicio sesion correctamente.', 'success', 'Verificar que IP, navegador y horario correspondan al patron esperado.'),
     'auth.login_success' => $event('Autenticacion', 'Inicio de sesion exitoso', 'Un usuario inicio sesion correctamente.', 'success', 'Verificar que IP, navegador y horario correspondan al patron esperado.'),
     'auth.login_failed' => $event('Autenticacion', 'Inicio de sesion fallido', 'Un usuario intento iniciar sesion sin completar la autenticacion.', 'warning', 'Revisar multiples intentos sobre el mismo usuario o desde la misma IP.'),
     'auth.logout' => $event('Autenticacion', 'Cierre de sesion', 'Un usuario cerro su sesion.', 'info', 'Normalmente no requiere accion salvo que ocurra tras actividad sospechosa.'),
@@ -223,6 +222,17 @@ return [
 
     'system_information.updated' => $event('Informacion del sistema', 'Informacion del sistema actualizada', 'Se actualizo informacion descriptiva del sistema.', 'info', 'Verificar que los datos publicados sean correctos.'),
     'system_health.viewed' => $event('Salud del sistema', 'Panel de salud consultado', 'Un administrador consulto el panel de salud del sistema.', 'info', 'Evento informativo; revisar si hay consultas inusuales o recurrentes.'),
+    'maintenance.cleanup_viewed' => $event('Mantenimiento', 'Limpieza consultada', 'Un administrador consulto el resumen de datos temporales limpiables.', 'info', 'Evento informativo para seguimiento administrativo.'),
+    'maintenance.cleanup_started' => $event('Mantenimiento', 'Limpieza iniciada', 'Se inicio una limpieza controlada de datos temporales.', 'warning', 'Revisar categorias seleccionadas y retenciones configuradas.'),
+    'maintenance.cleanup_completed' => $event('Mantenimiento', 'Limpieza completada', 'La limpieza de datos temporales finalizo.', 'success', 'Verificar cantidades eliminadas por categoria.'),
+    'maintenance.cleanup_failed' => $event('Mantenimiento', 'Limpieza fallida', 'Fallo la ejecucion de limpieza de datos temporales.', 'warning', 'Revisar logs tecnicos y categorias seleccionadas.'),
+    'maintenance.cleanup.password_reset_tokens' => $event('Mantenimiento', 'Tokens de recuperacion limpiados', 'Se eliminaron tokens vencidos, usados o antiguos de recuperacion de contrasena.', 'warning', 'Confirmar cantidad eliminada; no incluye usuarios ni contrasenas.'),
+    'maintenance.cleanup.email_change_codes' => $event('Mantenimiento', 'Codigos de cambio de correo limpiados', 'Se eliminaron codigos vencidos, usados o antiguos de cambio de correo.', 'warning', 'Confirmar cantidad eliminada; no registra codigos ni hashes.'),
+    'maintenance.cleanup.revoked_sessions' => $event('Mantenimiento', 'Sesiones revocadas antiguas limpiadas', 'Se eliminaron sesiones revocadas antiguas.', 'warning', 'Confirmar que no se eliminaron sesiones activas.'),
+    'maintenance.cleanup.login_attempts' => $event('Mantenimiento', 'Intentos fallidos antiguos limpiados', 'Se eliminaron registros antiguos de intentos de login.', 'warning', 'Confirmar retencion usada para no afectar bloqueos vigentes.'),
+    'maintenance.cleanup.password_histories' => $event('Mantenimiento', 'Historial de contrasenas depurado', 'Se eliminaron historiales que exceden la politica configurada.', 'warning', 'Confirmar que se conservaron los ultimos hashes requeridos por usuario.'),
+    'maintenance.cleanup.logs' => $event('Mantenimiento', 'Logs antiguos limpiados', 'Se eliminaron archivos de log antiguos en rutas permitidas.', 'warning', 'No registra contenido ni rutas absolutas sensibles.'),
+    'maintenance.cleanup.temp_files' => $event('Mantenimiento', 'Archivos temporales limpiados', 'Se eliminaron archivos antiguos en carpetas temporales permitidas.', 'warning', 'Confirmar que solo se usaron rutas temporales permitidas.'),
     'languages.created' => $event('Idiomas', 'Idioma creado', 'Se creo un idioma del sistema.', 'info', 'Verificar que exista archivo de traduccion correspondiente.'),
     'languages.updated' => $event('Idiomas', 'Idioma actualizado', 'Se actualizo un idioma del sistema.', 'info', 'Confirmar codigo, nombre y estado.'),
     'languages.activated' => $event('Idiomas', 'Idioma activado', 'Se activo un idioma.', 'info', 'Verificar disponibilidad de traducciones.'),

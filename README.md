@@ -461,6 +461,14 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 - No muestra secretos: `APP_KEY`, contraseñas SMTP, `client_secret`, tokens y hashes se muestran como configurados/ocultos por seguridad.
 - Para habilitar el permiso importa `database/024_add_system_health_permission.sql` solo si no existe `system_health.view`; luego cierra sesión e inicia nuevamente para recargar permisos.
 
+### Limpieza de datos temporales
+- El módulo **Mantenimiento → Limpieza de datos temporales** está disponible en `/maintenance/cleanup`.
+- Requiere permisos `maintenance.cleanup.view` para consultar y `maintenance.cleanup.run` para ejecutar; se agregan con `database/025_add_maintenance_cleanup_permissions.sql`.
+- Puede limpiar tokens de recuperación vencidos/usados, códigos de cambio de correo vencidos/usados, sesiones revocadas antiguas, intentos fallidos antiguos, historial de contraseñas excedente, logs antiguos y archivos temporales de rutas permitidas.
+- Nunca elimina usuarios, roles, permisos, sesiones activas, manuales activos, configuración SMTP/MFA/OAuth, política de contraseñas ni auditoría reciente.
+- La limpieza se ejecuta únicamente por POST con CSRF y confirmación SweetAlert2; no hay limpieza automática al abrir la pantalla.
+- Registra auditoría con `maintenance.cleanup_*` y cantidades eliminadas, sin guardar tokens, hashes, códigos, contenido de logs ni rutas absolutas sensibles.
+
 ### Configuración SMTP administrable
 - El administrador puede configurar el servidor de correo saliente desde **Seguridad → SMTP** sin editar archivos.
 - La configuración en BD tiene prioridad sobre las variables del `.env` (que sirven de respaldo).

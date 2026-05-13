@@ -72,7 +72,7 @@ $_initials = mb_strtoupper(mb_substr(preg_replace('/\s+/', '', $_appName), 0, 2)
         <?php endif; ?>
 
         <?php
-        $showAdmin = can('users.view') || can('languages.view') || can('appearance.view') || can('system_health.view');
+        $showAdmin = can('users.view') || can('languages.view') || can('appearance.view') || can('system_health.view') || can('maintenance.cleanup.view');
         if ($showAdmin):
         ?>
         <li class="pc-item pc-caption">
@@ -112,6 +112,15 @@ $_initials = mb_strtoupper(mb_substr(preg_replace('/\s+/', '', $_appName), 0, 2)
           <a href="<?= BASE_URL ?>/system-health" class="pc-link">
             <span class="pc-micon"><i class="ph-duotone ph-heartbeat"></i></span>
             <span class="pc-mtext"><?= __('menu.system_health') ?></span>
+          </a>
+        </li>
+        <?php endif; ?>
+
+        <?php if (can('maintenance.cleanup.view')): ?>
+        <li class="pc-item <?= ($activeMenu ?? '') === 'maintenance_cleanup' ? 'active' : '' ?>">
+          <a href="<?= BASE_URL ?>/maintenance/cleanup" class="pc-link">
+            <span class="pc-micon"><i class="ph-duotone ph-broom"></i></span>
+            <span class="pc-mtext"><?= __('menu.maintenance') ?></span>
           </a>
         </li>
         <?php endif; ?>
