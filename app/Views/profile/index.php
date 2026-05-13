@@ -29,7 +29,7 @@ $_prfImg = $user['profile_image'] ?? null;
 $_prfAvatar = $_prfImg
     ? BASE_URL . '/uploads/profiles/' . htmlspecialchars($_prfImg, ENT_QUOTES, 'UTF-8')
     : null;
-$_prfStatus = $user['status_slug'] ?? $user['status'] ?? '';
+$_prfStatus = $user['status_slug'] ?? '';
 ?>
 
 <div class="row">

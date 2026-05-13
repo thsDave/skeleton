@@ -219,6 +219,10 @@ DB_PASSWORD=
 | `024_add_system_health_permission.sql` | Permiso para Salud del Sistema |
 | `025_add_maintenance_cleanup_permissions.sql` | Permisos para limpieza de datos temporales |
 | `026_add_notifications.sql` | Tabla y permisos de notificaciones internas |
+| `027_add_deleted_at_to_notifications.sql` | Eliminacion logica de notificaciones propias |
+| `028_clean_high_priority_database_model.sql` | Limpieza critica: `status_id` oficial, FKs MFA y rol OAuth |
+
+> Desde la migracion 028, `tbl_users.status_id` es la unica fuente oficial del estado del usuario. No uses `tbl_users.status` en codigo nuevo. Tambien se refuerza integridad referencial en codigos MFA y rol por defecto de autenticacion externa.
 
 ### Paso 5 — Acceder al sistema
 

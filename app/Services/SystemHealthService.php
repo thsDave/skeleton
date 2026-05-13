@@ -159,6 +159,58 @@ class SystemHealthService
             );
         }
 
+        $legacyStatusExists = $this->columnExists('tbl_users', 'status');
+        $checks[] = $this->check(
+            'Estado de usuario normalizado',
+            $legacyStatusExists ? 'warning' : 'success',
+            $legacyStatusExists ? 'Campo legacy detectado' : 'status_id',
+            $legacyStatusExists
+                ? 'tbl_users.status aun existe; ejecutar la migracion correctiva para dejar status_id como fuente oficial.'
+                : 'tbl_users.status_id es la fuente oficial del estado de usuario.'
+        );
+
+        $invalidUserStatuses = $this->scalar(
+            'SELECT COUNT(*) FROM tbl_users u
+             LEFT JOIN tbl_statuses s ON s.id = u.status_id
+             WHERE s.id IS NULL'
+        );
+        $checks[] = $this->check(
+            'Usuarios con status_id invalido',
+            $invalidUserStatuses === 0 ? 'success' : 'danger',
+            (string)$invalidUserStatuses,
+            $invalidUserStatuses === 0
+                ? 'Todos los usuarios apuntan a un estado valido.'
+                : 'Hay usuarios con estado inexistente; corregir antes de operar autenticacion.'
+        );
+
+        $baseStatuses = $this->scalar(
+            "SELECT COUNT(*) FROM tbl_statuses WHERE slug IN ('active', 'inactive', 'blocked')"
+        );
+        $checks[] = $this->check(
+            'Estados base de usuario',
+            $baseStatuses === 3 ? 'success' : 'danger',
+            (string)$baseStatuses . '/3',
+            $baseStatuses === 3
+                ? 'Estados active, inactive y blocked disponibles.'
+                : 'Faltan estados base requeridos por usuarios y autenticacion.'
+        );
+
+        $twoFactorUserFkExists = $this->foreignKeyExists('tbl_two_factor_codes', 'fk_two_factor_codes_user');
+        $checks[] = $this->check(
+            'FK MFA usuario',
+            $twoFactorUserFkExists ? 'success' : 'warning',
+            $twoFactorUserFkExists ? __('system_health.available') : __('system_health.not_available'),
+            'tbl_two_factor_codes.user_id debe referenciar tbl_users.id con ON DELETE CASCADE.'
+        );
+
+        $defaultRoleFkExists = $this->foreignKeyExists('tbl_authentication_settings', 'fk_authentication_settings_default_role');
+        $checks[] = $this->check(
+            'FK rol por defecto OAuth',
+            $defaultRoleFkExists ? 'success' : 'warning',
+            $defaultRoleFkExists ? __('system_health.available') : __('system_health.not_available'),
+            'tbl_authentication_settings.default_role_id debe referenciar tbl_roles.id con ON DELETE SET NULL.'
+        );
+
         $adminCount = $this->scalar(
             "SELECT COUNT(*) FROM tbl_users u
              JOIN tbl_roles r ON r.id = u.role_id
@@ -413,6 +465,23 @@ class SystemHealthService
                 'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
             );
             $stmt->execute([$table, $column]);
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function foreignKeyExists(string $table, string $constraint): bool
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = ?
+                   AND CONSTRAINT_NAME = ?
+                   AND CONSTRAINT_TYPE = ?'
+            );
+            $stmt->execute([$table, $constraint, 'FOREIGN KEY']);
             return (int)$stmt->fetchColumn() > 0;
         } catch (Throwable) {
             return false;

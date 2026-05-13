@@ -85,11 +85,25 @@ class AuthenticationController extends Controller
             Redirect::to('/security/authentication');
         }
 
+        $roleModel     = new Role();
+        $defaultRoleId = !empty($_POST['default_role_id']) ? (int) $_POST['default_role_id'] : null;
+        $autoCreate    = !empty($_POST['allow_auto_user_creation']);
+
+        if ($defaultRoleId !== null && !$roleModel->exists($defaultRoleId)) {
+            Session::flash('error', __('security_authentication.invalid_default_role'));
+            Redirect::to('/security/authentication');
+        }
+
+        if ($autoCreate && $defaultRoleId === null) {
+            Session::flash('error', __('security_authentication.default_role_required_auto_create'));
+            Redirect::to('/security/authentication');
+        }
+
         $data = [
             'local_login_enabled'       => $localEnabled    ? 1 : 0,
             'external_login_enabled'    => $externalEnabled ? 1 : 0,
-            'allow_auto_user_creation'  => !empty($_POST['allow_auto_user_creation']) ? 1 : 0,
-            'default_role_id'           => !empty($_POST['default_role_id']) ? (int) $_POST['default_role_id'] : null,
+            'allow_auto_user_creation'  => $autoCreate ? 1 : 0,
+            'default_role_id'           => $defaultRoleId,
             'require_existing_user'     => !empty($_POST['require_existing_user'])    ? 1 : 0,
             'allow_account_linking'     => !empty($_POST['allow_account_linking'])    ? 1 : 0,
             'restrict_external_domains' => $restrictDomains,

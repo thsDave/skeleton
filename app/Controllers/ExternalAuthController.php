@@ -13,6 +13,8 @@ use App\Models\ExternalAuthProvider;
 use App\Models\UserExternalAccount;
 use App\Models\User;
 use App\Models\TwoFactorCode;
+use App\Models\Role;
+use App\Models\Status;
 use App\Services\ExternalAuthService;
 use App\Services\Mailer;
 use App\Services\NotificationService;
@@ -397,17 +399,17 @@ class ExternalAuthController extends Controller
             Redirect::withErrors('/login', ['general' => __('auth.external_account_not_authorized')]);
         }
 
-        $defaultRoleId = (int) ($settings['default_role_id'] ?? 2);
-        if (!$defaultRoleId) {
+        $defaultRoleId = (int) ($settings['default_role_id'] ?? 0);
+        if ($defaultRoleId <= 0 || !(new Role())->exists($defaultRoleId)) {
             Logger::error("ExternalAuthController::handleLogin — no default role configured for auto-create [{$provider}]");
             Audit::log([
                 'module'      => 'auth',
                 'action'      => 'external_login.failed',
-                'description' => "Sin rol por defecto para crear usuario desde {$provider}",
+                'description' => "Rol por defecto invalido para crear usuario desde {$provider}",
                 'status'      => 'failed',
                 'user_id'     => null,
             ]);
-            Redirect::withErrors('/login', ['general' => __('auth.external_login_failed')]);
+            Redirect::withErrors('/login', ['general' => __('auth.external_default_role_missing')]);
         }
 
         $nameParts = explode(' ', $providerName, 2);
@@ -420,7 +422,7 @@ class ExternalAuthController extends Controller
             'email'     => $providerEmail,
             'password'  => password_hash(bin2hex(random_bytes(32)), PASSWORD_BCRYPT, ['cost' => 12]),
             'role_id'   => $defaultRoleId,
-            'status_id' => 1,
+            'status_id' => (new Status())->getActiveId(),
         ]);
 
         if (!$newUserId) {

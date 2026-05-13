@@ -252,10 +252,11 @@ class User extends Model
 
     public function inactivate(int $id): bool
     {
+        $inactiveStatusId = (new Status())->getInactiveId();
         $stmt = $this->db->prepare(
-            'UPDATE ' . self::TABLE . ' SET status_id = 2, updated_at = NOW() WHERE id = ?'
+            'UPDATE ' . self::TABLE . ' SET status_id = ?, updated_at = NOW() WHERE id = ?'
         );
-        return $stmt->execute([$id]);
+        return $stmt->execute([$inactiveStatusId, $id]);
     }
 
     public function countActiveAdmins(): int

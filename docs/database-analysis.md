@@ -443,9 +443,9 @@ Modelo recomendado para Skeleton:
 
 | Hallazgo | Prioridad | Riesgo | Recomendacion |
 |---------|-----------|--------|---------------|
-| `tbl_users.status` duplica `tbl_users.status_id` | Alta | Estados inconsistentes entre codigo legado y codigo nuevo | Definir `status_id` como unica fuente y planificar retirada del ENUM heredado en version mayor. |
-| `tbl_two_factor_codes.user_id` sin FK declarada | Alta | Codigos huerfanos si se elimina un usuario; integridad incompleta en seguridad | Agregar FK hacia `tbl_users(id)` con `ON DELETE CASCADE` en fase posterior. |
-| `tbl_authentication_settings.default_role_id` sin FK | Alta | Configuracion puede apuntar a rol inexistente | Agregar FK hacia `tbl_roles(id)` con `ON DELETE SET NULL` o `RESTRICT`. |
+| `tbl_users.status` duplica `tbl_users.status_id` | Alta | Estados inconsistentes entre codigo legado y codigo nuevo | Corregido en fase 028: `status_id` queda como fuente oficial y el campo heredado se elimina al importar la migracion. |
+| `tbl_two_factor_codes.user_id` sin FK declarada | Alta | Codigos huerfanos si se elimina un usuario; integridad incompleta en seguridad | Corregido en fase 028 con FK hacia `tbl_users(id)` y `ON DELETE CASCADE`. |
+| `tbl_authentication_settings.default_role_id` sin FK | Alta | Configuracion puede apuntar a rol inexistente | Corregido en fase 028 con FK hacia `tbl_roles(id)` y `ON DELETE SET NULL`. |
 | Tablas single-row sin restriccion formal | Media | Duplicados de configuracion y lecturas ambiguas por `id = 1` | Formalizar singleton por constraint/check o clave unica constante. |
 | Indices simples donde se necesitan compuestos | Media | Consultas lentas al crecer auditoria, intentos, sesiones y notificaciones | Agregar indices compuestos tras revisar `SHOW INDEX` de la BD real. |
 | `tbl_login_logs` y `tbl_login_attempts` se solapan | Media | Doble fuente de verdad para eventos de login | Definir proposito de cada tabla o deprecar una en version futura. |
@@ -565,3 +565,15 @@ Reglas de integridad recomendadas:
 - No se incluyo contenido de `.env`.
 - No se incluyeron contrasenas, tokens ni secretos reales.
 - Las recomendaciones son propuestas para fases posteriores, no cambios aplicados.
+
+## 25. Actualizacion: fase de correcciones de alta prioridad
+
+Se trabajo una fase correctiva documentada en `docs/database-high-priority-fixes.md` y entregada en la migracion `database/028_clean_high_priority_database_model.sql`.
+
+Hallazgos de alta prioridad abordados:
+
+- `tbl_users.status` se retira como campo heredado; `tbl_users.status_id` queda como fuente oficial del estado del usuario.
+- `tbl_two_factor_codes.user_id` se formaliza como FK hacia `tbl_users.id` con `ON DELETE CASCADE`.
+- `tbl_authentication_settings.default_role_id` se formaliza como FK hacia `tbl_roles.id` con `ON DELETE SET NULL`.
+
+Estas correcciones deben importarse manualmente en la base de datos de desarrollo despues de ejecutar las consultas de prevalidacion indicadas en la documentacion de la fase.

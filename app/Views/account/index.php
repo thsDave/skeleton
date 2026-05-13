@@ -24,7 +24,7 @@ require dirname(__DIR__) . '/layouts/main.php';
   </div>
 </div>
 
-<?php $_accStatus = $user['status_slug'] ?? $user['status'] ?? ''; ?>
+<?php $_accStatus = $user['status_slug'] ?? ''; ?>
 
 <div class="row">
   <!-- Correo electrónico -->
