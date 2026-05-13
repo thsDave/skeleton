@@ -380,17 +380,15 @@ $glossaryUrl = BASE_URL . '/audit-logs' . ($glossaryQuery ? '?' . $glossaryQuery
                 <td><?= htmlspecialchars($event['analysis_hint'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
               </tr>
               <?php endforeach; ?>
-              <?php if (empty($filteredGlossary)): ?>
-              <tr>
-                <td colspan="6" class="text-center text-muted py-5">
-                  <i class="ph-duotone ph-book-open-text" style="font-size:2.5rem;"></i>
-                  <p class="mb-0 mt-2"><?= __('audit.no_glossary_description') ?></p>
-                </td>
-              </tr>
-              <?php endif; ?>
             </tbody>
           </table>
         </div>
+        <?php if (empty($filteredGlossary)): ?>
+        <div class="text-center text-muted py-4">
+          <i class="ph-duotone ph-book-open-text" style="font-size:2.5rem;"></i>
+          <p class="mb-0 mt-2"><?= __('audit.no_glossary_description') ?></p>
+        </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
@@ -423,6 +421,10 @@ $dataTableSelector = $activeTab === 'glossary' ? '#auditGlossaryTable' : '#audit
 $extraScript = <<<JS
 <script>
 $(document).ready(function () {
+  if ($.fn.DataTable.isDataTable('{$dataTableSelector}')) {
+    $('{$dataTableSelector}').DataTable().destroy();
+  }
+
   $('{$dataTableSelector}').DataTable({
     language: {
       url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
