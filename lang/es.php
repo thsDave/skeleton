@@ -568,6 +568,8 @@ return [
     'audit.unknown_event'          => 'Evento no documentado',
     'audit.no_glossary_description'=> 'Sin descripción registrada',
     'audit.detected_without_glossary' => 'Acciones detectadas sin glosario',
+    'audit.detected_without_glossary_help' => 'Estas claves existen en los registros de auditoría, pero aún no tienen descripción en el glosario controlado por código.',
+    'audit.detected_without_glossary_developer_note' => 'Para documentar estas acciones, agregarlas en config/audit_events.php.',
     'audit.search_event'           => 'Buscar evento',
     'audit.filter_by_module'       => 'Filtrar por módulo',
     'audit.filter_by_severity'     => 'Filtrar por nivel',

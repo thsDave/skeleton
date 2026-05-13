@@ -568,6 +568,8 @@ return [
     'audit.unknown_event'          => 'Undocumented event',
     'audit.no_glossary_description'=> 'No registered description',
     'audit.detected_without_glossary' => 'Actions detected without glossary',
+    'audit.detected_without_glossary_help' => 'These keys exist in the audit records, but they do not have a description in the code-controlled glossary yet.',
+    'audit.detected_without_glossary_developer_note' => 'To document these actions, add them to config/audit_events.php.',
     'audit.search_event'           => 'Search event',
     'audit.filter_by_module'       => 'Filter by module',
     'audit.filter_by_severity'     => 'Filter by severity',

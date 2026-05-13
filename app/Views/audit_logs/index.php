@@ -402,6 +402,9 @@ $glossaryUrl = BASE_URL . '/audit-logs' . ($glossaryQuery ? '?' . $glossaryQuery
         </h6>
       </div>
       <div class="card-body">
+        <p class="text-muted mb-3">
+          <?= __('audit.detected_without_glossary_help') ?>
+        </p>
         <div class="d-flex flex-wrap gap-2">
           <?php foreach ($unknownActions as $unknownAction): ?>
           <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
@@ -409,6 +412,9 @@ $glossaryUrl = BASE_URL . '/audit-logs' . ($glossaryQuery ? '?' . $glossaryQuery
           </span>
           <?php endforeach; ?>
         </div>
+        <p class="text-muted small mb-0 mt-3">
+          <?= __('audit.detected_without_glossary_developer_note') ?>
+        </p>
       </div>
     </div>
   </div>

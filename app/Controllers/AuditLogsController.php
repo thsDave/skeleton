@@ -37,7 +37,7 @@ class AuditLogsController extends Controller
         $filteredGlossary = $this->filterGlossary($auditGlossary, $glossaryFilters);
         $glossaryModules = $this->getGlossaryModules($auditGlossary);
         $glossarySeverities = $this->getGlossarySeverities($auditGlossary);
-        $unknownActions = array_values(array_diff($actions, array_keys($auditGlossary)));
+        $unknownActions = $this->getUnknownActions($actions, $auditGlossary);
 
         $this->view('audit_logs.index',
             compact(
@@ -240,5 +240,26 @@ class AuditLogsController extends Controller
         ))));
         sort($severities);
         return $severities;
+    }
+
+    private function getUnknownActions(array $actions, array $glossary): array
+    {
+        $knownKeys = [];
+        foreach (array_keys($glossary) as $key) {
+            $knownKeys[trim((string)$key)] = true;
+        }
+
+        $unknown = [];
+        foreach ($actions as $action) {
+            $normalized = trim((string)$action);
+            if ($normalized === '' || isset($knownKeys[$normalized])) {
+                continue;
+            }
+
+            $unknown[$normalized] = $normalized;
+        }
+
+        ksort($unknown);
+        return array_values($unknown);
     }
 }
