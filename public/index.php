@@ -61,6 +61,7 @@ use App\Controllers\AccountController;
 use App\Controllers\UsersController;
 use App\Controllers\LanguagesController;
 use App\Controllers\SystemInformationController;
+use App\Controllers\SystemHealthController;
 use App\Controllers\LockController;
 use App\Controllers\SecurityController;
 use App\Controllers\RolesPermissionsController;
@@ -150,6 +151,7 @@ $router->post('/languages/toggle/{id}',      [LanguagesController::class, 'toggl
 $router->get('/system-information',          [SystemInformationController::class, 'index']);
 $router->get('/system-information/edit',     [SystemInformationController::class, 'edit']);
 $router->post('/system-information/update',  [SystemInformationController::class, 'update']);
+$router->get('/system-health',               [SystemHealthController::class, 'index']);
 
 // Manuals
 $router->get('/manuals/create',              [SystemInformationController::class, 'createManual']);

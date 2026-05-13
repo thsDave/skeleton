@@ -17,6 +17,7 @@ $event = static function (
 };
 
 return [
+    'audit_logs' => $event('Autenticacion', 'Inicio de sesion exitoso', 'Un usuario inicio sesion correctamente.', 'success', 'Verificar que IP, navegador y horario correspondan al patron esperado.'),
     'auth.login_success' => $event('Autenticacion', 'Inicio de sesion exitoso', 'Un usuario inicio sesion correctamente.', 'success', 'Verificar que IP, navegador y horario correspondan al patron esperado.'),
     'auth.login_failed' => $event('Autenticacion', 'Inicio de sesion fallido', 'Un usuario intento iniciar sesion sin completar la autenticacion.', 'warning', 'Revisar multiples intentos sobre el mismo usuario o desde la misma IP.'),
     'auth.logout' => $event('Autenticacion', 'Cierre de sesion', 'Un usuario cerro su sesion.', 'info', 'Normalmente no requiere accion salvo que ocurra tras actividad sospechosa.'),
@@ -221,6 +222,7 @@ return [
     'uploaded' => $event('Sistema', 'Accion generica: archivo subido', 'Accion generica registrada cuando se subio un archivo al sistema.', 'info', 'Para un analisis preciso, revisar el modulo, nombre del recurso, usuario, fecha e IP asociados al evento.'),
 
     'system_information.updated' => $event('Informacion del sistema', 'Informacion del sistema actualizada', 'Se actualizo informacion descriptiva del sistema.', 'info', 'Verificar que los datos publicados sean correctos.'),
+    'system_health.viewed' => $event('Salud del sistema', 'Panel de salud consultado', 'Un administrador consulto el panel de salud del sistema.', 'info', 'Evento informativo; revisar si hay consultas inusuales o recurrentes.'),
     'languages.created' => $event('Idiomas', 'Idioma creado', 'Se creo un idioma del sistema.', 'info', 'Verificar que exista archivo de traduccion correspondiente.'),
     'languages.updated' => $event('Idiomas', 'Idioma actualizado', 'Se actualizo un idioma del sistema.', 'info', 'Confirmar codigo, nombre y estado.'),
     'languages.activated' => $event('Idiomas', 'Idioma activado', 'Se activo un idioma.', 'info', 'Verificar disponibilidad de traducciones.'),

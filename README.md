@@ -454,6 +454,13 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 - En nuevas funcionalidades se recomienda registrar acciones más específicas con formato `modulo.accion`.
 - No se deben documentar ni registrar contraseñas, hashes, tokens, secretos OAuth, códigos MFA, códigos de verificación, cookies ni IDs reales de sesión.
 
+### Salud del Sistema
+- El módulo **Salud del Sistema** está disponible en `/system-health` y requiere el permiso `system_health.view`.
+- Revisa entorno PHP, extensiones, conexión y tablas de base de datos, permisos base, `.env`, carpetas escribibles, assets críticos, seguridad de sesión, SMTP, autenticación, OAuth, mantenimiento y logs.
+- El panel solo realiza lecturas; no corrige ni elimina datos automáticamente.
+- No muestra secretos: `APP_KEY`, contraseñas SMTP, `client_secret`, tokens y hashes se muestran como configurados/ocultos por seguridad.
+- Para habilitar el permiso importa `database/024_add_system_health_permission.sql` solo si no existe `system_health.view`; luego cierra sesión e inicia nuevamente para recargar permisos.
+
 ### Configuración SMTP administrable
 - El administrador puede configurar el servidor de correo saliente desde **Seguridad → SMTP** sin editar archivos.
 - La configuración en BD tiene prioridad sobre las variables del `.env` (que sirven de respaldo).
