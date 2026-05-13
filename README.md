@@ -450,6 +450,8 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 - Cada acción documentada incluye clave técnica, módulo, título, descripción, severidad y recomendación de análisis.
 - En Registros, la columna acción muestra el título amigable y conserva la clave técnica debajo para trazabilidad.
 - Si aparece **Sin descripción registrada** o la sección **Acciones detectadas sin glosario**, agrega la clave faltante en `config/audit_events.php`.
+- Algunas claves como `created`, `updated`, `deleted`, `uploaded` o `exported` son acciones genéricas heredadas; para analizarlas correctamente revisa también módulo, descripción, usuario, fecha e IP.
+- En nuevas funcionalidades se recomienda registrar acciones más específicas con formato `modulo.accion`.
 - No se deben documentar ni registrar contraseñas, hashes, tokens, secretos OAuth, códigos MFA, códigos de verificación, cookies ni IDs reales de sesión.
 
 ### Configuración SMTP administrable
