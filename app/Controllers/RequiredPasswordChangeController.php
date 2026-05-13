@@ -128,7 +128,7 @@ class RequiredPasswordChangeController extends Controller
 
         // ── Limpiar flags de sesión ────────────────────────────────────────────
         Auth::clearPasswordChangeRequired();
-        (new UserSessionService())->revokeAllUserSessions((int)$userId, (int)$userId, 'required_password_change', true);
+        $closedSessions = (new UserSessionService())->revokeOtherSessionsForUser((int)$userId, 'required_password_change', (int)$userId);
 
         Logger::security("Required password change completed for user ID {$userId}, reason: {$reason}");
         Audit::log([
@@ -141,7 +141,11 @@ class RequiredPasswordChangeController extends Controller
             'user_id'     => $userId,
         ]);
 
-        Session::flash('success', __('password_policy.password_updated'));
+        $message = __('password_policy.password_updated');
+        if ($closedSessions > 0) {
+            $message .= ' ' . __('sessions.other_sessions_closed');
+        }
+        Session::flash('success', $message);
         Redirect::to('/dashboard');
     }
 }

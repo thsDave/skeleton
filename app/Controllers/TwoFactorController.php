@@ -156,7 +156,7 @@ class TwoFactorController extends Controller
 
         $this->codeModel->markUsed((int) $row['id']);
         $this->userModel->enableTwoFactor($authUser['id'], 'email');
-        (new UserSessionService())->revokeAllUserSessions((int)$authUser['id'], (int)$authUser['id'], 'mfa_change', true);
+        $closedSessions = (new UserSessionService())->revokeOtherSessionsForUser((int)$authUser['id'], 'mfa_changed', (int)$authUser['id']);
 
         Session::delete('tf_pending_method');
         Session::delete('tf_pending_action');
@@ -170,7 +170,7 @@ class TwoFactorController extends Controller
             'status'      => 'success',
         ]);
 
-        Session::flash('success', __('2fa.enabled_success'));
+        Session::flash('success', __('2fa.enabled_success') . ($closedSessions > 0 ? ' ' . __('sessions.other_sessions_closed') : ''));
         Redirect::to('/profile/two-factor');
     }
 
@@ -264,7 +264,7 @@ class TwoFactorController extends Controller
 
         $secretEnc = Crypt::encrypt($secret);
         $this->userModel->enableTwoFactor($authUser['id'], 'authenticator', $secretEnc);
-        (new UserSessionService())->revokeAllUserSessions((int)$authUser['id'], (int)$authUser['id'], 'mfa_change', true);
+        $closedSessions = (new UserSessionService())->revokeOtherSessionsForUser((int)$authUser['id'], 'mfa_changed', (int)$authUser['id']);
         Session::delete('tf_totp_secret_pending');
 
         Audit::log([
@@ -276,7 +276,7 @@ class TwoFactorController extends Controller
             'status'      => 'success',
         ]);
 
-        Session::flash('success', __('2fa.enabled_success'));
+        Session::flash('success', __('2fa.enabled_success') . ($closedSessions > 0 ? ' ' . __('sessions.other_sessions_closed') : ''));
         Redirect::to('/profile/two-factor');
     }
 
@@ -288,7 +288,7 @@ class TwoFactorController extends Controller
 
         $authUser = Auth::user();
         $this->userModel->disableTwoFactor($authUser['id']);
-        (new UserSessionService())->revokeAllUserSessions((int)$authUser['id'], (int)$authUser['id'], 'mfa_change', true);
+        $closedSessions = (new UserSessionService())->revokeOtherSessionsForUser((int)$authUser['id'], 'mfa_changed', (int)$authUser['id']);
 
         Audit::log([
             'module'      => 'profile',
@@ -299,7 +299,7 @@ class TwoFactorController extends Controller
             'status'      => 'success',
         ]);
 
-        Session::flash('success', __('2fa.disabled_success'));
+        Session::flash('success', __('2fa.disabled_success') . ($closedSessions > 0 ? ' ' . __('sessions.other_sessions_closed') : ''));
         Redirect::to('/profile/two-factor');
     }
 

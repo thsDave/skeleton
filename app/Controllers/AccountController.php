@@ -231,7 +231,7 @@ class AccountController extends Controller
         try {
             $this->emailChangeModel->completeEmailChange((int) $pending['id'], $userId, $pending['new_email']);
             Auth::updateSession(['email' => $pending['new_email']]);
-            (new UserSessionService())->revokeAllUserSessions((int)$userId, (int)$userId, 'email_change', true);
+            $closedSessions = (new UserSessionService())->revokeOtherSessionsForUser((int)$userId, 'email_changed', (int)$userId);
             Logger::security("Email change completed - user ID {$userId}");
             Audit::log([
                 'module' => 'account', 'action' => 'account.email_change_verified',
@@ -249,7 +249,11 @@ class AccountController extends Controller
                 'new_values' => ['email' => $pending['new_email']],
                 'status' => 'success',
             ]);
-            Redirect::withSuccess('/account', __('account.email_change_success'));
+            $message = __('account.email_change_success');
+            if ($closedSessions > 0) {
+                $message .= ' ' . __('sessions.other_sessions_closed');
+            }
+            Redirect::withSuccess('/account', $message);
         } catch (\Throwable $e) {
             Logger::error('AccountController::verifyEmailChange update failed - ' . $e->getMessage());
             Audit::log([
@@ -483,13 +487,17 @@ class AccountController extends Controller
             Session::regenerate();
             $sessionService = new UserSessionService();
             $sessionService->registerCurrentSession((int)$id);
-            $sessionService->revokeOtherSessions((int)$id, (int)$id, 'password_change');
+            $closedSessions = $sessionService->revokeOtherSessionsForUser((int)$id, 'password_changed', (int)$id);
             Logger::security("Contraseña actualizada - ID {$id}");
             Audit::log(['module' => 'account', 'action' => 'account.password_changed',
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Contraseña de cuenta actualizada',
                 'status' => 'success']);
-            Redirect::withSuccess('/account', 'Contraseña actualizada correctamente.');
+            $message = 'Contraseña actualizada correctamente.';
+            if ($closedSessions > 0) {
+                $message .= ' ' . __('sessions.other_sessions_closed');
+            }
+            Redirect::withSuccess('/account', $message);
         } else {
             Redirect::withError('/account/edit-password', 'No se pudo actualizar la contraseña. Intenta de nuevo.');
         }

@@ -471,7 +471,12 @@ class UsersController extends Controller
             // Guardar en historial si hubo cambio de contraseña
             if ($newHash !== null) {
                 $policySvc->saveHistory($userId, $newHash);
-                (new UserSessionService())->revokeAllUserSessions($userId, Auth::id(), 'admin_password_change');
+                (new UserSessionService())->revokeAllUserSessions(
+                    $userId,
+                    Auth::id(),
+                    'admin_password_changed',
+                    $userId === (int)Auth::id()
+                );
                 Audit::log(['module' => 'users', 'action' => 'users.password_changed_by_admin',
                     'entity' => 'user', 'entity_id' => $userId,
                     'description' => "Contraseña de usuario ID {$userId} cambiada por admin ID " . Auth::id(),
@@ -480,6 +485,14 @@ class UsersController extends Controller
             $prevForce = (int)($user['force_password_change'] ?? 0);
             if ($forcePasswordChange !== $prevForce) {
                 $forceAction = $forcePasswordChange ? 'users.force_password_change_enabled' : 'users.force_password_change_disabled';
+                if ($forcePasswordChange) {
+                    (new UserSessionService())->revokeAllUserSessions(
+                        $userId,
+                        Auth::id(),
+                        'force_password_change',
+                        $userId === (int)Auth::id()
+                    );
+                }
                 Audit::log(['module' => 'users', 'action' => $forceAction,
                     'entity' => 'user', 'entity_id' => $userId,
                     'description' => ($forcePasswordChange ? 'Activado' : 'Desactivado') . " cambio obligatorio de contraseña para usuario ID {$userId}",

@@ -153,11 +153,16 @@ class UserSessionService
 
     public function revokeOtherSessions(int $userId, ?int $revokedBy, string $reason): int
     {
+        return $this->revokeOtherSessionsForUser($userId, $reason, $revokedBy);
+    }
+
+    public function revokeOtherSessionsForUser(int $userId, string $reason, ?int $revokedBy = null): int
+    {
         try {
             $count = $this->sessions->revokeOtherSessions($userId, $this->getCurrentSessionHash(), $revokedBy, $reason);
             Audit::log([
                 'module' => 'sessions',
-                'action' => $reason === 'password_change' ? 'sessions.revoked_due_password_change' : 'sessions.revoked_others',
+                'action' => $this->auditActionForReason($reason, true),
                 'entity' => 'user',
                 'entity_id' => $userId,
                 'description' => 'Otras sesiones activas revocadas',
@@ -177,16 +182,9 @@ class UserSessionService
         try {
             $exceptHash = $keepCurrent ? $this->getCurrentSessionHash() : null;
             $count = $this->sessions->revokeAllForUser($userId, $revokedBy, $reason, $exceptHash);
-            $action = match ($reason) {
-                'password_reset' => 'sessions.revoked_due_password_reset',
-                'required_password_change', 'admin_password_change' => 'sessions.revoked_due_password_change',
-                'mfa_change' => 'sessions.revoked_due_mfa_change',
-                'email_change' => 'sessions.revoked_due_email_change',
-                default => 'sessions.revoked_all_user',
-            };
             Audit::log([
                 'module' => 'sessions',
-                'action' => $action,
+                'action' => $this->auditActionForReason($reason, false),
                 'entity' => 'user',
                 'entity_id' => $userId,
                 'description' => 'Sesiones activas de usuario revocadas',
@@ -309,11 +307,30 @@ class UserSessionService
             'logout' => __('sessions.reason_logout'),
             'user_revoke', 'user_revoke_others' => __('sessions.reason_user'),
             'admin_revoke', 'admin_revoke_user_all' => __('sessions.reason_admin'),
-            'password_change', 'required_password_change', 'admin_password_change' => __('sessions.reason_password_change'),
+            'password_change', 'password_changed' => __('sessions.reason_password_changed'),
+            'required_password_change' => __('sessions.reason_required_password_change'),
+            'admin_password_change', 'admin_password_changed' => __('sessions.reason_admin_password_changed'),
             'password_reset' => __('sessions.reason_password_reset'),
-            'mfa_change' => __('sessions.reason_mfa_change'),
-            'email_change' => __('sessions.reason_email_change'),
+            'mfa_change', 'mfa_changed' => __('sessions.reason_mfa_changed'),
+            'email_change', 'email_changed' => __('sessions.reason_email_changed'),
+            'force_password_change' => __('sessions.reason_force_password_change'),
+            'admin_mfa_reset' => __('sessions.reason_admin_mfa_reset'),
             default => $reason !== '' ? $reason : __('sessions.reason_unknown'),
+        };
+    }
+
+    private function auditActionForReason(string $reason, bool $otherSessions): string
+    {
+        return match ($reason) {
+            'password_change', 'password_changed' => 'sessions.revoked_due_password_change',
+            'password_reset' => 'sessions.revoked_due_password_reset',
+            'required_password_change' => 'sessions.revoked_due_required_password_change',
+            'mfa_change', 'mfa_changed' => 'sessions.revoked_due_mfa_change',
+            'email_change', 'email_changed' => 'sessions.revoked_due_email_change',
+            'admin_password_change', 'admin_password_changed' => 'sessions.revoked_due_admin_password_change',
+            'force_password_change' => 'sessions.revoked_due_force_password_change',
+            'admin_mfa_reset' => 'sessions.revoked_due_admin_mfa_reset',
+            default => $otherSessions ? 'sessions.revoked_others' : 'sessions.revoked_all_user',
         };
     }
 }
