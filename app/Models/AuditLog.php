@@ -119,9 +119,16 @@ class AuditLog extends Model
     public function getDistinctActions(): array
     {
         $stmt = $this->db->query(
-            "SELECT DISTINCT action FROM " . self::TABLE . " ORDER BY action"
+            "SELECT DISTINCT TRIM(action) AS action
+             FROM " . self::TABLE . "
+             WHERE action IS NOT NULL
+               AND TRIM(action) <> ''
+             ORDER BY action ASC"
         );
-        return $stmt->fetchAll(\PDO::FETCH_COLUMN);
+        return array_values(array_filter(array_map(
+            static fn($action): string => trim((string)$action),
+            $stmt->fetchAll(\PDO::FETCH_COLUMN)
+        ), static fn(string $action): bool => $action !== ''));
     }
 
     public function getRecent(int $limit = 10): array
