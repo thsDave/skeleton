@@ -9,6 +9,7 @@ $statusMeta = [
     'warning' => ['class' => 'warning', 'icon' => 'ph-warning-circle'],
     'danger' => ['class' => 'danger', 'icon' => 'ph-x-circle'],
 ];
+$readCount = (int)($readCount ?? 0);
 ?>
 
 <div class="page-header">
@@ -54,6 +55,24 @@ $statusMeta = [
             <?= \Core\CSRF::field() ?>
             <button type="submit" class="btn btn-sm btn-outline-success">
               <i class="ph-duotone ph-checks me-1"></i><?= __('notifications.mark_all_as_read') ?>
+            </button>
+          </form>
+          <?php endif; ?>
+          <?php if ($readCount > 0): ?>
+          <form action="<?= BASE_URL ?>/notifications/delete-read" method="POST" class="d-inline js-confirm-notification-delete">
+            <?= \Core\CSRF::field() ?>
+            <input type="hidden" name="confirm_message" value="<?= htmlspecialchars(__('notifications.confirm_delete_read'), ENT_QUOTES, 'UTF-8') ?>">
+            <button type="submit" class="btn btn-sm btn-outline-danger">
+              <i class="ph-duotone ph-trash me-1"></i><?= __('notifications.delete_read') ?>
+            </button>
+          </form>
+          <?php endif; ?>
+          <?php if (!empty($notifications)): ?>
+          <form action="<?= BASE_URL ?>/notifications/delete-all" method="POST" class="d-inline js-confirm-notification-delete">
+            <?= \Core\CSRF::field() ?>
+            <input type="hidden" name="confirm_message" value="<?= htmlspecialchars(__('notifications.confirm_delete_all'), ENT_QUOTES, 'UTF-8') ?>">
+            <button type="submit" class="btn btn-sm btn-danger text-white">
+              <i class="ph-duotone ph-trash-simple me-1"></i><?= __('notifications.delete_all') ?>
             </button>
           </form>
           <?php endif; ?>
@@ -109,7 +128,7 @@ $statusMeta = [
                     </span>
                   </td>
                   <td class="text-end">
-                    <div class="d-inline-flex gap-1">
+                    <div class="d-inline-flex flex-wrap justify-content-end gap-1">
                       <a href="<?= BASE_URL ?>/notifications/read/<?= (int)$notification['id'] ?>" class="btn btn-sm btn-outline-primary">
                         <i class="ph-duotone ph-arrow-square-out me-1"></i><?= __('notifications.open') ?>
                       </a>
@@ -121,6 +140,13 @@ $statusMeta = [
                         </button>
                       </form>
                       <?php endif; ?>
+                      <form action="<?= BASE_URL ?>/notifications/delete/<?= (int)$notification['id'] ?>" method="POST" class="js-confirm-notification-delete">
+                        <?= \Core\CSRF::field() ?>
+                        <input type="hidden" name="confirm_message" value="<?= htmlspecialchars(__('notifications.confirm_delete'), ENT_QUOTES, 'UTF-8') ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="<?= htmlspecialchars(__('notifications.delete_notification'), ENT_QUOTES, 'UTF-8') ?>">
+                          <i class="ph-duotone ph-trash me-1"></i><?= __('notifications.delete') ?>
+                        </button>
+                      </form>
                     </div>
                   </td>
                 </tr>
@@ -134,4 +160,35 @@ $statusMeta = [
   </div>
 </div>
 
-<?php require dirname(__DIR__) . '/layouts/footer.php'; ?>
+<?php
+$confirmTitle = json_encode(__('notifications.delete_notification'), JSON_UNESCAPED_UNICODE);
+$confirmButton = json_encode(__('alerts.confirm_yes'), JSON_UNESCAPED_UNICODE);
+$cancelButton = json_encode(__('alerts.cancel'), JSON_UNESCAPED_UNICODE);
+$extraScript = <<<JS
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.js-confirm-notification-delete').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      var input = form.querySelector('[name="confirm_message"]');
+      Swal.fire({
+        icon: 'warning',
+        title: {$confirmTitle},
+        text: input ? input.value : '',
+        showCancelButton: true,
+        confirmButtonText: {$confirmButton},
+        cancelButtonText: {$cancelButton},
+        confirmButtonColor: '#d63031',
+        cancelButtonColor: '#6c757d'
+      }).then(function (result) {
+        if (result.isConfirmed) {
+          form.submit();
+        }
+      });
+    });
+  });
+});
+</script>
+JS;
+require dirname(__DIR__) . '/layouts/footer.php';
+?>

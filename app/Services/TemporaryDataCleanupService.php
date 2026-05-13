@@ -202,13 +202,16 @@ class TemporaryDataCleanupService
             return $this->unavailable('read_notifications', $days);
         }
 
+        $where = $this->columnExists('tbl_notifications', 'deleted_at')
+            ? 'deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL ? DAY)'
+            : 'read_at IS NOT NULL AND read_at < DATE_SUB(NOW(), INTERVAL ? DAY)';
         $count = $this->count(
             'tbl_notifications',
-            'read_at IS NOT NULL AND read_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+            $where,
             [$days]
         );
 
-        return $this->summaryItem('read_notifications', $days, $count, 'Solo notificaciones leidas antiguas. No elimina notificaciones no leidas.');
+        return $this->summaryItem('read_notifications', $days, $count, 'Solo notificaciones eliminadas logicamente antiguas cuando deleted_at existe. No elimina notificaciones visibles del usuario.');
     }
 
     private function tempFilesSummary(int $days): array
@@ -285,10 +288,14 @@ class TemporaryDataCleanupService
 
     private function cleanupReadNotifications(int $days): array
     {
+        $where = $this->columnExists('tbl_notifications', 'deleted_at')
+            ? 'deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL ? DAY)'
+            : 'read_at IS NOT NULL AND read_at < DATE_SUB(NOW(), INTERVAL ? DAY)';
+
         return $this->deleteRows(
             'read_notifications',
             'tbl_notifications',
-            'read_at IS NOT NULL AND read_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+            $where,
             [$days]
         );
     }

@@ -56,7 +56,26 @@ class Notification extends Model
             }
 
             $stmt = $this->db->prepare(
-                'SELECT COUNT(*) FROM ' . self::TABLE . ' WHERE user_id = ? AND read_at IS NULL'
+                'SELECT COUNT(*) FROM ' . self::TABLE . '
+                 WHERE user_id = ? AND read_at IS NULL' . $this->activeWhereSql()
+            );
+            $stmt->execute([$userId]);
+            return (int)$stmt->fetchColumn();
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+
+    public function getReadCount(int $userId): int
+    {
+        try {
+            if ($userId <= 0 || !$this->tableExists()) {
+                return 0;
+            }
+
+            $stmt = $this->db->prepare(
+                'SELECT COUNT(*) FROM ' . self::TABLE . '
+                 WHERE user_id = ? AND read_at IS NOT NULL' . $this->activeWhereSql()
             );
             $stmt->execute([$userId]);
             return (int)$stmt->fetchColumn();
@@ -75,7 +94,7 @@ class Notification extends Model
             $limit = max(1, min(10, $limit));
             $stmt = $this->db->prepare(
                 'SELECT * FROM ' . self::TABLE . '
-                 WHERE user_id = ?
+                 WHERE user_id = ?' . $this->activeWhereSql() . '
                  ORDER BY created_at DESC, id DESC
                  LIMIT ' . $limit
             );
@@ -94,6 +113,9 @@ class Notification extends Model
             }
 
             $where = ['user_id = ?'];
+            if ($this->deletedAtColumnExists()) {
+                $where[] = 'deleted_at IS NULL';
+            }
             $params = [$userId];
             $status = (string)($filters['status'] ?? 'all');
 
@@ -119,13 +141,25 @@ class Notification extends Model
 
     public function findForUser(int $notificationId, int $userId): array|false
     {
+        return $this->findForUserInternal($notificationId, $userId, false);
+    }
+
+    public function findForUserIncludingDeleted(int $notificationId, int $userId): array|false
+    {
+        return $this->findForUserInternal($notificationId, $userId, true);
+    }
+
+    private function findForUserInternal(int $notificationId, int $userId, bool $includeDeleted): array|false
+    {
         try {
             if ($notificationId <= 0 || $userId <= 0 || !$this->tableExists()) {
                 return false;
             }
 
             $stmt = $this->db->prepare(
-                'SELECT * FROM ' . self::TABLE . ' WHERE id = ? AND user_id = ? LIMIT 1'
+                'SELECT * FROM ' . self::TABLE . '
+                 WHERE id = ? AND user_id = ?' . ($includeDeleted ? '' : $this->activeWhereSql()) . '
+                 LIMIT 1'
             );
             $stmt->execute([$notificationId, $userId]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -144,7 +178,7 @@ class Notification extends Model
             $stmt = $this->db->prepare(
                 'UPDATE ' . self::TABLE . '
                  SET read_at = COALESCE(read_at, NOW())
-                 WHERE id = ? AND user_id = ?'
+                 WHERE id = ? AND user_id = ?' . $this->activeWhereSql()
             );
             return $stmt->execute([$notificationId, $userId]);
         } catch (Throwable $e) {
@@ -163,7 +197,7 @@ class Notification extends Model
             $stmt = $this->db->prepare(
                 'UPDATE ' . self::TABLE . '
                  SET read_at = NOW()
-                 WHERE user_id = ? AND read_at IS NULL'
+                 WHERE user_id = ? AND read_at IS NULL' . $this->activeWhereSql()
             );
             $stmt->execute([$userId]);
             return $stmt->rowCount();
@@ -181,15 +215,95 @@ class Notification extends Model
             }
 
             $days = max(1, min(3650, $days));
+            $where = $this->deletedAtColumnExists()
+                ? 'deleted_at IS NOT NULL AND deleted_at < DATE_SUB(NOW(), INTERVAL ? DAY)'
+                : 'read_at IS NOT NULL AND read_at < DATE_SUB(NOW(), INTERVAL ? DAY)';
             $stmt = $this->db->prepare(
                 'DELETE FROM ' . self::TABLE . '
-                 WHERE read_at IS NOT NULL
-                   AND read_at < DATE_SUB(NOW(), INTERVAL ? DAY)'
+                 WHERE ' . $where
             );
             $stmt->execute([$days]);
             return $stmt->rowCount();
         } catch (Throwable $e) {
             Logger::error('Notification::deleteOldReadNotifications: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function deleteForUser(int $notificationId, int $userId): int
+    {
+        try {
+            if ($notificationId <= 0 || $userId <= 0 || !$this->tableExists() || !$this->deletedAtColumnExists()) {
+                return 0;
+            }
+
+            $stmt = $this->db->prepare(
+                'UPDATE ' . self::TABLE . '
+                 SET deleted_at = NOW()
+                 WHERE id = ? AND user_id = ? AND deleted_at IS NULL'
+            );
+            $stmt->execute([$notificationId, $userId]);
+            return $stmt->rowCount();
+        } catch (Throwable $e) {
+            Logger::error('Notification::deleteForUser: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function deleteReadForUser(int $userId): int
+    {
+        try {
+            if ($userId <= 0 || !$this->tableExists() || !$this->deletedAtColumnExists()) {
+                return 0;
+            }
+
+            $stmt = $this->db->prepare(
+                'UPDATE ' . self::TABLE . '
+                 SET deleted_at = NOW()
+                 WHERE user_id = ? AND read_at IS NOT NULL AND deleted_at IS NULL'
+            );
+            $stmt->execute([$userId]);
+            return $stmt->rowCount();
+        } catch (Throwable $e) {
+            Logger::error('Notification::deleteReadForUser: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function deleteAllForUser(int $userId): int
+    {
+        try {
+            if ($userId <= 0 || !$this->tableExists() || !$this->deletedAtColumnExists()) {
+                return 0;
+            }
+
+            $stmt = $this->db->prepare(
+                'UPDATE ' . self::TABLE . '
+                 SET deleted_at = NOW()
+                 WHERE user_id = ? AND deleted_at IS NULL'
+            );
+            $stmt->execute([$userId]);
+            return $stmt->rowCount();
+        } catch (Throwable $e) {
+            Logger::error('Notification::deleteAllForUser: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getDeletedCount(int $userId): int
+    {
+        try {
+            if ($userId <= 0 || !$this->tableExists() || !$this->deletedAtColumnExists()) {
+                return 0;
+            }
+
+            $stmt = $this->db->prepare(
+                'SELECT COUNT(*) FROM ' . self::TABLE . '
+                 WHERE user_id = ? AND deleted_at IS NOT NULL'
+            );
+            $stmt->execute([$userId]);
+            return (int)$stmt->fetchColumn();
+        } catch (Throwable) {
             return 0;
         }
     }
@@ -232,6 +346,30 @@ class Notification extends Model
                  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
             );
             $stmt->execute([self::TABLE]);
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function activeWhereSql(): string
+    {
+        return $this->deletedAtColumnExists() ? ' AND deleted_at IS NULL' : '';
+    }
+
+    private function deletedAtColumnExists(): bool
+    {
+        return $this->columnExists('deleted_at');
+    }
+
+    private function columnExists(string $column): bool
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+            );
+            $stmt->execute([self::TABLE, $column]);
             return (int)$stmt->fetchColumn() > 0;
         } catch (Throwable) {
             return false;

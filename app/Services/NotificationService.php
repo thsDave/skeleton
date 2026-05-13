@@ -83,4 +83,19 @@ class NotificationService
 
         return $created;
     }
+
+    public function deleteNotificationForUser(int $notificationId, int $userId): int
+    {
+        return $this->notifications->deleteForUser($notificationId, $userId);
+    }
+
+    public function deleteReadForUser(int $userId): int
+    {
+        return $this->notifications->deleteReadForUser($userId);
+    }
+
+    public function deleteAllForUser(int $userId): int
+    {
+        return $this->notifications->deleteAllForUser($userId);
+    }
 }

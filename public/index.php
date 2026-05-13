@@ -164,6 +164,9 @@ $router->get('/notifications',                     [NotificationsController::cla
 $router->get('/notifications/read/{id}',           [NotificationsController::class, 'read']);
 $router->post('/notifications/mark-read/{id}',     [NotificationsController::class, 'markRead']);
 $router->post('/notifications/mark-all-read',      [NotificationsController::class, 'markAllRead']);
+$router->post('/notifications/delete-read',        [NotificationsController::class, 'deleteRead']);
+$router->post('/notifications/delete-all',         [NotificationsController::class, 'deleteAll']);
+$router->post('/notifications/delete/{id}',        [NotificationsController::class, 'delete']);
 
 // Manuals
 $router->get('/manuals/create',              [SystemInformationController::class, 'createManual']);
