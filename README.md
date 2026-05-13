@@ -444,6 +444,14 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 - Auditoría respeta los filtros GET actuales y limita la exportación a 5,000 registros.
 - Usuarios exporta el listado administrativo completo; no incluye contraseñas, tokens ni secretos MFA.
 
+### Glosario de auditoría
+- El módulo **Auditoría** se organiza en las pestañas **Registros** y **Glosario** usando `/audit-logs?tab=records` y `/audit-logs?tab=glossary`.
+- El glosario está controlado por código en `config/audit_events.php`; no existe formulario para editarlo desde la interfaz ni tabla nueva en base de datos.
+- Cada acción documentada incluye clave técnica, módulo, título, descripción, severidad y recomendación de análisis.
+- En Registros, la columna acción muestra el título amigable y conserva la clave técnica debajo para trazabilidad.
+- Si aparece **Sin descripción registrada** o la sección **Acciones detectadas sin glosario**, agrega la clave faltante en `config/audit_events.php`.
+- No se deben documentar ni registrar contraseñas, hashes, tokens, secretos OAuth, códigos MFA, códigos de verificación, cookies ni IDs reales de sesión.
+
 ### Configuración SMTP administrable
 - El administrador puede configurar el servidor de correo saliente desde **Seguridad → SMTP** sin editar archivos.
 - La configuración en BD tiene prioridad sobre las variables del `.env` (que sirven de respaldo).

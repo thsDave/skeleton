@@ -26,14 +26,36 @@ class AuditLogsController extends Controller
         $authUser = Auth::user();
 
         $filters = $this->buildFilters();
+        $activeTab = $this->buildActiveTab();
+        $auditGlossary = $this->loadAuditGlossary();
         $logs    = $this->model->getAll($filters);
         $total   = $this->model->countAll([]);
         $modules = $this->model->getDistinctModules();
         $actions = $this->model->getDistinctActions();
         $users   = (new User())->getAll();
+        $glossaryFilters = $this->buildGlossaryFilters();
+        $filteredGlossary = $this->filterGlossary($auditGlossary, $glossaryFilters);
+        $glossaryModules = $this->getGlossaryModules($auditGlossary);
+        $glossarySeverities = $this->getGlossarySeverities($auditGlossary);
+        $unknownActions = array_values(array_diff($actions, array_keys($auditGlossary)));
 
         $this->view('audit_logs.index',
-            compact('authUser', 'logs', 'total', 'filters', 'modules', 'actions', 'users'));
+            compact(
+                'authUser',
+                'logs',
+                'total',
+                'filters',
+                'modules',
+                'actions',
+                'users',
+                'activeTab',
+                'auditGlossary',
+                'filteredGlossary',
+                'glossaryFilters',
+                'glossaryModules',
+                'glossarySeverities',
+                'unknownActions'
+            ));
     }
 
     public function show(string $id): void
@@ -144,5 +166,79 @@ class AuditLogsController extends Controller
         }
 
         return $raw;
+    }
+
+    private function buildActiveTab(): string
+    {
+        $tab = $_GET['tab'] ?? 'records';
+        return $tab === 'glossary' ? 'glossary' : 'records';
+    }
+
+    private function buildGlossaryFilters(): array
+    {
+        return [
+            'q' => trim((string)($_GET['glossary_q'] ?? '')),
+            'module' => trim((string)($_GET['glossary_module'] ?? '')),
+            'severity' => trim((string)($_GET['glossary_severity'] ?? '')),
+        ];
+    }
+
+    private function loadAuditGlossary(): array
+    {
+        $path = dirname(__DIR__, 2) . '/config/audit_events.php';
+        if (!is_file($path)) {
+            return [];
+        }
+
+        $glossary = require $path;
+        return is_array($glossary) ? $glossary : [];
+    }
+
+    private function filterGlossary(array $glossary, array $filters): array
+    {
+        return array_filter($glossary, static function (array $event, string $key) use ($filters): bool {
+            if ($filters['module'] !== '' && ($event['module'] ?? '') !== $filters['module']) {
+                return false;
+            }
+
+            if ($filters['severity'] !== '' && ($event['severity'] ?? '') !== $filters['severity']) {
+                return false;
+            }
+
+            if ($filters['q'] !== '') {
+                $haystack = strtolower(implode(' ', [
+                    $key,
+                    $event['module'] ?? '',
+                    $event['title'] ?? '',
+                    $event['description'] ?? '',
+                    $event['analysis_hint'] ?? '',
+                ]));
+                if (strpos($haystack, strtolower($filters['q'])) === false) {
+                    return false;
+                }
+            }
+
+            return true;
+        }, ARRAY_FILTER_USE_BOTH);
+    }
+
+    private function getGlossaryModules(array $glossary): array
+    {
+        $modules = array_values(array_unique(array_filter(array_map(
+            static fn(array $event): string => (string)($event['module'] ?? ''),
+            $glossary
+        ))));
+        sort($modules);
+        return $modules;
+    }
+
+    private function getGlossarySeverities(array $glossary): array
+    {
+        $severities = array_values(array_unique(array_filter(array_map(
+            static fn(array $event): string => (string)($event['severity'] ?? ''),
+            $glossary
+        ))));
+        sort($severities);
+        return $severities;
     }
 }
