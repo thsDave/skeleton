@@ -124,10 +124,22 @@
 }
 
 [data-bs-theme=dark] .table {
+  --bs-table-color: var(--bs-body-color);
+  --bs-table-bg: transparent;
+  --bs-table-border-color: var(--bs-border-color);
+  --bs-table-striped-color: var(--bs-body-color);
   --bs-table-striped-bg: rgba(255, 255, 255, 0.04);
+  --bs-table-active-color: var(--bs-body-color);
+  --bs-table-active-bg: rgba(var(--bs-primary-rgb), 0.14);
+  --bs-table-hover-color: var(--bs-emphasis-color);
   --bs-table-hover-bg: rgba(255, 255, 255, 0.06);
   color: var(--bs-body-color);
   border-color: var(--bs-border-color);
+}
+
+[data-bs-theme=dark] .table > :not(caption) > * > * {
+  color: var(--bs-table-color-state, var(--bs-table-color-type, var(--bs-table-color)));
+  background-color: var(--bs-table-bg);
 }
 
 [data-bs-theme=dark] .table > :not(caption) > * {
@@ -136,6 +148,10 @@
 
 [data-bs-theme=dark] .table > thead {
   border-bottom-color: var(--bs-border-color);
+}
+
+[data-bs-theme=dark] .table-hover > tbody > tr:hover > * {
+  color: var(--bs-table-hover-color);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -531,6 +547,110 @@
 /* ── Textos heredados ────────────────────────────────────── */
 [data-bs-theme=dark] .text-dark {
   color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme=dark] .text-body,
+[data-bs-theme=dark] .text-black,
+[data-bs-theme=dark] .text-black-50 {
+  color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme=dark] .text-secondary,
+[data-bs-theme=dark] .text-body-secondary {
+  color: var(--bs-secondary-color) !important;
+}
+
+[data-bs-theme=dark] .card,
+[data-bs-theme=dark] .card-body,
+[data-bs-theme=dark] .pc-container,
+[data-bs-theme=dark] .pc-content {
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme=dark] .card-header h1,
+[data-bs-theme=dark] .card-header h2,
+[data-bs-theme=dark] .card-header h3,
+[data-bs-theme=dark] .card-header h4,
+[data-bs-theme=dark] .card-header h5,
+[data-bs-theme=dark] .card-header h6,
+[data-bs-theme=dark] .card-body h1,
+[data-bs-theme=dark] .card-body h2,
+[data-bs-theme=dark] .card-body h3,
+[data-bs-theme=dark] .card-body h4,
+[data-bs-theme=dark] .card-body h5,
+[data-bs-theme=dark] .card-body h6 {
+  color: var(--bs-emphasis-color);
+}
+
+[data-bs-theme=dark] code,
+[data-bs-theme=dark] .font-monospace {
+  color: #f0abfc;
+}
+
+[data-bs-theme=dark] .bg-body-secondary,
+[data-bs-theme=dark] .bg-body-tertiary,
+[data-bs-theme=dark] .bg-light-subtle {
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme=dark] .form-floating > .form-control:not(:placeholder-shown) ~ label,
+[data-bs-theme=dark] .form-floating > .form-control:focus ~ label,
+[data-bs-theme=dark] .form-floating > .form-select ~ label {
+  color: var(--bs-secondary-color);
+}
+
+[data-bs-theme=dark] .form-floating > input {
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme=dark] .datepicker {
+  color: var(--bs-body-color);
+  background-color: var(--bs-secondary-bg);
+  border-color: var(--bs-border-color);
+}
+
+[data-bs-theme=dark] .datepicker thead th,
+[data-bs-theme=dark] .datepicker thead th.datepicker-switch,
+[data-bs-theme=dark] .datepicker thead th.next,
+[data-bs-theme=dark] .datepicker thead th.prev,
+[data-bs-theme=dark] .datepicker thead th.datepicker-switch i,
+[data-bs-theme=dark] .datepicker thead th.next i,
+[data-bs-theme=dark] .datepicker thead th.prev i,
+[data-bs-theme=dark] .datepicker thead th.dow,
+[data-bs-theme=dark] .datepicker tbody tr > td.day,
+[data-bs-theme=dark] .datepicker tbody tr > td.day.old,
+[data-bs-theme=dark] .datepicker tbody tr > td.day.new,
+[data-bs-theme=dark] .datepicker tbody tr > td span.hour,
+[data-bs-theme=dark] .datepicker tbody tr > td span.minute,
+[data-bs-theme=dark] .datepicker tbody tr > td span.month,
+[data-bs-theme=dark] .datepicker tbody tr > td span.year {
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme=dark] .datepicker thead th.datepicker-switch:hover,
+[data-bs-theme=dark] .datepicker thead th.next:hover,
+[data-bs-theme=dark] .datepicker thead th.prev:hover,
+[data-bs-theme=dark] .datepicker tbody tr > td.day:hover,
+[data-bs-theme=dark] .datepicker tbody tr > td span.hour:hover,
+[data-bs-theme=dark] .datepicker tbody tr > td span.minute:hover,
+[data-bs-theme=dark] .datepicker tbody tr > td span.month:hover,
+[data-bs-theme=dark] .datepicker tbody tr > td span.year:hover {
+  color: var(--bs-emphasis-color);
+  background-color: var(--bs-tertiary-bg);
+}
+
+[data-bs-theme=dark] .dropzone,
+[data-bs-theme=dark] .dropzone-multi .dropzone-item {
+  color: var(--bs-body-color);
+  background-color: var(--bs-secondary-bg);
+  border-color: var(--bs-border-color);
+}
+
+[data-bs-theme=dark] .dropzone .dropzone-msg-title,
+[data-bs-theme=dark] .dropzone .dropzone-msg-desc,
+[data-bs-theme=dark] .dropzone-multi .dropzone-item .dropzone-file .dropzone-filename,
+[data-bs-theme=dark] .dropzone-multi .dropzone-item .dropzone-file .dropzone-filename b {
+  color: var(--bs-body-color);
 }
 
 /* ── Login / Auth ────────────────────────────────────────── */
