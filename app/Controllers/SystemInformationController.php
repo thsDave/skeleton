@@ -12,6 +12,7 @@ use Core\Logger;
 use App\Models\SystemSetting;
 use App\Models\UserManual;
 use App\Models\Status;
+use App\Services\NotificationService;
 use App\Services\UploadService;
 
 class SystemInformationController extends Controller
@@ -179,6 +180,7 @@ class SystemInformationController extends Controller
                     'description' => "Manual subido: {$title}",
                     'new_values' => ['title' => $title, 'file_name' => $result['original_name'], 'file_size' => $result['size']],
                     'status' => 'success']);
+                (new NotificationService())->notifyManualUploaded($title, (int)Auth::id());
                 Redirect::withSuccess('/system-information', __('manuals.uploaded_ok'));
             } else {
                 $uploadSvc->delete($result['filename'], 'user_manuals');

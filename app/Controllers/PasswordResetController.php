@@ -14,6 +14,7 @@ use App\Models\AuthenticationSettings;
 use App\Models\User;
 use App\Models\PasswordReset;
 use App\Services\Mailer;
+use App\Services\NotificationService;
 use App\Services\PasswordPolicyService;
 use App\Services\UserSessionService;
 
@@ -306,6 +307,7 @@ class PasswordResetController extends Controller
             'status'      => 'success',
             'user_id'     => null,
         ]);
+        (new NotificationService())->notifyPasswordChanged((int)$userId);
 
         $this->view('auth.reset_success');
     }

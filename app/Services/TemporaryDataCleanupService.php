@@ -17,6 +17,7 @@ class TemporaryDataCleanupService
         'revoked_sessions' => 90,
         'login_attempts' => 90,
         'password_histories' => 0,
+        'read_notifications' => 90,
         'logs' => 30,
         'temp_files' => 7,
     ];
@@ -37,6 +38,7 @@ class TemporaryDataCleanupService
             'revoked_sessions' => $this->revokedSessionsSummary($retention['revoked_sessions']),
             'login_attempts' => $this->loginAttemptsSummary($retention['login_attempts']),
             'password_histories' => $this->passwordHistoriesSummary(),
+            'read_notifications' => $this->readNotificationsSummary($retention['read_notifications']),
             'logs' => $this->logsSummary($retention['logs']),
             'temp_files' => $this->tempFilesSummary($retention['temp_files']),
         ];
@@ -57,6 +59,7 @@ class TemporaryDataCleanupService
                     'revoked_sessions' => $this->cleanupRevokedSessions($retention[$item]),
                     'login_attempts' => $this->cleanupLoginAttempts($retention[$item]),
                     'password_histories' => $this->cleanupPasswordHistories(),
+                    'read_notifications' => $this->cleanupReadNotifications($retention[$item]),
                     'logs' => $this->cleanupLogs($retention[$item]),
                     'temp_files' => $this->cleanupTempFiles($retention[$item]),
                 };
@@ -193,6 +196,21 @@ class TemporaryDataCleanupService
         return $this->summaryItem('logs', $days, count($files), 'Archivos .log antiguos. No muestra ni registra contenido de logs.', true, 'files');
     }
 
+    private function readNotificationsSummary(int $days): array
+    {
+        if (!$this->tableExists('tbl_notifications')) {
+            return $this->unavailable('read_notifications', $days);
+        }
+
+        $count = $this->count(
+            'tbl_notifications',
+            'read_at IS NOT NULL AND read_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+            [$days]
+        );
+
+        return $this->summaryItem('read_notifications', $days, $count, 'Solo notificaciones leidas antiguas. No elimina notificaciones no leidas.');
+    }
+
     private function tempFilesSummary(int $days): array
     {
         $files = $this->oldFiles($this->tempDirectories(), $days, null);
@@ -263,6 +281,16 @@ class TemporaryDataCleanupService
         }
 
         return ['status' => 'success', 'deleted' => $deleted, 'message' => 'Historial antiguo eliminado conservando la politica vigente.'];
+    }
+
+    private function cleanupReadNotifications(int $days): array
+    {
+        return $this->deleteRows(
+            'read_notifications',
+            'tbl_notifications',
+            'read_at IS NOT NULL AND read_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+            [$days]
+        );
     }
 
     private function cleanupLogs(int $days): array

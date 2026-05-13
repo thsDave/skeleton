@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Status;
 use App\Models\LoginAttempt;
+use App\Services\NotificationService;
 use App\Services\PasswordPolicyService;
 use App\Services\UploadService;
 use App\Services\ExcelExportService;
@@ -481,6 +482,7 @@ class UsersController extends Controller
                     'entity' => 'user', 'entity_id' => $userId,
                     'description' => "Contraseña de usuario ID {$userId} cambiada por admin ID " . Auth::id(),
                     'status' => 'success']);
+                (new NotificationService())->notifyPasswordChanged((int)$userId);
             }
             $prevForce = (int)($user['force_password_change'] ?? 0);
             if ($forcePasswordChange !== $prevForce) {

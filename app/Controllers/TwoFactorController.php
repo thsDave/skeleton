@@ -14,6 +14,7 @@ use App\Models\TwoFactorCode;
 use App\Models\MfaSettings;
 use App\Services\TwoFactorService;
 use App\Services\Mailer;
+use App\Services\NotificationService;
 use App\Services\UserSessionService;
 
 class TwoFactorController extends Controller
@@ -169,6 +170,7 @@ class TwoFactorController extends Controller
             'description' => '2FA habilitado (email)',
             'status'      => 'success',
         ]);
+        (new NotificationService())->notifyMfaEnabled((int)$authUser['id']);
 
         Session::flash('success', __('2fa.enabled_success') . ($closedSessions > 0 ? ' ' . __('sessions.other_sessions_closed') : ''));
         Redirect::to('/profile/two-factor');
@@ -275,6 +277,7 @@ class TwoFactorController extends Controller
             'description' => '2FA habilitado (authenticator)',
             'status'      => 'success',
         ]);
+        (new NotificationService())->notifyMfaEnabled((int)$authUser['id']);
 
         Session::flash('success', __('2fa.enabled_success') . ($closedSessions > 0 ? ' ' . __('sessions.other_sessions_closed') : ''));
         Redirect::to('/profile/two-factor');

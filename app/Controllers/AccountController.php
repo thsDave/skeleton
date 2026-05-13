@@ -9,6 +9,7 @@ use App\Models\SmtpSettings;
 use App\Models\User;
 use App\Models\UserExternalAccount;
 use App\Services\Mailer;
+use App\Services\NotificationService;
 use App\Services\PasswordPolicyService;
 use App\Services\UserSessionService;
 use Core\Audit;
@@ -249,6 +250,7 @@ class AccountController extends Controller
                 'new_values' => ['email' => $pending['new_email']],
                 'status' => 'success',
             ]);
+            (new NotificationService())->notifyEmailUpdated((int)$userId);
             $message = __('account.email_change_success');
             if ($closedSessions > 0) {
                 $message .= ' ' . __('sessions.other_sessions_closed');
@@ -493,6 +495,7 @@ class AccountController extends Controller
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Contraseña de cuenta actualizada',
                 'status' => 'success']);
+            (new NotificationService())->notifyPasswordChanged((int)$id);
             $message = 'Contraseña actualizada correctamente.';
             if ($closedSessions > 0) {
                 $message .= ' ' . __('sessions.other_sessions_closed');

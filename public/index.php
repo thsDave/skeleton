@@ -63,6 +63,7 @@ use App\Controllers\LanguagesController;
 use App\Controllers\SystemInformationController;
 use App\Controllers\SystemHealthController;
 use App\Controllers\MaintenanceController;
+use App\Controllers\NotificationsController;
 use App\Controllers\LockController;
 use App\Controllers\SecurityController;
 use App\Controllers\RolesPermissionsController;
@@ -157,6 +158,12 @@ $router->get('/system-health',               [SystemHealthController::class, 'in
 // Maintenance
 $router->get('/maintenance/cleanup',         [MaintenanceController::class, 'cleanup']);
 $router->post('/maintenance/cleanup/run',    [MaintenanceController::class, 'runCleanup']);
+
+// Notifications
+$router->get('/notifications',                     [NotificationsController::class, 'index']);
+$router->get('/notifications/read/{id}',           [NotificationsController::class, 'read']);
+$router->post('/notifications/mark-read/{id}',     [NotificationsController::class, 'markRead']);
+$router->post('/notifications/mark-all-read',      [NotificationsController::class, 'markAllRead']);
 
 // Manuals
 $router->get('/manuals/create',              [SystemInformationController::class, 'createManual']);

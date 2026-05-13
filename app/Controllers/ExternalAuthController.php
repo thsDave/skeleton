@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\TwoFactorCode;
 use App\Services\ExternalAuthService;
 use App\Services\Mailer;
+use App\Services\NotificationService;
 use App\Services\TwoFactorService;
 
 class ExternalAuthController extends Controller
@@ -378,6 +379,7 @@ class ExternalAuthController extends Controller
                 'status'      => 'success',
                 'user_id'     => $userByEmail['id'],
             ]);
+            (new NotificationService())->notifyExternalAccountLinked((int)$userByEmail['id'], (string)$providerName);
             (new ExternalAuthProvider())->markVerified((int) $providerRow['id']);
             $this->completeLogin($userByEmail, $provider, $providerEmail);
             return;
@@ -558,6 +560,7 @@ class ExternalAuthController extends Controller
             'status'      => 'success',
             'user_id'     => $userId,
         ]);
+        (new NotificationService())->notifyExternalAccountLinked((int)$userId, (string)$providerName);
 
         Session::flash('success', __('account.provider_linked'));
         Redirect::to('/account');

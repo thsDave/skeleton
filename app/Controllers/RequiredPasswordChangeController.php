@@ -11,6 +11,7 @@ use Core\Redirect;
 use Core\Session;
 use Core\Validator;
 use App\Models\User;
+use App\Services\NotificationService;
 use App\Services\PasswordPolicyService;
 use App\Services\UserSessionService;
 
@@ -140,6 +141,7 @@ class RequiredPasswordChangeController extends Controller
             'status'      => 'success',
             'user_id'     => $userId,
         ]);
+        (new NotificationService())->notifyPasswordChanged((int)$userId);
 
         $message = __('password_policy.password_updated');
         if ($closedSessions > 0) {

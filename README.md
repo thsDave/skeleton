@@ -216,6 +216,9 @@ DB_PASSWORD=
 | `021_add_excel_export_permissions.sql` | Permisos para exportar Usuarios y Auditoria a Excel |
 | `022_add_user_sessions.sql` | Sesiones activas por usuario y permisos de revocacion |
 | `023_add_session_history_permissions.sql` | Permisos para historial de sesiones propio y administrativo |
+| `024_add_system_health_permission.sql` | Permiso para Salud del Sistema |
+| `025_add_maintenance_cleanup_permissions.sql` | Permisos para limpieza de datos temporales |
+| `026_add_notifications.sql` | Tabla y permisos de notificaciones internas |
 
 ### Paso 5 — Acceder al sistema
 
@@ -464,10 +467,20 @@ La presentación visual del dashboard se refuerza con clases acotadas en `public
 ### Limpieza de datos temporales
 - El módulo **Mantenimiento → Limpieza de datos temporales** está disponible en `/maintenance/cleanup`.
 - Requiere permisos `maintenance.cleanup.view` para consultar y `maintenance.cleanup.run` para ejecutar; se agregan con `database/025_add_maintenance_cleanup_permissions.sql`.
-- Puede limpiar tokens de recuperación vencidos/usados, códigos de cambio de correo vencidos/usados, sesiones revocadas antiguas, intentos fallidos antiguos, historial de contraseñas excedente, logs antiguos y archivos temporales de rutas permitidas.
+- Puede limpiar tokens de recuperación vencidos/usados, códigos de cambio de correo vencidos/usados, sesiones revocadas antiguas, intentos fallidos antiguos, historial de contraseñas excedente, notificaciones leídas antiguas, logs antiguos y archivos temporales de rutas permitidas.
 - Nunca elimina usuarios, roles, permisos, sesiones activas, manuales activos, configuración SMTP/MFA/OAuth, política de contraseñas ni auditoría reciente.
 - La limpieza se ejecuta únicamente por POST con CSRF y confirmación SweetAlert2; no hay limpieza automática al abrir la pantalla.
 - Registra auditoría con `maintenance.cleanup_*` y cantidades eliminadas, sin guardar tokens, hashes, códigos, contenido de logs ni rutas absolutas sensibles.
+
+### Notificaciones internas
+- Las notificaciones internas usan `tbl_notifications` y se consultan desde la campanita del topbar o `/notifications`.
+- El topbar muestra contador de no leídas, las 5 notificaciones recientes, enlace **Ver todas** y acción **Marcar todas como leídas**.
+- Eventos iniciales que generan notificaciones: cambio de contraseña propio, correo actualizado, MFA activado, cuenta externa vinculada y nuevo manual subido.
+- Las notificaciones solo pertenecen al usuario destino; no se muestran ni se pueden marcar notificaciones de otros usuarios.
+- La URL guardada debe ser interna del sistema; no se permiten redirecciones externas arbitrarias.
+- No se guardan contraseñas, tokens, secretos OAuth, códigos MFA, cookies ni datos sensibles.
+- Permisos: `notifications.view` y `notifications.mark_read`. Se agregan con `database/026_add_notifications.sql`.
+- La limpieza de datos temporales puede eliminar solo notificaciones leídas antiguas; nunca elimina notificaciones no leídas.
 
 ### Configuración SMTP administrable
 - El administrador puede configurar el servidor de correo saliente desde **Seguridad → SMTP** sin editar archivos.
