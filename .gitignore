@@ -51,3 +51,7 @@ public/uploads/manuals/*
 
 # NOTA: database/db_skeleton.sql SÍ se incluye en el repo
 # porque contiene solo la estructura base (sin datos reales sensibles).
+
+# ─── Carpetas de trabajo / análisis (no versionar) ────────────
+recursos/
+resultados/
