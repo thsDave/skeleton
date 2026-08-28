@@ -42,6 +42,18 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
 header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://cdn.datatables.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.datatables.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: https://cdn.datatables.net;");
 
+// HSTS — solo si la petición actual llega por HTTPS Y el entorno es de
+// producción. No se envía en local/staging (aunque se sirvieran por HTTPS)
+// para evitar que el navegador fuerce HTTPS-only sobre un dominio/certificado
+// de pruebas. No se usa "preload" (requiere registro externo del dominio).
+$_isHttpsRequest = (
+    (($_SERVER['HTTPS'] ?? '') !== '' && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+    || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https'
+);
+if ($_isHttpsRequest && ($appConfig['env'] ?? '') === 'production') {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+}
+
 // Iniciar sesión
 use Core\Session;
 Session::start();

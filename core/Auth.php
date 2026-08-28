@@ -205,25 +205,10 @@ class Auth
 
     private static function sanitizeIntendedUrl(): string
     {
-        $uri = $_SERVER['REQUEST_URI'] ?? '';
-        if (!$uri) {
-            return '/dashboard';
-        }
+        // Sanitización genérica (open redirect) centralizada en Redirect::sanitizeInternalPath().
+        $uri = Redirect::sanitizeInternalPath($_SERVER['REQUEST_URI'] ?? null, '/dashboard');
 
-        $uri = parse_url($uri, PHP_URL_PATH) ?: '';
-
-        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
-        if ($scriptDir && $scriptDir !== '/' && str_starts_with($uri, $scriptDir)) {
-            $uri = substr($uri, strlen($scriptDir));
-        }
-
-        $uri = '/' . ltrim($uri, '/');
-        $uri = rtrim($uri, '/') ?: '/';
-
-        if (preg_match('#^//#', $uri) || str_contains($uri, '://')) {
-            return '/dashboard';
-        }
-
+        // Regla propia de Auth: no ofrecer /lock ni /unlock como destino tras desbloquear.
         if (in_array(strtolower($uri), ['/lock', '/unlock'], true)) {
             return '/dashboard';
         }

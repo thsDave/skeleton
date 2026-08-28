@@ -13,11 +13,39 @@ class Redirect
         exit;
     }
 
-    public static function back(): void
+    /**
+     * Sanea una URL potencialmente no confiable (ej. HTTP_REFERER o
+     * REQUEST_URI) y devuelve únicamente una ruta interna segura para este
+     * mismo sitio. Descarta el host/esquema de cualquier URL absoluta
+     * (evita open redirect) y rechaza rutas protocol-relative ('//host/...').
+     */
+    public static function sanitizeInternalPath(?string $rawUrl, string $fallback = '/dashboard'): string
     {
-        $referer = $_SERVER['HTTP_REFERER'] ?? '/';
-        header('Location: ' . $referer);
-        exit;
+        if (!$rawUrl) {
+            return $fallback;
+        }
+
+        $path = parse_url($rawUrl, PHP_URL_PATH) ?: '';
+
+        $scriptDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/');
+        if ($scriptDir && $scriptDir !== '/' && str_starts_with($path, $scriptDir)) {
+            $path = substr($path, strlen($scriptDir));
+        }
+
+        $path = '/' . ltrim($path, '/');
+        $path = rtrim($path, '/') ?: '/';
+
+        if (preg_match('#^//#', $path) || str_contains($path, '://')) {
+            return $fallback;
+        }
+
+        return $path;
+    }
+
+    public static function back(string $fallback = '/dashboard'): void
+    {
+        $referer = $_SERVER['HTTP_REFERER'] ?? null;
+        self::to(self::sanitizeInternalPath($referer, $fallback));
     }
 
     public static function withSuccess(string $path, string $message): void

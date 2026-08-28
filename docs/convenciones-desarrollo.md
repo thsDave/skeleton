@@ -29,6 +29,39 @@ Esta guia resume las reglas de estilo y arquitectura para extender Skeleton como
 - Usar `Redirect` para redirecciones internas.
 - No ejecutar SQL directamente si ya existe un modelo adecuado.
 
+## CSRF
+
+- Token almacenado en sesión (`Core\CSRF`), generado con `random_bytes(32)`.
+- En formularios: imprimir `Core\CSRF::field()` (campo oculto `_csrf_token`).
+- En peticiones AJAX: leer el meta `<meta name="csrf-token">` (ya presente en
+  `app/Views/layouts/header.php`) y enviarlo como parte del body/POST.
+- Validar con `CSRF::validateOrFail()` en toda acción `POST` sensible; esto
+  responde 403 y detiene la ejecución si el token no coincide, y **regenera
+  el token tras una validación exitosa** (no es un token estable por sesión).
+  Esto es intencional: evita reutilización del mismo token entre distintas
+  acciones sensibles consecutivas. Efecto práctico para quien desarrolle
+  nuevas vistas: si un formulario queda abierto en una pestaña después de
+  que otra acción ya usó y regeneró el token en esa misma sesión, ese
+  formulario antiguo devolverá 403 al enviarse y deberá recargarse.
+- `CSRF::verify()` (sin `Fail`) solo verifica sin regenerar el token; se usa
+  en endpoints que gestionan su propia respuesta JSON/AJAX de forma manual
+  (ej. `LockController::lockSession()`) para no invalidar el formulario
+  visible en pantalla. Úsalo solo cuando el propio endpoint controle su
+  respuesta; para el resto, usar `validateOrFail()`.
+
+## Cifrado (Crypt)
+
+- `Core\Crypt` implementa cifrado **reversible** (AES-256-CBC + HMAC-SHA256,
+  clave derivada de `APP_KEY`), para secretos que el sistema necesita volver
+  a leer en texto plano (ej. contraseña SMTP, secreto TOTP cifrado en BD).
+- `Crypt` **no debe usarse para contraseñas de usuario** ni para ningún dato
+  que deba ser irreversible. Las contraseñas siempre se manejan con
+  `password_hash()` / `password_verify()` (patrón ya usado en `AuthController`,
+  `UsersController`, `AccountController`, `LockController`, etc.).
+- Nunca registrar en auditoría/logs el resultado de `Crypt::decrypt()` ni
+  ningún valor cifrado reversible — ver la lista completa de datos que no
+  deben registrarse en `docs/permisos-y-auditoria.md`.
+
 ## Modelos
 
 - Extender `Core\Model`.
