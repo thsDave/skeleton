@@ -235,21 +235,32 @@ foreach ($linkedAccounts as $la) {
 </div>
 <?php endif; ?>
 
-<?php $extraScript = <<<'JS'
+<?php
+// Textos traducidos, generados en PHP y sustituidos por marcador en el
+// NOWDOC (no se puede evaluar __() dentro de un bloque <<<'JS', y el
+// script usa jQuery/JS con muchos signos $ que no deben interpolarse
+// como ocurriria con un HEREDOC).
+$_acctUnlinkDefault = json_encode(__('account.unlink_default_provider'), JSON_UNESCAPED_UNICODE);
+$_acctUnlinkTitle   = json_encode(__('account.unlink_confirm_title'), JSON_UNESCAPED_UNICODE);
+$_acctUnlinkHtml    = json_encode(__('account.unlink_confirm_html', ['provider' => '__PROVIDER_NAME__']), JSON_UNESCAPED_UNICODE);
+$_acctUnlinkConfirm = json_encode(__('account.unlink_confirm_yes'), JSON_UNESCAPED_UNICODE);
+$_acctUnlinkCancel  = json_encode(__('buttons.cancel'), JSON_UNESCAPED_UNICODE);
+
+$extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.form-unlink-account').forEach(function (form) {
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var pName = form.querySelector('[name="provider_name"]');
-      var name  = pName ? pName.value : 'este proveedor';
+      var name  = pName ? pName.value : __ACCT_UNLINK_DEFAULT__;
       Swal.fire({
         icon: 'warning',
-        title: '¿Desvincular cuenta?',
-        html: '¿Deseas desvincular tu cuenta de <strong>' + name + '</strong>?<br><small class="text-muted">Ya no podrás iniciar sesión con este proveedor.</small>',
+        title: __ACCT_UNLINK_TITLE__,
+        html: __ACCT_UNLINK_HTML__.replace('__PROVIDER_NAME__', name),
         showCancelButton: true,
-        confirmButtonText: 'Sí, desvincular',
-        cancelButtonText: 'Cancelar',
+        confirmButtonText: __ACCT_UNLINK_CONFIRM__,
+        cancelButtonText: __ACCT_UNLINK_CANCEL__,
         confirmButtonColor: '#d63031',
         cancelButtonColor: '#6c757d'
       }).then(function (result) {
@@ -260,6 +271,14 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 JS;
+
+$extraScript = strtr($extraScript, [
+    '__ACCT_UNLINK_DEFAULT__' => $_acctUnlinkDefault,
+    '__ACCT_UNLINK_TITLE__'   => $_acctUnlinkTitle,
+    '__ACCT_UNLINK_HTML__'    => $_acctUnlinkHtml,
+    '__ACCT_UNLINK_CONFIRM__' => $_acctUnlinkConfirm,
+    '__ACCT_UNLINK_CANCEL__'  => $_acctUnlinkCancel,
+]);
 ?>
 
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>

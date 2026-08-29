@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
   <?php if ($_swSuccess): ?>
   Swal.fire({
     icon: 'success',
-    title: '¡Listo!',
+    title: <?= json_encode(__('alerts.success'), JSON_UNESCAPED_UNICODE) ?>,
     text: <?= json_encode($_swSuccess, JSON_UNESCAPED_UNICODE) ?>,
     timer: 3500,
     timerProgressBar: true,
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
   <?php if ($_swError): ?>
   Swal.fire({
     icon: 'error',
-    title: 'Error',
+    title: <?= json_encode(__('alerts.error'), JSON_UNESCAPED_UNICODE) ?>,
     text: <?= json_encode($_swError, JSON_UNESCAPED_UNICODE) ?>,
     confirmButtonColor: '#4680ff'
   });
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function () {
   html += '</ul>';
   Swal.fire({
     icon: 'error',
-    title: 'Revisa los datos ingresados',
+    title: <?= json_encode(__('alerts.validation_title'), JSON_UNESCAPED_UNICODE) ?>,
     html: html,
     confirmButtonColor: '#4680ff',
     customClass: { htmlContainer: 'text-start' }

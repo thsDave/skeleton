@@ -185,7 +185,7 @@ preset_change('preset-1');
 document.addEventListener('DOMContentLoaded', function () {
   Swal.fire({
     icon: 'success',
-    title: '¡Listo!',
+    title: <?= json_encode(__('alerts.success'), JSON_UNESCAPED_UNICODE) ?>,
     text: <?= json_encode($flashSuccess, JSON_UNESCAPED_UNICODE) ?>,
     timer: 3500,
     timerProgressBar: true,
@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function () {
 document.addEventListener('DOMContentLoaded', function () {
   Swal.fire({
     icon: 'error',
-    title: 'Error',
+    title: <?= json_encode(__('alerts.error'), JSON_UNESCAPED_UNICODE) ?>,
     text: <?= json_encode($flashError, JSON_UNESCAPED_UNICODE) ?>,
     confirmButtonColor: '#4680ff'
   });

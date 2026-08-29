@@ -311,6 +311,13 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
 </div>
 
 <?php
+// Textos traducidos, generados en PHP y sustituidos por marcador en el
+// NOWDOC (no se puede evaluar __() dentro de un bloque <<<'JS').
+$_ppWeakTitle    = json_encode(__('password_policy.error_weak_title'), JSON_UNESCAPED_UNICODE);
+$_ppWeakText     = json_encode(__('password_policy.error_weak_policy'), JSON_UNESCAPED_UNICODE);
+$_ppInvalidTitle = json_encode(__('password_policy.error_invalid_title'), JSON_UNESCAPED_UNICODE);
+$_ppInvalidText  = json_encode(__('password_policy.error_invalid_range'), JSON_UNESCAPED_UNICODE);
+
 $extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -326,8 +333,8 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         Swal.fire({
           icon: 'error',
-          title: 'Política débil',
-          text: 'La longitud mínima debe ser al menos 8 caracteres cuando la política está activa.',
+          title: __PP_WEAK_TITLE__,
+          text: __PP_WEAK_TEXT__,
           confirmButtonColor: '#4680ff'
         });
         return;
@@ -336,8 +343,8 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         Swal.fire({
           icon: 'error',
-          title: 'Valor inválido',
-          text: 'La longitud mínima debe estar entre 6 y 128 caracteres.',
+          title: __PP_INVALID_TITLE__,
+          text: __PP_INVALID_TEXT__,
           confirmButtonColor: '#4680ff'
         });
       }
@@ -346,6 +353,13 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 JS;
+
+$extraScript = strtr($extraScript, [
+    '__PP_WEAK_TITLE__'    => $_ppWeakTitle,
+    '__PP_WEAK_TEXT__'     => $_ppWeakText,
+    '__PP_INVALID_TITLE__' => $_ppInvalidTitle,
+    '__PP_INVALID_TEXT__'  => $_ppInvalidText,
+]);
 
 require dirname(dirname(__DIR__)) . '/layouts/footer.php';
 ?>

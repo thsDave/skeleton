@@ -169,12 +169,28 @@ require dirname(__DIR__) . '/layouts/main.php';
 </div>
 
 <?php
+// Textos traducidos, generados en PHP y sustituidos por marcador en el
+// NOWDOC (no se puede evaluar __() dentro de un bloque <<<'JS', y el
+// script usa jQuery con signos $ que no deben interpolarse).
+$_uiDataTableLangUrl = json_encode(
+    \Core\Lang::getLocale() === 'es'
+        ? 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+        : 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/en-GB.json'
+);
+$_uiInactivateTitle = json_encode(__('users.confirm_inactivate'), JSON_UNESCAPED_UNICODE);
+$_uiInactivateHtml  = json_encode(__('users.inactivate_body', ['name' => '__USER_NAME__']), JSON_UNESCAPED_UNICODE);
+$_uiYesInactivate   = json_encode(__('users.yes_inactivate'), JSON_UNESCAPED_UNICODE);
+$_uiUnlockTitle     = json_encode(__('users.unlock_confirm'), JSON_UNESCAPED_UNICODE);
+$_uiUnlockHtml      = json_encode(__('users.unlock_confirm_html', ['name' => '__USER_NAME__']), JSON_UNESCAPED_UNICODE);
+$_uiYesUnlock       = json_encode(__('users.yes_unlock'), JSON_UNESCAPED_UNICODE);
+$_uiCancel          = json_encode(__('buttons.cancel'), JSON_UNESCAPED_UNICODE);
+
 $extraScript = <<<'JS'
 <script>
 $(document).ready(function () {
   $('#usersTable').DataTable({
     language: {
-      url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+      url: __UI_DT_LANG_URL__
     },
     columnDefs: [
       { orderable: false, targets: [1, 8] }
@@ -187,14 +203,14 @@ $(document).ready(function () {
     var form = $(this).closest('form');
     var name = $(this).data('name');
     Swal.fire({
-      title: '¿Inactivar usuario?',
-      html: 'El usuario <strong>' + name + '</strong> no podrá iniciar sesión.',
+      title: __UI_INACTIVATE_TITLE__,
+      html: __UI_INACTIVATE_HTML__.replace('__USER_NAME__', name),
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#d33',
       cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Sí, inactivar',
-      cancelButtonText: 'Cancelar'
+      confirmButtonText: __UI_YES_INACTIVATE__,
+      cancelButtonText: __UI_CANCEL__
     }).then(function (result) {
       if (result.isConfirmed) form.submit();
     });
@@ -204,14 +220,14 @@ $(document).ready(function () {
     var form = $(this).closest('form');
     var name = $(this).data('name');
     Swal.fire({
-      title: '¿Desbloquear usuario?',
-      html: 'Se quitará el bloqueo de inicio de sesión a <strong>' + name + '</strong>.',
+      title: __UI_UNLOCK_TITLE__,
+      html: __UI_UNLOCK_HTML__.replace('__USER_NAME__', name),
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#f39c12',
       cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Sí, desbloquear',
-      cancelButtonText: 'Cancelar'
+      confirmButtonText: __UI_YES_UNLOCK__,
+      cancelButtonText: __UI_CANCEL__
     }).then(function (result) {
       if (result.isConfirmed) form.submit();
     });
@@ -219,5 +235,16 @@ $(document).ready(function () {
 });
 </script>
 JS;
+
+$extraScript = strtr($extraScript, [
+    '__UI_DT_LANG_URL__'     => $_uiDataTableLangUrl,
+    '__UI_INACTIVATE_TITLE__'=> $_uiInactivateTitle,
+    '__UI_INACTIVATE_HTML__' => $_uiInactivateHtml,
+    '__UI_YES_INACTIVATE__'  => $_uiYesInactivate,
+    '__UI_UNLOCK_TITLE__'    => $_uiUnlockTitle,
+    '__UI_UNLOCK_HTML__'     => $_uiUnlockHtml,
+    '__UI_YES_UNLOCK__'      => $_uiYesUnlock,
+    '__UI_CANCEL__'          => $_uiCancel,
+]);
 ?>
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>

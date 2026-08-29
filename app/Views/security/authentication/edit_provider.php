@@ -367,14 +367,25 @@ $hasSecret = !empty($provider['client_secret']);
   </div>
 </div>
 
-<?php $extraScript = <<<'JS'
+<?php
+// Textos traducidos, generados en PHP y sustituidos por marcador en el
+// NOWDOC (no se puede evaluar __() dentro de un bloque <<<'JS').
+$_epErrorTitle    = json_encode(__('alerts.error'), JSON_UNESCAPED_UNICODE);
+$_epMsgCopied     = json_encode(__('security_authentication.redirect_uri_copied'), JSON_UNESCAPED_UNICODE);
+$_epMsgFailed     = json_encode(__('security_authentication.redirect_uri_copy_failed'), JSON_UNESCAPED_UNICODE);
+$_epTestTitle     = json_encode(__('security_authentication.test_real_oauth_title'), JSON_UNESCAPED_UNICODE);
+$_epTestHtml      = json_encode(__('security_authentication.test_real_oauth_html'), JSON_UNESCAPED_UNICODE);
+$_epTestContinue  = json_encode(__('security_authentication.test_real_oauth_continue'), JSON_UNESCAPED_UNICODE);
+$_epCancel        = json_encode(__('buttons.cancel'), JSON_UNESCAPED_UNICODE);
+
+$extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var btnCopy  = document.getElementById('btnCopyUri');
   var uriInput = document.getElementById('callbackUriDisplay');
 
-  var msgCopied = btnCopy ? (btnCopy.dataset.msgCopied || 'URI copiada correctamente.') : '';
-  var msgFailed = btnCopy ? (btnCopy.dataset.msgFailed || 'No se pudo copiar la URI. Cópiala manualmente.') : '';
+  var msgCopied = btnCopy ? (btnCopy.dataset.msgCopied || __EP_MSG_COPIED__) : '';
+  var msgFailed = btnCopy ? (btnCopy.dataset.msgFailed || __EP_MSG_FAILED__) : '';
 
   function copyToClipboard(text, onSuccess, onError) {
     if (navigator.clipboard && window.isSecureContext) {
@@ -414,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function () {
         function () {
           Swal.fire({
             icon: 'error',
-            title: 'Error',
+            title: __EP_ERROR_TITLE__,
             text: msgFailed,
             confirmButtonColor: '#4680ff'
           });
@@ -440,11 +451,11 @@ document.addEventListener('DOMContentLoaded', function () {
       e.preventDefault();
       Swal.fire({
         icon: 'info',
-        title: 'Prueba OAuth real',
-        html: 'Serás redirigido al proveedor para autenticarte.<br><br>Tras iniciar sesión, regresarás aquí con el resultado de la verificación.',
+        title: __EP_TEST_TITLE__,
+        html: __EP_TEST_HTML__,
         showCancelButton: true,
-        confirmButtonText: 'Continuar',
-        cancelButtonText: 'Cancelar',
+        confirmButtonText: __EP_TEST_CONTINUE__,
+        cancelButtonText: __EP_CANCEL__,
         confirmButtonColor: '#0dcaf0'
       }).then(function (r) {
         if (r.isConfirmed) formTest.submit();
@@ -454,6 +465,16 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 JS;
+
+$extraScript = strtr($extraScript, [
+    '__EP_ERROR_TITLE__'   => $_epErrorTitle,
+    '__EP_MSG_COPIED__'    => $_epMsgCopied,
+    '__EP_MSG_FAILED__'    => $_epMsgFailed,
+    '__EP_TEST_TITLE__'    => $_epTestTitle,
+    '__EP_TEST_HTML__'     => $_epTestHtml,
+    '__EP_TEST_CONTINUE__' => $_epTestContinue,
+    '__EP_CANCEL__'        => $_epCancel,
+]);
 ?>
 
 <?php require dirname(dirname(__DIR__)) . '/layouts/footer.php'; ?>

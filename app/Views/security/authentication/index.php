@@ -450,7 +450,22 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   </div>
 </div>
 
-<?php $extraScript = <<<'JS'
+<?php
+// Textos traducidos, generados en PHP y sustituidos por marcador en el
+// NOWDOC (no se puede evaluar __() dentro de un bloque <<<'JS').
+$_saNoProvidersTitle  = json_encode(__('security_authentication.confirm_no_providers_title'), JSON_UNESCAPED_UNICODE);
+$_saUnderstood        = json_encode(__('security_authentication.confirm_understood'), JSON_UNESCAPED_UNICODE);
+$_saErrorTitle        = json_encode(__('alerts.error'), JSON_UNESCAPED_UNICODE);
+$_saDisableLocalTitle = json_encode(__('security_authentication.confirm_disable_local_title'), JSON_UNESCAPED_UNICODE);
+$_saDisableLocalHtml  = json_encode(__('security_authentication.confirm_disable_local_html'), JSON_UNESCAPED_UNICODE);
+$_saYesContinue       = json_encode(__('security_authentication.confirm_yes_continue'), JSON_UNESCAPED_UNICODE);
+$_saCancel            = json_encode(__('buttons.cancel'), JSON_UNESCAPED_UNICODE);
+$_saDefaultProvider   = json_encode(__('security_authentication.default_provider_name'), JSON_UNESCAPED_UNICODE);
+$_saDisableProvTitle  = json_encode(__('security_authentication.confirm_disable_provider_title', ['provider' => '__PROVIDER_NAME__']), JSON_UNESCAPED_UNICODE);
+$_saDisableProvText   = json_encode(__('security_authentication.confirm_disable_provider_text'), JSON_UNESCAPED_UNICODE);
+$_saYesDisable        = json_encode(__('security_authentication.confirm_yes_disable'), JSON_UNESCAPED_UNICODE);
+
+$extraScript = <<<'JS'
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var form                = document.getElementById('formSettings');
@@ -502,10 +517,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (externalSwitch.checked && providersReady === 0) {
         Swal.fire({
           icon: 'warning',
-          title: 'Sin proveedores configurados',
+          title: __SA_NO_PROVIDERS_TITLE__,
           text: msgExternalRequired,
           confirmButtonColor: '#4680ff',
-          confirmButtonText: 'Entendido'
+          confirmButtonText: __SA_UNDERSTOOD__
         }).then(function () {
           externalSwitch.checked = false;
           toggleExternalOptions();
@@ -523,14 +538,14 @@ document.addEventListener('DOMContentLoaded', function () {
       // No methods active
       if (!localOn && !externalOn) {
         e.preventDefault();
-        Swal.fire({ icon: 'error', title: 'Error', text: msgNoMethods, confirmButtonColor: '#4680ff' });
+        Swal.fire({ icon: 'error', title: __SA_ERROR_TITLE__, text: msgNoMethods, confirmButtonColor: '#4680ff' });
         return;
       }
 
       // External enabled but no providers ready — block here too (server will also block)
       if (externalOn && providersReady === 0) {
         e.preventDefault();
-        Swal.fire({ icon: 'error', title: 'Error', text: msgExternalRequired, confirmButtonColor: '#4680ff' });
+        Swal.fire({ icon: 'error', title: __SA_ERROR_TITLE__, text: msgExternalRequired, confirmButtonColor: '#4680ff' });
         return;
       }
 
@@ -538,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (restrictDomains && restrictDomains.checked && allowedDomainsEl && allowedDomainsEl.value.trim() === '') {
         e.preventDefault();
         allowedDomainsEl.focus();
-        Swal.fire({ icon: 'error', title: 'Error', text: msgInvalidDomain, confirmButtonColor: '#4680ff' });
+        Swal.fire({ icon: 'error', title: __SA_ERROR_TITLE__, text: msgInvalidDomain, confirmButtonColor: '#4680ff' });
         return;
       }
 
@@ -547,11 +562,11 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         Swal.fire({
           icon: 'warning',
-          title: 'Advertencia de seguridad',
-          html: '<strong>¿Desactivar el inicio de sesión local?</strong><br><br>Si desactivas el acceso con correo y contraseña, solo podrás entrar mediante proveedores externos.<br><br>Asegúrate de tener tu cuenta vinculada antes de continuar.',
+          title: __SA_DISABLE_LOCAL_TITLE__,
+          html: __SA_DISABLE_LOCAL_HTML__,
           showCancelButton: true,
-          confirmButtonText: 'Sí, continuar',
-          cancelButtonText: 'Cancelar',
+          confirmButtonText: __SA_YES_CONTINUE__,
+          cancelButtonText: __SA_CANCEL__,
           confirmButtonColor: '#d63031',
           cancelButtonColor: '#6c757d'
         }).then(function (result) {
@@ -566,16 +581,16 @@ document.addEventListener('DOMContentLoaded', function () {
     provForm.addEventListener('submit', function (e) {
       var btn     = provForm.querySelector('button[type="submit"]');
       var enabled = btn && btn.dataset.enabled === '1';
-      var name    = btn && btn.dataset.name ? btn.dataset.name : 'este proveedor';
+      var name    = btn && btn.dataset.name ? btn.dataset.name : __SA_DEFAULT_PROVIDER__;
       if (enabled) {
         e.preventDefault();
         Swal.fire({
           icon: 'warning',
-          title: '¿Desactivar ' + name + '?',
-          text: 'Los usuarios no podrán iniciar sesión con este proveedor mientras esté inactivo.',
+          title: __SA_DISABLE_PROV_TITLE__.replace('__PROVIDER_NAME__', name),
+          text: __SA_DISABLE_PROV_TEXT__,
           showCancelButton: true,
-          confirmButtonText: 'Sí, desactivar',
-          cancelButtonText: 'Cancelar',
+          confirmButtonText: __SA_YES_DISABLE__,
+          cancelButtonText: __SA_CANCEL__,
           confirmButtonColor: '#e67e22',
           cancelButtonColor: '#6c757d'
         }).then(function (result) {
@@ -587,6 +602,20 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 JS;
+
+$extraScript = strtr($extraScript, [
+    '__SA_NO_PROVIDERS_TITLE__'  => $_saNoProvidersTitle,
+    '__SA_UNDERSTOOD__'          => $_saUnderstood,
+    '__SA_ERROR_TITLE__'         => $_saErrorTitle,
+    '__SA_DISABLE_LOCAL_TITLE__' => $_saDisableLocalTitle,
+    '__SA_DISABLE_LOCAL_HTML__'  => $_saDisableLocalHtml,
+    '__SA_YES_CONTINUE__'        => $_saYesContinue,
+    '__SA_CANCEL__'              => $_saCancel,
+    '__SA_DEFAULT_PROVIDER__'    => $_saDefaultProvider,
+    '__SA_DISABLE_PROV_TITLE__'  => $_saDisableProvTitle,
+    '__SA_DISABLE_PROV_TEXT__'   => $_saDisableProvText,
+    '__SA_YES_DISABLE__'         => $_saYesDisable,
+]);
 
 require dirname(dirname(__DIR__)) . '/layouts/footer.php';
 ?>

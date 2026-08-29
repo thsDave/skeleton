@@ -293,6 +293,16 @@ $_eSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
 </div>
 
 <?php
+// Textos traducidos, generados en PHP y sustituidos por marcador en el
+// NOWDOC (no se puede evaluar __() dentro de un bloque <<<'JS', y el
+// script usa jQuery con signos $ que no deben interpolarse).
+$_uePwdMatch    = json_encode(__('password.match'), JSON_UNESCAPED_UNICODE);
+$_uePwdNoMatch  = json_encode(__('password.no_match'), JSON_UNESCAPED_UNICODE);
+$_ueUnlockTitle = json_encode(__('users.unlock_confirm'), JSON_UNESCAPED_UNICODE);
+$_ueUnlockHtml  = json_encode(__('users.unlock_confirm_html', ['name' => '__USER_NAME__']), JSON_UNESCAPED_UNICODE);
+$_ueYesUnlock   = json_encode(__('users.yes_unlock'), JSON_UNESCAPED_UNICODE);
+$_ueCancel      = json_encode(__('buttons.cancel'), JSON_UNESCAPED_UNICODE);
+
 $extraScript = <<<'JS'
 <script>
 function previewAvatar(input) {
@@ -337,8 +347,8 @@ function previewAvatar(input) {
     var p = pwdEl.value, c = cfmEl.value;
     if (!c) { matchDiv.innerHTML = ''; return; }
     matchDiv.innerHTML = p === c
-      ? '<span class="text-success small"><i class="ph-fill ph-check-circle me-1"></i>Las contraseñas coinciden.</span>'
-      : '<span class="text-danger small"><i class="ph-fill ph-x-circle me-1"></i>Las contraseñas no coinciden.</span>';
+      ? '<span class="text-success small"><i class="ph-fill ph-check-circle me-1"></i>' + __UE_PWD_MATCH__ + '</span>'
+      : '<span class="text-danger small"><i class="ph-fill ph-x-circle me-1"></i>' + __UE_PWD_NO_MATCH__ + '</span>';
   }
 }());
 
@@ -346,19 +356,28 @@ $(document).on('click', '.btn-unlock-edit', function () {
   var form = $(this).closest('form');
   var name = $(this).data('name');
   Swal.fire({
-    title: '¿Desbloquear usuario?',
-    html: 'Se quitará el bloqueo de inicio de sesión a <strong>' + name + '</strong>.',
+    title: __UE_UNLOCK_TITLE__,
+    html: __UE_UNLOCK_HTML__.replace('__USER_NAME__', name),
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#f39c12',
     cancelButtonColor: '#6c757d',
-    confirmButtonText: 'Sí, desbloquear',
-    cancelButtonText: 'Cancelar'
+    confirmButtonText: __UE_YES_UNLOCK__,
+    cancelButtonText: __UE_CANCEL__
   }).then(function (result) {
     if (result.isConfirmed) form.submit();
   });
 });
 </script>
 JS;
+
+$extraScript = strtr($extraScript, [
+    '__UE_PWD_MATCH__'    => $_uePwdMatch,
+    '__UE_PWD_NO_MATCH__' => $_uePwdNoMatch,
+    '__UE_UNLOCK_TITLE__' => $_ueUnlockTitle,
+    '__UE_UNLOCK_HTML__'  => $_ueUnlockHtml,
+    '__UE_YES_UNLOCK__'   => $_ueYesUnlock,
+    '__UE_CANCEL__'       => $_ueCancel,
+]);
 ?>
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>
