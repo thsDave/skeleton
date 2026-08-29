@@ -1421,6 +1421,8 @@ return [
     'maintenance.read_notifications' => 'Read notifications',
     'maintenance.logs' => 'Old logs',
     'maintenance.temp_files' => 'Temporary files',
+    'maintenance.rate_limits' => 'Expired rate limits',
+    'maintenance.two_factor_codes' => 'Expired/used MFA codes',
     'maintenance.no_active_sessions_deleted' => 'Active sessions and the current session are not deleted.',
     'maintenance.no_critical_data_deleted' => 'Users, roles, permissions, active manuals, and system configuration are not deleted.',
     'maintenance.last_cleanup' => 'Last cleanup',

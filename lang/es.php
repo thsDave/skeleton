@@ -1418,6 +1418,8 @@ return [
     'maintenance.read_notifications' => 'Notificaciones leídas',
     'maintenance.logs' => 'Logs antiguos',
     'maintenance.temp_files' => 'Archivos temporales',
+    'maintenance.rate_limits' => 'Límites de tasa vencidos',
+    'maintenance.two_factor_codes' => 'Códigos MFA vencidos/usados',
     'maintenance.no_active_sessions_deleted' => 'No se eliminan sesiones activas ni la sesión actual.',
     'maintenance.no_critical_data_deleted' => 'No se eliminan usuarios, roles, permisos, manuales activos ni configuración del sistema.',
     'maintenance.last_cleanup' => 'Última limpieza',

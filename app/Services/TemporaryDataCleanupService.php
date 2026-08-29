@@ -6,6 +6,9 @@ use Core\Database;
 use PDO;
 use Throwable;
 
+// RateLimitService (Etapa 3.5) esta en el mismo namespace App\Services, por
+// lo que no requiere "use" — se instancia directamente en cleanupRateLimits().
+
 class TemporaryDataCleanupService
 {
     private PDO $db;
@@ -20,6 +23,15 @@ class TemporaryDataCleanupService
         'read_notifications' => 90,
         'logs' => 30,
         'temp_files' => 7,
+        // Retencion de 1 dia: coincide con el criterio ya implementado en
+        // RateLimitService::cleanupExpired() (fallback 86400 segundos), no con
+        // la retencion de login_attempts (90 dias), porque las filas de rate
+        // limit solo son relevantes durante su ventana activa (minutos/horas),
+        // no como historial de seguridad a largo plazo (Etapa 3.5).
+        'rate_limits' => 1,
+        // Misma retencion que email_change_codes (categoria analoga: codigos
+        // de un solo uso de corta duracion) (Etapa 3.5).
+        'two_factor_codes' => 7,
     ];
 
     public function __construct()
@@ -41,6 +53,8 @@ class TemporaryDataCleanupService
             'read_notifications' => $this->readNotificationsSummary($retention['read_notifications']),
             'logs' => $this->logsSummary($retention['logs']),
             'temp_files' => $this->tempFilesSummary($retention['temp_files']),
+            'rate_limits' => $this->rateLimitsSummary($retention['rate_limits']),
+            'two_factor_codes' => $this->twoFactorCodesSummary($retention['two_factor_codes']),
         ];
     }
 
@@ -62,6 +76,8 @@ class TemporaryDataCleanupService
                     'read_notifications' => $this->cleanupReadNotifications($retention[$item]),
                     'logs' => $this->cleanupLogs($retention[$item]),
                     'temp_files' => $this->cleanupTempFiles($retention[$item]),
+                    'rate_limits' => $this->cleanupRateLimits($retention[$item]),
+                    'two_factor_codes' => $this->cleanupTwoFactorCodes($retention[$item]),
                 };
             } catch (Throwable $e) {
                 $results[$item] = [
@@ -220,6 +236,36 @@ class TemporaryDataCleanupService
         return $this->summaryItem('temp_files', $days, count($files), 'Archivos antiguos en carpetas temporales conocidas.', true, 'files');
     }
 
+    private function rateLimitsSummary(int $days): array
+    {
+        if (!$this->tableExists('tbl_rate_limits')) {
+            return $this->unavailable('rate_limits', $days);
+        }
+
+        $count = $this->count(
+            'tbl_rate_limits',
+            'last_attempt_at < DATE_SUB(NOW(), INTERVAL ? DAY) AND (available_at IS NULL OR available_at < NOW())',
+            [$days]
+        );
+
+        return $this->summaryItem('rate_limits', $days, $count, 'Registros de control de intentos (rate limit) inactivos, sin bloqueo vigente. No incluye bloqueos activos.');
+    }
+
+    private function twoFactorCodesSummary(int $days): array
+    {
+        if (!$this->tableExists('tbl_two_factor_codes')) {
+            return $this->unavailable('two_factor_codes', $days);
+        }
+
+        $count = $this->count(
+            'tbl_two_factor_codes',
+            '(used = 1 OR expires_at < NOW()) AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+            [$days]
+        );
+
+        return $this->summaryItem('two_factor_codes', $days, $count, 'Codigos MFA por correo usados o vencidos, antiguos segun la retencion configurada. No elimina codigos vigentes.');
+    }
+
     private function cleanupPasswordResetTokens(int $days): array
     {
         return $this->deleteRows(
@@ -308,6 +354,30 @@ class TemporaryDataCleanupService
     private function cleanupTempFiles(int $days): array
     {
         return $this->deleteFiles('temp_files', $this->oldFiles($this->tempDirectories(), $days, null));
+    }
+
+    private function cleanupRateLimits(int $days): array
+    {
+        if (!$this->tableExists('tbl_rate_limits')) {
+            return $this->skipped('rate_limits');
+        }
+
+        // Reutiliza el criterio ya implementado y probado en RateLimitService
+        // (Etapa 3.1): no elimina un registro cuyo available_at siga en el
+        // futuro (bloqueo activo), sin importar su antiguedad.
+        $deleted = (new RateLimitService())->cleanupExpired($days * 86400);
+
+        return ['status' => 'success', 'deleted' => $deleted, 'message' => 'Limpieza completada. No se eliminan bloqueos activos.'];
+    }
+
+    private function cleanupTwoFactorCodes(int $days): array
+    {
+        return $this->deleteRows(
+            'two_factor_codes',
+            'tbl_two_factor_codes',
+            '(used = 1 OR expires_at < NOW()) AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
+            [$days]
+        );
     }
 
     private function deleteRows(string $key, string $table, string $where, array $params): array

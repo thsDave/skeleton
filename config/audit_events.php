@@ -80,6 +80,7 @@ return [
     'password_reset.completed' => $event('Recuperacion de contrasena', 'Recuperacion completada', 'La contrasena fue actualizada por recuperacion.', 'critical', 'Confirmar cierre de sesiones anteriores.'),
     'password_reset.domain_denied' => $event('Recuperacion de contrasena', 'Dominio denegado en recuperacion', 'Se rechazo recuperacion por dominio no permitido.', 'warning', 'Validar si el dominio debe estar autorizado.'),
     'password_reset.ip_rate_limited' => $event('Recuperacion de contrasena', 'Recuperacion limitada por IP', 'Se alcanzo o se intento superar el limite de solicitudes de recuperacion de contrasena desde la misma IP.', 'warning', 'Revisar recurrencia, IP, volumen de solicitudes y posible abuso.'),
+    'password_reset.rate_limited' => $event('Recuperacion de contrasena', 'Recuperacion limitada por correo', 'Se alcanzo el limite de solicitudes de recuperacion de contrasena para el mismo correo dentro de la ventana configurada.', 'warning', 'Revisar recurrencia, volumen de solicitudes, posible abuso o usuario olvidando su contrasena.'),
     'password_reset.failed' => $event('Recuperacion de contrasena', 'Recuperacion fallida', 'Fallo el proceso de recuperacion.', 'warning', 'Revisar motivo y frecuencia.'),
 
     'smtp.updated' => $event('SMTP', 'SMTP actualizado', 'Se actualizo la configuracion SMTP.', 'critical', 'Revisar que no se hayan cambiado servidores o remitentes sin autorizacion.'),
