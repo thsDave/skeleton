@@ -144,6 +144,16 @@ lang/en.php
 
 Usar `__()` en vistas y controladores cuando el texto sea visible para el usuario.
 
+No dejar textos hardcodeados innecesarios ni mezclar idiomas dentro de una misma vista.
+
+Antes de cerrar un modulo nuevo, ejecutar la validacion de claves de idioma:
+
+```bash
+php scripts/check_lang_keys.php
+```
+
+El script es de solo lectura: compara `lang/es.php` contra `lang/en.php` y reporta claves faltantes en cada direccion. Debe devolver `OK` (sin diferencias nuevas introducidas por el modulo) antes de dar el modulo por terminado.
+
 ## 10. Uploads
 
 Si el modulo sube archivos, usar `UploadService` y agregar una categoria en `config/uploads.php`. No escribir archivos fuera de las rutas configuradas.

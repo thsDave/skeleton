@@ -18,7 +18,7 @@ Options -Indexes
     RewriteEngine On
 
     # ─── Bloquear acceso directo a carpetas privadas ──────────────────────
-    RewriteRule ^(app|core|config|database|vendor|logs|lang|docs|recursos|resultados)(/|$) - [F,L]
+    RewriteRule ^(app|core|config|database|vendor|logs|lang|docs|recursos|resultados|scripts)(/|$) - [F,L]
 
     # ─── Reenviar tráfico a /public/ ─────────────────────────────────────
     # Descomenta estas líneas si tu hosting apunta a la raíz del proyecto
