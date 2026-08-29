@@ -388,6 +388,8 @@ return [
     'common.home'                => 'Inicio',
     'common.active'              => 'Activo',
     'common.inactive'            => 'Inactivo',
+    'common.confirm_action'      => 'Confirmar acción',
+    'common.confirm'             => 'Confirmar',
     'common.blocked'             => 'Bloqueado',
     'common.yes'                 => 'Sí',
     'common.no'                  => 'No',

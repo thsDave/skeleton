@@ -93,16 +93,30 @@ require dirname(__DIR__) . '/layouts/main.php';
 </div>
 
 <?php
+// URL de idioma de DataTables segun el idioma activo del usuario (mismo
+// criterio ya usado en app/Views/users/index.php). Se sustituye por
+// marcador porque el script vive en un NOWDOC (no evalua __()/PHP) y
+// usa jQuery, por lo que no conviene convertirlo a HEREDOC.
+$_lgDataTableLangUrl = json_encode(
+    \Core\Lang::getLocale() === 'es'
+        ? 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+        : 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/en-GB.json'
+);
+
 $extraScript = <<<'JS'
 <script>
 $(document).ready(function () {
   $('.datatable').DataTable({
-    language: { url: '' },
+    language: { url: __LG_DT_LANG_URL__ },
     pageLength: 10,
     order: [[0, 'asc']]
   });
 });
 </script>
 JS;
+
+$extraScript = strtr($extraScript, [
+    '__LG_DT_LANG_URL__' => $_lgDataTableLangUrl,
+]);
 ?>
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>

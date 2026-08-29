@@ -424,6 +424,11 @@ $glossaryUrl = BASE_URL . '/audit-logs' . ($glossaryQuery ? '?' . $glossaryQuery
 
 <?php
 $dataTableSelector = $activeTab === 'glossary' ? '#auditGlossaryTable' : '#auditLogsTable';
+// URL de idioma de DataTables segun el idioma activo del usuario (mismo
+// criterio ya usado en app/Views/users/index.php).
+$dataTableLangUrl = \Core\Lang::getLocale() === 'es'
+    ? 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+    : 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/en-GB.json';
 $extraScript = <<<JS
 <script>
 $(document).ready(function () {
@@ -433,7 +438,7 @@ $(document).ready(function () {
 
   $('{$dataTableSelector}').DataTable({
     language: {
-      url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+      url: '{$dataTableLangUrl}'
     },
     pageLength: 25,
     order: [[0, 'desc']],

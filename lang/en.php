@@ -388,6 +388,8 @@ return [
     'common.home'                => 'Home',
     'common.active'              => 'Active',
     'common.inactive'            => 'Inactive',
+    'common.confirm_action'      => 'Confirm action',
+    'common.confirm'             => 'Confirm',
     'common.blocked'             => 'Blocked',
     'common.yes'                 => 'Yes',
     'common.no'                  => 'No',

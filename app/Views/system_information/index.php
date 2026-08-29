@@ -205,10 +205,23 @@ require dirname(__DIR__) . '/layouts/main.php';
 </div>
 
 <?php
+// Textos traducidos, generados en PHP y sustituidos por marcador en el
+// NOWDOC (no se puede evaluar __() dentro de un bloque <<<'JS', y el
+// script usa jQuery con signos $ que no deben interpolarse).
+$_siDataTableLangUrl = json_encode(
+    \Core\Lang::getLocale() === 'es'
+        ? 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+        : 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/en-GB.json'
+);
+$_siConfirmActionFallback = json_encode(__('common.confirm_action'), JSON_UNESCAPED_UNICODE);
+$_siConfirmFallback       = json_encode(__('common.confirm'), JSON_UNESCAPED_UNICODE);
+$_siCancel                = json_encode(__('buttons.cancel'), JSON_UNESCAPED_UNICODE);
+
 $extraScript = <<<'JS'
 <script>
 $(document).ready(function () {
   $('.datatable').DataTable({
+    language: { url: __SI_DT_LANG_URL__ },
     pageLength: 10,
     order: [[0, 'asc']]
   });
@@ -218,10 +231,10 @@ $(document).ready(function () {
       event.preventDefault();
       Swal.fire({
         icon: 'warning',
-        title: form.dataset.confirm || 'Confirmar acción',
+        title: form.dataset.confirm || __SI_CONFIRM_ACTION__,
         showCancelButton: true,
-        confirmButtonText: form.dataset.confirmButton || 'Confirmar',
-        cancelButtonText: 'Cancelar',
+        confirmButtonText: form.dataset.confirmButton || __SI_CONFIRM__,
+        cancelButtonText: __SI_CANCEL__,
         confirmButtonColor: '#4680ff'
       }).then(function (result) {
         if (result.isConfirmed) {
@@ -233,5 +246,12 @@ $(document).ready(function () {
 });
 </script>
 JS;
+
+$extraScript = strtr($extraScript, [
+    '__SI_DT_LANG_URL__'   => $_siDataTableLangUrl,
+    '__SI_CONFIRM_ACTION__'=> $_siConfirmActionFallback,
+    '__SI_CONFIRM__'       => $_siConfirmFallback,
+    '__SI_CANCEL__'        => $_siCancel,
+]);
 ?>
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>
