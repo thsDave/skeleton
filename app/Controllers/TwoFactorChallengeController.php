@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\TwoFactorCode;
 use App\Services\TwoFactorService;
 use App\Services\Mailer;
+use App\Services\RateLimitService;
 
 class TwoFactorChallengeController extends Controller
 {
@@ -128,12 +129,69 @@ class TwoFactorChallengeController extends Controller
 
     // ─── Internals ────────────────────────────────────────────────────────────
 
+    // Rate limit de la verificacion TOTP (Etapa 3.2). Limite inicial
+    // aprobado: 5 intentos / 10 minutos, por usuario. Reutiliza
+    // TWO_FACTOR_MAX_ATTEMPTS (ya usado para el mismo proposito en el
+    // OTP por correo) para no introducir un segundo numero de intentos
+    // distinto sin necesidad. La ventana no tiene variable de entorno
+    // existente reutilizable con el significado correcto, por lo que se
+    // usa una nueva variable opcional (TWO_FACTOR_TOTP_WINDOW_SECONDS,
+    // con fallback 600) en vez de modificar .env/.env.example en esta
+    // etapa.
+    private const TOTP_RATE_LIMIT_ACTION = 'mfa.totp_challenge';
+    private const TOTP_RATE_LIMIT_IDENTIFIER_TYPE = 'user';
+
     private function verifyTotp(array $user, string $code): void
     {
+        $rateLimiter   = new RateLimitService();
+        $identifier    = (string) $user['id'];
+        $maxAttempts   = (int) env('TWO_FACTOR_MAX_ATTEMPTS', 5);
+        $windowSeconds = (int) env('TWO_FACTOR_TOTP_WINDOW_SECONDS', 600);
+
+        // ── Bloqueado por intentos previos: no validar el codigo ────────────────
+        if ($rateLimiter->tooManyAttempts(
+            self::TOTP_RATE_LIMIT_ACTION,
+            $identifier,
+            $maxAttempts,
+            $windowSeconds,
+            self::TOTP_RATE_LIMIT_IDENTIFIER_TYPE
+        )) {
+            $availableIn = $rateLimiter->availableIn(
+                self::TOTP_RATE_LIMIT_ACTION,
+                $identifier,
+                self::TOTP_RATE_LIMIT_IDENTIFIER_TYPE
+            );
+
+            Audit::log([
+                'module'      => 'auth',
+                'action'      => 'mfa.totp_rate_limited',
+                'entity'      => 'user',
+                'entity_id'   => $user['id'],
+                'description' => 'Intento de verificacion TOTP mientras el usuario esta bloqueado temporalmente',
+                'status'      => 'denied',
+                'new_values'  => [
+                    'action'          => self::TOTP_RATE_LIMIT_ACTION,
+                    'identifier_type' => self::TOTP_RATE_LIMIT_IDENTIFIER_TYPE,
+                    'available_in'    => $availableIn,
+                ],
+            ]);
+
+            Session::flash('error', __('2fa.totp_too_many_attempts', ['seconds' => $availableIn]));
+            Redirect::to('/two-factor/challenge');
+        }
+
         $secretEnc = $user['two_factor_secret_enc'] ?? '';
         $secret    = $secretEnc !== '' ? Crypt::decrypt($secretEnc) : '';
 
         if ($secret === '' || !$this->tf->verifyTotp($secret, $code)) {
+            $result = $rateLimiter->hit(
+                self::TOTP_RATE_LIMIT_ACTION,
+                $identifier,
+                self::TOTP_RATE_LIMIT_IDENTIFIER_TYPE,
+                $maxAttempts,
+                $windowSeconds
+            );
+
             Audit::log([
                 'module'      => 'auth',
                 'action'      => 'mfa.challenge_failed',
@@ -142,9 +200,31 @@ class TwoFactorChallengeController extends Controller
                 'description' => 'Verificacion MFA fallida (authenticator)',
                 'status'      => 'failed',
             ]);
-            Session::flash('error', __('2fa.code_invalid'));
+
+            if ($result['blocked']) {
+                Audit::log([
+                    'module'      => 'auth',
+                    'action'      => 'mfa.totp_rate_limited',
+                    'entity'      => 'user',
+                    'entity_id'   => $user['id'],
+                    'description' => 'Verificacion TOTP bloqueada temporalmente por exceso de intentos',
+                    'status'      => 'denied',
+                    'new_values'  => [
+                        'action'          => self::TOTP_RATE_LIMIT_ACTION,
+                        'identifier_type' => self::TOTP_RATE_LIMIT_IDENTIFIER_TYPE,
+                        'attempts'        => $result['attempts'],
+                        'available_in'    => $result['available_in'],
+                    ],
+                ]);
+                Session::flash('error', __('2fa.totp_too_many_attempts', ['seconds' => $result['available_in']]));
+            } else {
+                Session::flash('error', __('2fa.totp_invalid_remaining', ['remaining' => $result['remaining']]));
+            }
+
             Redirect::to('/two-factor/challenge');
         }
+
+        $rateLimiter->clear(self::TOTP_RATE_LIMIT_ACTION, $identifier, self::TOTP_RATE_LIMIT_IDENTIFIER_TYPE);
 
         $this->completeLogin($user);
     }

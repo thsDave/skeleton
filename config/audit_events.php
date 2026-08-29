@@ -92,6 +92,7 @@ return [
     'mfa.user_disabled' => $event('MFA', 'MFA de usuario desactivado', 'Un usuario desactivo MFA en su cuenta.', 'critical', 'Revisar si fue una accion esperada.'),
     'mfa.challenge_success' => $event('MFA', 'Verificacion MFA exitosa', 'El usuario completo el desafio MFA.', 'success', 'Revisar solo si hay actividad inusual.'),
     'mfa.challenge_failed' => $event('MFA', 'Verificacion MFA fallida', 'Fallo un desafio MFA.', 'warning', 'Revisar intentos repetidos o desde ubicaciones inusuales.'),
+    'mfa.totp_rate_limited' => $event('MFA', 'Verificacion TOTP bloqueada temporalmente', 'Se alcanzo o se intento superar el limite de intentos de verificacion TOTP.', 'warning', 'Revisar usuario, recurrencia y posibles intentos de fuerza bruta.'),
     'mfa.challenge_required' => $event('MFA', 'Desafio MFA requerido', 'El sistema solicito validacion MFA para completar el acceso.', 'info', 'Normal si el usuario tiene MFA activo.'),
     'mfa.method_unavailable' => $event('MFA', 'Metodo MFA no disponible', 'El metodo MFA esperado no estaba disponible.', 'warning', 'Revisar configuracion MFA del usuario y metodos habilitados.'),
     'mfa.reset_by_admin' => $event('MFA', 'MFA reiniciado por administrador', 'Un administrador reinicio o desactivo MFA de un usuario.', 'critical', 'Confirmar solicitud y cierre de sesiones del usuario afectado.'),

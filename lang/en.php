@@ -849,6 +849,8 @@ return [
     '2fa.code_invalid'              => 'Incorrect code. Please try again.',
     '2fa.code_expired'              => 'The code has expired. Please request a new one.',
     '2fa.max_attempts'              => 'Too many failed attempts. Please start over.',
+    '2fa.totp_too_many_attempts'    => 'Too many verification attempts. Try again in :seconds seconds.',
+    '2fa.totp_invalid_remaining'    => 'The code is not valid. Remaining attempts: :remaining.',
     '2fa.session_expired'           => 'Your setup session has expired.',
     '2fa.verify'                    => 'Verify',
     '2fa.resend'                    => 'Resend code',
