@@ -28,6 +28,21 @@ Esta guia resume las reglas de estilo y arquitectura para extender Skeleton como
 - Usar `CSRF::validateOrFail()` en acciones `POST`.
 - Usar `Redirect` para redirecciones internas.
 - No ejecutar SQL directamente si ya existe un modelo adecuado.
+- Estos checks deben seguir estando en el controlador aunque la ruta
+  ya tenga guard opcional en el Router (ver seccion siguiente) — el
+  guard del Router es una segunda capa de defensa, no un reemplazo.
+
+## Router — Guard Opcional (Etapa 4)
+
+`Router::get()`/`Router::post()` aceptan un tercer parametro opcional
+`array $options = []` con metadata de acceso (`guest`, `auth`,
+`permission`). Es opcional y retrocompatible: una ruta sin tercer
+parametro funciona exactamente igual que antes de la Etapa 4. Ver
+`docs/crear-nuevo-modulo.md` (seccion "5.1 Guard opcional del
+Router") para la sintaxis completa y ejemplos. Regla clave: el guard
+NO reemplaza los checks dentro del controlador — ambos deben coexistir
+hasta que una etapa futura apruebe explicitamente retirar el check
+duplicado del controlador.
 
 ## CSRF
 

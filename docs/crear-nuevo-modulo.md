@@ -88,6 +88,54 @@ $router->post('/products/delete/{id}', [ProductsController::class, 'delete']);
 
 Usar `POST` para acciones que cambian datos.
 
+### 5.1 Guard opcional del Router (Etapa 4)
+
+Desde la Etapa 4, `Router::get()`/`Router::post()` aceptan un tercer
+parametro opcional `array $options = []` con metadata de acceso. Es
+completamente opcional y retrocompatible: una ruta sin tercer
+parametro se comporta exactamente igual que antes.
+
+Claves soportadas:
+
+```php
+// Ruta publica (sin metadata) — comportamiento igual que siempre.
+$router->get('/products', [ProductsController::class, 'index']);
+
+// Ruta solo invitados (equivalente a Auth::requireGuest()).
+$router->get('/login', [AuthController::class, 'loginForm'], ['guest' => true]);
+
+// Ruta autenticada (equivalente a Auth::requireAuth()).
+$router->get('/dashboard', [DashboardController::class, 'index'], ['auth' => true]);
+
+// Ruta con permiso (equivalente a Auth::requirePermission(), ya implica autenticacion).
+$router->get('/products', [ProductsController::class, 'index'], [
+    'permission' => 'products.view',
+]);
+```
+
+Reglas importantes:
+
+- `guest` no puede combinarse con `auth` ni `permission` en la misma
+  ruta — si se combinan, `Router` lanza `InvalidArgumentException` al
+  registrar la ruta (se detecta en desarrollo, no en producción
+  silenciosa).
+- No existe todavia soporte para multiples permisos (`permissions`,
+  plural) ni para roles — mantenlo simple.
+- **El guard del Router es una segunda capa de defensa, NO un
+  reemplazo.** El controlador debe SEGUIR llamando
+  `Auth::requirePermission(...)`/`Auth::requireAuth()`/
+  `Auth::requireGuest()` como ya lo hace — no elimines esos checks
+  aunque la ruta ya tenga metadata. Esta etapa dejó una base para
+  rutas mas declarativas a futuro, pero la migracion completa (y la
+  eventual eliminacion del check duplicado dentro del controlador)
+  queda para una etapa posterior que lo apruebe explicitamente.
+- No agregues metadata a rutas nuevas por costumbre todavia — es
+  opcional y se está probando con pocas rutas de bajo riesgo
+  (`/login`, `/forgot-password`, `/dashboard`,
+  `/maintenance/cleanup`). Para un modulo nuevo, seguir usando
+  únicamente el check dentro del controlador es igual de valido en
+  esta etapa.
+
 ## 6. Permisos
 
 Crear un modulo en `tbl_modules` y permisos en `tbl_permissions`.

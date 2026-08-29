@@ -95,12 +95,15 @@ use App\Controllers\RequiredPasswordChangeController;
 $router = new Router();
 
 // Auth
-$router->get('/login',  [AuthController::class, 'loginForm']);
+// Rutas de prueba del guard opcional del Router (Etapa 4): 'guest' aqui es
+// una segunda capa de defensa — AuthController::loginForm() sigue llamando
+// Auth::requireGuest() internamente, sin cambios.
+$router->get('/login',  [AuthController::class, 'loginForm'], ['guest' => true]);
 $router->post('/login', [AuthController::class, 'loginProcess']);
 $router->post('/logout',[AuthController::class, 'logout']);
 
 // Password reset
-$router->get('/forgot-password',         [PasswordResetController::class, 'showForgotForm']);
+$router->get('/forgot-password',         [PasswordResetController::class, 'showForgotForm'], ['guest' => true]);
 $router->post('/forgot-password',        [PasswordResetController::class, 'sendResetLink']);
 $router->get('/reset-password/{token}',  [PasswordResetController::class, 'showResetForm']);
 $router->post('/reset-password',         [PasswordResetController::class, 'resetPassword']);
@@ -115,7 +118,10 @@ $router->post('/lock/session', [LockController::class, 'lockSession']); // AJAX:
 $router->post('/unlock',       [LockController::class, 'unlock']);
 
 // Dashboard
-$router->get('/dashboard', [DashboardController::class, 'index']);
+// Ruta de prueba del guard opcional 'auth' (Etapa 4) — segunda capa de
+// defensa; DashboardController::index() puede mantener su propia
+// validacion interna sin cambios.
+$router->get('/dashboard', [DashboardController::class, 'index'], ['auth' => true]);
 
 // Profile
 $router->get('/profile',                   [ProfileController::class, 'index']);
@@ -168,7 +174,10 @@ $router->post('/system-information/update',  [SystemInformationController::class
 $router->get('/system-health',               [SystemHealthController::class, 'index']);
 
 // Maintenance
-$router->get('/maintenance/cleanup',         [MaintenanceController::class, 'cleanup']);
+// Ruta de prueba del guard opcional 'permission' (Etapa 4) — mismo slug
+// exacto que ya valida MaintenanceController::cleanup() internamente
+// (Auth::requirePermission('maintenance.cleanup.view')), sin cambios ahi.
+$router->get('/maintenance/cleanup',         [MaintenanceController::class, 'cleanup'], ['permission' => 'maintenance.cleanup.view']);
 $router->post('/maintenance/cleanup/run',    [MaintenanceController::class, 'runCleanup']);
 
 // Notifications
