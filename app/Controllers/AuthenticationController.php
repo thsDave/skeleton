@@ -13,9 +13,22 @@ use App\Models\AuthenticationSettings;
 use App\Models\ExternalAuthProvider;
 use App\Models\Role;
 use App\Services\ExternalAuthService;
+use App\Services\RateLimitService;
 
 class AuthenticationController extends Controller
 {
+    // Rate limit de la prueba administrativa de proveedor OAuth (Etapa
+    // 3.7). Limite aprobado: 5 pruebas / 5 minutos, por administrador
+    // (accion general, no separada por proveedor — ver TXT de la
+    // etapa). Evita generar estados/callbacks repetidos hacia el
+    // proveedor externo desde una cuenta admin. No afecta el login
+    // OAuth normal de usuarios finales (ExternalAuthController), que
+    // es un flujo y un endpoint completamente distintos.
+    private const OAUTH_TEST_RATE_LIMIT_ACTION = 'admin.oauth_test';
+    private const OAUTH_TEST_RATE_LIMIT_IDENTIFIER_TYPE = 'user';
+    private const OAUTH_TEST_RATE_LIMIT_MAX_ATTEMPTS = 5;
+    private const OAUTH_TEST_RATE_LIMIT_WINDOW_SECONDS = 300;
+
     public function index(): void
     {
         Auth::requirePermission('security_authentication.view');
@@ -285,6 +298,58 @@ class AuthenticationController extends Controller
             Session::flash('error', __('security_authentication.provider_test_failed') . ' — ' . $msg);
             Redirect::to('/security/authentication');
         }
+
+        // ── Rate limit de la prueba OAuth administrativa (Etapa 3.7) ────────────
+        // Se evalua justo antes de iniciar el flujo externo real (generar state y
+        // redirigir al proveedor). Las validaciones previas (campos faltantes,
+        // secret sin descifrar) no cuentan como intento, porque nunca llegan a
+        // contactar al proveedor externo.
+        $rateLimiter = new RateLimitService();
+        $adminId     = (string) Auth::id();
+
+        if ($rateLimiter->tooManyAttempts(
+            self::OAUTH_TEST_RATE_LIMIT_ACTION,
+            $adminId,
+            self::OAUTH_TEST_RATE_LIMIT_MAX_ATTEMPTS,
+            self::OAUTH_TEST_RATE_LIMIT_WINDOW_SECONDS,
+            self::OAUTH_TEST_RATE_LIMIT_IDENTIFIER_TYPE
+        )) {
+            $availableIn = $rateLimiter->availableIn(
+                self::OAUTH_TEST_RATE_LIMIT_ACTION,
+                $adminId,
+                self::OAUTH_TEST_RATE_LIMIT_IDENTIFIER_TYPE
+            );
+
+            Audit::log([
+                'module'      => 'security_authentication',
+                'action'      => 'external_provider.test_rate_limited',
+                'entity'      => 'external_auth_provider',
+                'entity_id'   => $id,
+                'description' => "Prueba OAuth bloqueada temporalmente por exceso de intentos para {$provider['name']}",
+                'status'      => 'denied',
+                'new_values'  => [
+                    'action'          => self::OAUTH_TEST_RATE_LIMIT_ACTION,
+                    'identifier_type' => self::OAUTH_TEST_RATE_LIMIT_IDENTIFIER_TYPE,
+                    'available_in'    => $availableIn,
+                    'provider'        => $provider['slug'] ?? null,
+                ],
+            ]);
+
+            Session::flash('error', __('security_authentication.oauth_test_rate_limited', ['seconds' => $availableIn]));
+            Redirect::to('/security/authentication');
+        }
+
+        // La solicitud cuenta aunque el intento #5 SI se procesa normalmente
+        // (redirige al proveedor) — igual criterio que la prueba SMTP: es una
+        // accion administrativa de diagnostico, no un intento adversario. El
+        // bloqueo aplica desde la siguiente solicitud (#6).
+        $rateLimiter->hit(
+            self::OAUTH_TEST_RATE_LIMIT_ACTION,
+            $adminId,
+            self::OAUTH_TEST_RATE_LIMIT_IDENTIFIER_TYPE,
+            self::OAUTH_TEST_RATE_LIMIT_MAX_ATTEMPTS,
+            self::OAUTH_TEST_RATE_LIMIT_WINDOW_SECONDS
+        );
 
         $slug    = $provider['slug'] ?? '';
         $service = new ExternalAuthService();

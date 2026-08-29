@@ -10,9 +10,19 @@ use Core\Redirect;
 use Core\Logger;
 use App\Models\SmtpSettings;
 use App\Services\Mailer;
+use App\Services\RateLimitService;
 
 class SmtpSettingsController
 {
+    // Rate limit de la prueba SMTP administrativa (Etapa 3.7). Limite
+    // aprobado: 5 pruebas / 5 minutos, por administrador. Una prueba
+    // SMTP puede disparar un correo real, por lo que se limita el
+    // volumen de pruebas sin bloquear el guardado de configuracion.
+    private const SMTP_TEST_RATE_LIMIT_ACTION = 'admin.smtp_test';
+    private const SMTP_TEST_RATE_LIMIT_IDENTIFIER_TYPE = 'user';
+    private const SMTP_TEST_RATE_LIMIT_MAX_ATTEMPTS = 5;
+    private const SMTP_TEST_RATE_LIMIT_WINDOW_SECONDS = 300;
+
     public function index(): void
     {
         Auth::requirePermission('security_smtp.view');
@@ -139,6 +149,58 @@ class SmtpSettingsController
                 Redirect::to('/security/smtp');
                 exit;
             }
+
+            // ── Rate limit de la prueba SMTP (Etapa 3.7) ────────────────────────
+            // Se evalua justo antes de enviar el correo real: las validaciones de
+            // configuracion previas (host/usuario vacios, password vacia o sin
+            // descifrar) no cuentan como intento, porque nunca llegan a intentar
+            // un envio real.
+            $rateLimiter = new RateLimitService();
+            $adminId     = (string) Auth::id();
+
+            if ($rateLimiter->tooManyAttempts(
+                self::SMTP_TEST_RATE_LIMIT_ACTION,
+                $adminId,
+                self::SMTP_TEST_RATE_LIMIT_MAX_ATTEMPTS,
+                self::SMTP_TEST_RATE_LIMIT_WINDOW_SECONDS,
+                self::SMTP_TEST_RATE_LIMIT_IDENTIFIER_TYPE
+            )) {
+                $availableIn = $rateLimiter->availableIn(
+                    self::SMTP_TEST_RATE_LIMIT_ACTION,
+                    $adminId,
+                    self::SMTP_TEST_RATE_LIMIT_IDENTIFIER_TYPE
+                );
+
+                Audit::log([
+                    'module'      => 'security_smtp',
+                    'action'      => 'smtp.test_rate_limited',
+                    'description' => 'Prueba SMTP bloqueada temporalmente por exceso de intentos',
+                    'status'      => 'denied',
+                    'new_values'  => [
+                        'action'          => self::SMTP_TEST_RATE_LIMIT_ACTION,
+                        'identifier_type' => self::SMTP_TEST_RATE_LIMIT_IDENTIFIER_TYPE,
+                        'available_in'    => $availableIn,
+                    ],
+                ]);
+
+                Session::flash('error', __('smtp.test_rate_limited', ['seconds' => $availableIn]));
+                Redirect::to('/security/smtp');
+                exit;
+            }
+
+            // La solicitud cuenta aunque el envio falle despues. A diferencia de
+            // los flujos de fuerza bruta (Etapas 3.2/3.3/3.4), el intento que
+            // alcanza el limite (#5) SI se procesa normalmente — es una accion
+            // administrativa de diagnostico, no un intento adversario — y el
+            // bloqueo aplica recien desde la siguiente solicitud (#6), detectada
+            // por tooManyAttempts() en la proxima llamada a este metodo.
+            $rateLimiter->hit(
+                self::SMTP_TEST_RATE_LIMIT_ACTION,
+                $adminId,
+                self::SMTP_TEST_RATE_LIMIT_IDENTIFIER_TYPE,
+                self::SMTP_TEST_RATE_LIMIT_MAX_ATTEMPTS,
+                self::SMTP_TEST_RATE_LIMIT_WINDOW_SECONDS
+            );
 
             // Determine recipient for the test email
             $testEmail = trim($_POST['test_email'] ?? '');

@@ -694,6 +694,7 @@ return [
     'smtp.error.auth_failed'        => 'No se pudo autenticar con el servidor SMTP. Verifica usuario y contraseña.',
     'smtp.error.connect_failed'     => 'No se pudo conectar al servidor SMTP. Verifica Host, Puerto y Cifrado.',
     'smtp.error.invalid_address'    => 'El correo remitente no es válido. Verifica el campo "Correo remitente".',
+    'smtp.test_rate_limited'        => 'Demasiadas pruebas SMTP. Intenta nuevamente en :seconds segundos.',
     'smtp.validation.host_required'         => 'El servidor SMTP es obligatorio.',
     'smtp.validation.port_invalid'          => 'El puerto debe ser un número entre 1 y 65535.',
     'smtp.validation.username_required'     => 'El usuario SMTP es obligatorio.',
@@ -956,6 +957,7 @@ return [
     'security_authentication.test_secret_decrypt_failed'    => 'No se pudo descifrar el Client Secret. Vuelve a guardarlo.',
     'security_authentication.test_provider_denied'          => 'El proveedor rechazó la autorización.',
     'security_authentication.test_oauth_success_msg'        => 'Verificación OAuth exitosa',
+    'security_authentication.oauth_test_rate_limited'       => 'Demasiadas pruebas de proveedor externo. Intenta nuevamente en :seconds segundos.',
     // Formulario de proveedor
     'security_authentication.configure_provider'          => 'Configurar proveedor',
     'security_authentication.credentials'                 => 'Credenciales OAuth',

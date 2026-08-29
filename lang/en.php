@@ -694,6 +694,7 @@ return [
     'smtp.error.auth_failed'        => 'Could not authenticate with the SMTP server. Please check your username and password.',
     'smtp.error.connect_failed'     => 'Could not connect to the SMTP server. Please check Host, Port and Encryption.',
     'smtp.error.invalid_address'    => 'The sender email address is not valid. Please check the "Sender email" field.',
+    'smtp.test_rate_limited'        => 'Too many SMTP tests. Try again in :seconds seconds.',
     'smtp.validation.host_required'         => 'The SMTP server is required.',
     'smtp.validation.port_invalid'          => 'Port must be a number between 1 and 65535.',
     'smtp.validation.username_required'     => 'The SMTP username is required.',
@@ -1107,6 +1108,7 @@ return [
     'security_authentication.test_secret_decrypt_failed'    => 'Could not decrypt the Client Secret. Please re-save it.',
     'security_authentication.test_provider_denied'          => 'The provider rejected the authorization.',
     'security_authentication.test_oauth_success_msg'        => 'OAuth verification successful',
+    'security_authentication.oauth_test_rate_limited'       => 'Too many external provider tests. Try again in :seconds seconds.',
     'security_authentication.configure_provider' => 'Configure provider',
     'security_authentication.credentials' => 'OAuth credentials',
 

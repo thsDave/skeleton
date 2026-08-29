@@ -46,6 +46,7 @@ return [
     'external_provider.disabled' => $event('OAuth', 'Proveedor externo desactivado', 'Se deshabilito un proveedor externo.', 'warning', 'Validar impacto sobre usuarios que dependen de ese proveedor.'),
     'external_provider.test_success' => $event('OAuth', 'Prueba de proveedor exitosa', 'La prueba de configuracion del proveedor externo fue exitosa.', 'success', 'No requiere accion salvo documentar el cambio.'),
     'external_provider.test_failed' => $event('OAuth', 'Prueba de proveedor fallida', 'La prueba de configuracion del proveedor externo fallo.', 'warning', 'Revisar configuracion sin exponer secretos.'),
+    'external_provider.test_rate_limited' => $event('OAuth', 'Prueba de proveedor OAuth limitada temporalmente', 'Se bloqueo temporalmente una prueba administrativa de proveedor OAuth por exceso de intentos.', 'warning', 'Revisar recurrencia, usuario administrador, proveedor y posible abuso o automatizacion accidental.'),
     'external_provider.verified' => $event('OAuth', 'Proveedor verificado', 'El proveedor externo quedo marcado como verificado.', 'success', 'Confirmar que la verificacion fue realizada por personal autorizado.'),
     'external_provider.unverified' => $event('OAuth', 'Proveedor no verificado', 'El proveedor externo quedo sin verificacion.', 'warning', 'Revisar si debe quedar habilitado.'),
 
@@ -94,6 +95,7 @@ return [
     'smtp.updated' => $event('SMTP', 'SMTP actualizado', 'Se actualizo la configuracion SMTP.', 'critical', 'Revisar que no se hayan cambiado servidores o remitentes sin autorizacion.'),
     'smtp.test_success' => $event('SMTP', 'Prueba SMTP exitosa', 'La prueba de envio SMTP fue exitosa.', 'success', 'No requiere accion salvo documentar cambios.'),
     'smtp.test_failed' => $event('SMTP', 'Prueba SMTP fallida', 'La prueba SMTP fallo.', 'warning', 'Revisar configuracion sin exponer contrasenas.'),
+    'smtp.test_rate_limited' => $event('SMTP', 'Prueba SMTP limitada temporalmente', 'Se bloqueo temporalmente una prueba SMTP por exceso de intentos.', 'warning', 'Revisar recurrencia, usuario administrador y posible automatizacion accidental.'),
     'smtp.update_failed' => $event('SMTP', 'Actualizacion SMTP fallida', 'No se pudo guardar la configuracion SMTP.', 'warning', 'Revisar logs tecnicos y permisos.'),
 
     'mfa.settings_updated' => $event('MFA', 'Configuracion MFA actualizada', 'Se actualizo la configuracion global de MFA.', 'critical', 'Confirmar aprobacion porque afecta el nivel de seguridad de acceso.'),
