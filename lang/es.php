@@ -34,7 +34,6 @@ return [
     'auth.password_reset_success'    => 'Tu contraseña fue actualizada correctamente. Ya puedes iniciar sesión.',
     'auth.too_many_reset_requests'   => 'Has realizado demasiadas solicitudes. Intenta de nuevo en unos minutos.',
     'auth.login_invalid_credentials' => 'Las credenciales ingresadas no son válidas.',
-    'auth.login_temporarily_blocked' => 'No fue posible iniciar sesión. Intenta nuevamente más tarde.',
 
     // ── Correo de recuperación ──────────────────────────────────────────────────
     'mail.password_reset_subject'    => 'Restablecer contraseña',
@@ -61,17 +60,11 @@ return [
     'menu.administrator'     => 'Administrador',
 
     // ── Dashboard ───────────────────────────────────────────────────────────────
-    'dashboard.title'        => 'Dashboard',
-    'dashboard.welcome'      => '¡Bienvenido, :name!',
-    'dashboard.session_as'   => 'Has iniciado sesión correctamente. Sesión activa como',
-    'dashboard.my_profile'   => 'Mi Perfil',
     'dashboard.personal_info'=> 'Información Personal',
     'dashboard.personal_desc'=> 'Nombres, apellidos, teléfono y dirección.',
     'dashboard.view_profile' => 'Ver Perfil',
-    'dashboard.my_account'   => 'Mi Cuenta',
     'dashboard.credentials'  => 'Credenciales de Acceso',
     'dashboard.cred_desc'    => 'Correo electrónico y contraseña.',
-    'dashboard.security'     => 'Seguridad',
     'dashboard.session_active'=> 'Sesión Activa',
     'dashboard.session_desc' => 'Sesión protegida con timeout de 30 min.',
 
@@ -210,7 +203,6 @@ return [
     'users.unlock_error'        => 'No se pudo desbloquear el usuario.',
     'users.management_title'    => 'Gestión de Usuarios',
     'users.new_user'            => 'Nuevo Usuario',
-    'users.system_users'        => 'Usuarios del Sistema',
     'users.col_photo'           => 'Foto',
     'users.col_name'            => 'Nombre',
     'users.col_email'           => 'Correo',
@@ -924,8 +916,6 @@ return [
     'security_authentication.provider_test_oauth_info'      => 'Al presionar el botón serás redirigido al proveedor para autenticarte. Tras iniciar sesión, el sistema verificará las credenciales y marcará el proveedor como verificado si todo funciona correctamente.',
     'security_authentication.provider_test_started'         => 'Redirigiendo al proveedor para prueba OAuth...',
     'security_authentication.test_missing_fields'           => 'Campos requeridos sin completar',
-    'security_authentication.test_config_ok'                => 'Configuración válida. URL de autorización alcanzable.',
-    'security_authentication.test_unreachable'              => 'No se pudo alcanzar la URL de autorización. Verifica la conectividad.',
     'security_authentication.test_secret_decrypt_failed'    => 'No se pudo descifrar el Client Secret. Vuelve a guardarlo.',
     'security_authentication.test_provider_denied'          => 'El proveedor rechazó la autorización.',
     'security_authentication.test_oauth_success_msg'        => 'Verificación OAuth exitosa',
@@ -980,11 +970,8 @@ return [
     'auth.external_login_failed'        => 'No se pudo completar el inicio de sesión externo. Intenta de nuevo.',
     'auth.external_default_role_missing'=> 'No se pudo crear la cuenta externa porque falta configurar un rol por defecto válido. Contacta al administrador.',
     'auth.external_login_denied'        => 'El proveedor no autorizó el inicio de sesión.',
-    'auth.external_email_not_verified'  => 'No se pudo obtener un correo verificado del proveedor.',
-    'auth.external_user_not_found'           => 'No existe un usuario registrado con ese correo. Contacta al administrador.',
     'auth.external_provider_disabled'        => 'El proveedor de autenticación no está disponible.',
     'auth.external_account_not_authorized'   => 'Las credenciales ingresadas no son válidas o la cuenta no está autorizada para acceder al sistema.',
-    'auth.external_invalid_state'       => 'Error de seguridad en el proceso de autenticación. Intenta de nuevo.',
     // Cuenta — vínculos externos
     'account.external_accounts'         => 'Cuentas externas vinculadas',
     'account.external_accounts_desc'    => 'Vincula tu cuenta con proveedores externos para iniciar sesión más rápidamente.',
