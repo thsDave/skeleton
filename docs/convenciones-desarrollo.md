@@ -90,6 +90,31 @@ tokens persistentes seguros: selector + validador, hash en base de
 datos (nunca el token plano), expiración, rotación, revocación en
 logout/cambio de contraseña/MFA, y cookies `HttpOnly`/`Secure`/`SameSite`.
 
+## MFA — Columnas SMS heredadas (Etapa 6)
+
+Skeleton **no implementa** actualmente MFA por SMS ni envío de códigos
+por SMS. El método `sms` existió en versiones tempranas y fue
+retirado deliberadamente (ver `database/migrations/011_remove_sms_from_mfa.sql`):
+`tbl_mfa_settings.sms_enabled` queda forzado a `0` de forma
+incondicional en `MfaSettings::update()` (ignora cualquier valor
+recibido), y tanto `AuthController::loginProcess()` como
+`TwoFactorChallengeController` bloquean explícitamente cualquier
+usuario que aún tuviera `two_factor_method = 'sms'` ("Block legacy SMS
+method"), con su propio mensaje y evento de auditoría
+(`mfa.method_unavailable`). Las columnas
+`tbl_mfa_settings.sms_provider/sms_api_key/sms_api_secret_enc/sms_from/sms_endpoint/sms_extra_config`,
+`tbl_users.two_factor_phone`, y el valor `'sms'` en los enum
+`tbl_users.two_factor_method`/`tbl_two_factor_codes.method` se
+conservan únicamente para no romper migraciones anteriores, no como
+reserva para una funcionalidad futura. El permiso
+`security_mfa.test` ("Probar SMS MFA") también quedó huérfano: sigue
+existiendo en `tbl_permissions`, pero ningún controlador lo valida. No
+exponer opciones SMS al usuario ni reutilizar estos campos sin una
+etapa de diseño completo (proveedor, validación de número, rate
+limit, auditoría, expiración, consentimiento/costos) — ver
+`resultados/etapa-6-revision-columnas-sms-heredadas-skeleton.txt` para
+el análisis completo y la propuesta de eliminación controlada futura.
+
 ## Modelos
 
 - Extender `Core\Model`.
