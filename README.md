@@ -280,6 +280,7 @@ Prioridad media:
 - Revisar consolidacion entre `tbl_login_logs` y `tbl_login_attempts`.
 - Normalizar dominios externos si se vuelven administrables.
 - Planificar limpieza de columnas SMS heredadas.
+- Decidir sobre `tbl_users.remember_token` (Etapa 5: analizado y clasificado como campo sin uso actual — no hay login persistente "recordarme" implementado). Pendiente: implementarlo correctamente con diseño completo (tokens seguros, hash, expiracion, revocacion) o eliminarlo con migracion controlada en una etapa futura.
 
 Prioridad baja:
 

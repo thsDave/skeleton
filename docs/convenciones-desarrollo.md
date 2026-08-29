@@ -77,6 +77,19 @@ duplicado del controlador.
   ningún valor cifrado reversible — ver la lista completa de datos que no
   deben registrarse en `docs/permisos-y-auditoria.md`.
 
+## Autenticación — `remember_token` (Etapa 5)
+
+`tbl_users.remember_token` puede existir por compatibilidad o reserva
+futura, pero actualmente Skeleton **no implementa** login persistente
+tipo "recordarme" — no hay checkbox visible, no hay cookie persistente,
+y ningún controlador/modelo lee, escribe ni compara esta columna (solo
+viaja incidentalmente dentro de los `SELECT u.*` de `App\Models\User`,
+sin que nada la consuma). No usar esta columna sin una etapa de diseño
+específica. Cualquier implementación futura de "recordarme" debe usar
+tokens persistentes seguros: selector + validador, hash en base de
+datos (nunca el token plano), expiración, rotación, revocación en
+logout/cambio de contraseña/MFA, y cookies `HttpOnly`/`Secure`/`SameSite`.
+
 ## Modelos
 
 - Extender `Core\Model`.
