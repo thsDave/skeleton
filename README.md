@@ -2,7 +2,7 @@
 
 Skeleton PHP MVC es una plantilla base para construir sistemas administrativos con PHP puro, arquitectura MVC, PDO, Composer y DashboardKit. Su objetivo es servir como punto de partida estable para nuevos proyectos sin rehacer autenticacion, autorizacion, seguridad, auditoria, configuracion y estructura visual.
 
-Version estable: **v3.0.0**  
+Version: **v3.0.0 (release candidate)** — instalacion limpia validada en la Etapa 7; pendiente checklist manual de release (ver "Checklist De Release") y creacion de tag antes de marcar como estable definitiva.  
 Fecha: **2026-05-13**
 
 ## Caracteristicas Principales
@@ -12,6 +12,7 @@ Fecha: **2026-05-13**
 - OAuth externo para Google, Microsoft 365 y GitHub.
 - MFA por correo/autenticador, politica de contrasenas e intentos fallidos.
 - Rate limiting (`RateLimitService`) en MFA TOTP, desbloqueo de sesion, recuperacion de contrasena por IP y pruebas administrativas de SMTP/OAuth.
+- Guard opcional en el Router (`core/Router.php`) para declarar `guest`/`auth`/`permission` por ruta, como segunda capa de defensa junto a los checks existentes en cada controlador.
 - Gestion de sesiones activas, historial de sesiones y bloqueo por inactividad.
 - Usuarios, roles, permisos y validacion de permisos en backend.
 - Auditoria, glosario de auditoria y exportaciones Excel.
@@ -287,9 +288,35 @@ Prioridad baja:
 - Evaluar `TEXT` para `user_agent` en auditoria/login logs.
 - Agregar `updated_by` en configuraciones sensibles si se requiere trazabilidad directa.
 
+## Checklist De Release
+
+Antes de marcar una instalacion como lista para producción (o crear el
+tag de la version), verificar:
+
+- [ ] Importar el schema limpio (`database/schema/skeleton_schema.sql`)
+      en una base vacia.
+- [ ] Configurar `.env` (base de datos, `APP_URL`, `APP_KEY`, SMTP).
+- [ ] Entrar con el usuario administrador seed
+      (`admin@example.com` / `Admin123*`).
+- [ ] Completar el cambio de contraseña obligatorio del primer acceso.
+- [ ] Revisar que el Dashboard carga correctamente.
+- [ ] Revisar el modulo de Usuarios.
+- [ ] Revisar Seguridad > MFA (email y autenticador).
+- [ ] Revisar Seguridad > SMTP y ejecutar una prueba de envio.
+- [ ] Revisar Seguridad > Autenticacion/OAuth si se usara login externo.
+- [ ] Revisar Auditoria.
+- [ ] Revisar Mantenimiento / limpieza de datos temporales.
+- [ ] Ejecutar `php scripts/check_lang_keys.php` (debe devolver
+      codigo 0).
+- [ ] Confirmar que `.env` no quedo incluido en el control de
+      versiones.
+
 ## Versionado
 
-Version estable actual: **v3.0.0**  
+Version actual: **v3.0.0 (release candidate)**  
 Fecha: **2026-05-13**
 
-No hacer `push` automaticamente. Para publicar, usar los comandos indicados por el responsable del repositorio.
+Se marcara como **v3.0.0 estable** una vez completado el "Checklist De
+Release" anterior y creado el tag correspondiente. No hacer `push`
+automaticamente. Para publicar, usar los comandos indicados por el
+responsable del repositorio.
