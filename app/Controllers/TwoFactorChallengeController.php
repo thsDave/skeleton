@@ -42,8 +42,10 @@ class TwoFactorChallengeController extends Controller
             Redirect::to('/login');
         }
 
-        // Block legacy SMS method
-        if ($method === 'sms') {
+        // Defensa generica: bloquear cualquier metodo 2FA no soportado
+        // (Etapa 6.1 — reemplaza el bloqueo especifico de 'sms', ya
+        // imposible a nivel de schema tras la migracion 031).
+        if (!in_array($method, ['email', 'authenticator'], true)) {
             $this->clearPendingState();
             Redirect::withErrors('/login',
                 ['general' => 'Tu método de verificación en 2 pasos ya no está disponible. Contacta al administrador.'],
@@ -68,8 +70,10 @@ class TwoFactorChallengeController extends Controller
             Redirect::to('/login');
         }
 
-        // Block legacy SMS method
-        if ($method === 'sms') {
+        // Defensa generica: bloquear cualquier metodo 2FA no soportado
+        // (Etapa 6.1 — reemplaza el bloqueo especifico de 'sms', ya
+        // imposible a nivel de schema tras la migracion 031).
+        if (!in_array($method, ['email', 'authenticator'], true)) {
             $this->clearPendingState();
             Redirect::to('/login');
         }

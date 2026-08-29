@@ -42,7 +42,7 @@ $tf_method  = $user['two_factor_method'] ?? null;
           <span class="badge bg-<?= $tf_enabled ? 'success' : 'secondary' ?>">
             <?= $tf_enabled ? __('2fa.status_enabled') : __('2fa.status_disabled') ?>
           </span>
-          <?php if ($tf_enabled && $tf_method && $tf_method !== 'sms'): ?>
+          <?php if ($tf_enabled && $tf_method): ?>
             <span class="ms-2 text-muted small"><?= __("2fa.method_{$tf_method}") ?></span>
           <?php endif; ?>
         </div>

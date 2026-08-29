@@ -279,7 +279,6 @@ Prioridad media:
 - Formalizar tablas single-row.
 - Revisar consolidacion entre `tbl_login_logs` y `tbl_login_attempts`.
 - Normalizar dominios externos si se vuelven administrables.
-- Eliminar columnas SMS heredadas en migracion controlada, con backup previo (Etapa 6: analizado — MFA por SMS fue retirado deliberadamente en la migracion 011 y no tiene ningun uso activo hoy). Incluye las columnas `sms_*` de `tbl_mfa_settings`, `tbl_users.two_factor_phone`, el valor `'sms'` de los enum `two_factor_method`/`tbl_two_factor_codes.method`, y el permiso huerfano `security_mfa.test`.
 - Decidir sobre `tbl_users.remember_token` (Etapa 5: analizado y clasificado como campo sin uso actual — no hay login persistente "recordarme" implementado). Pendiente: implementarlo correctamente con diseño completo (tokens seguros, hash, expiracion, revocacion) o eliminarlo con migracion controlada en una etapa futura.
 
 Prioridad baja:

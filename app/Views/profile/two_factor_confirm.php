@@ -34,7 +34,7 @@ require dirname(__DIR__) . '/layouts/main.php';
       <div class="card-body p-4">
         <div class="text-center mb-4">
           <div class="avtar avtar-l bg-light-primary mx-auto mb-3">
-            <i class="ph-duotone ph-<?= $method === 'sms' ? 'device-mobile' : 'envelope-open' ?> text-primary" style="font-size:2rem;"></i>
+            <i class="ph-duotone ph-envelope-open text-primary" style="font-size:2rem;"></i>
           </div>
           <h5 class="mb-1"><?= __('2fa.confirm_heading') ?></h5>
           <p class="text-muted small mb-0"><?= __("2fa.confirm_desc_{$method}") ?></p>

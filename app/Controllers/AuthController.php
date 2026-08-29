@@ -225,10 +225,14 @@ class AuthController extends Controller
 
         // ── Verificación 2FA ──────────────────────────────────────────────────────
         if (!empty($user['two_factor_enabled']) && !empty($user['two_factor_method'])) {
-            if ($user['two_factor_method'] === 'sms') {
+            // Defensa generica: bloquear cualquier metodo 2FA no soportado
+            // (Etapa 6.1 — reemplaza el bloqueo especifico de 'sms', ya
+            // imposible a nivel de schema tras la migracion 031, por una
+            // validacion generica que no depende de un metodo concreto).
+            if (!in_array($user['two_factor_method'], ['email', 'authenticator'], true)) {
                 Audit::log(['module' => 'auth', 'action' => 'mfa.method_unavailable',
                     'entity' => 'user', 'entity_id' => $user['id'],
-                    'description' => "Login bloqueado — método 2FA 'sms' ya no disponible desde {$ip}",
+                    'description' => "Login bloqueado — metodo 2FA no soportado desde {$ip}",
                     'status' => 'denied']);
                 Redirect::withErrors('/login',
                     ['general' => 'Tu método de verificación en 2 pasos ya no está disponible. Contacta al administrador.'],

@@ -27,11 +27,10 @@ class MfaSettings extends Model
     {
         try {
             $stmt = $this->db->prepare(
-                'INSERT INTO ' . self::TABLE . ' (id, email_enabled, sms_enabled, authenticator_enabled)
-                 VALUES (1, ?, 0, ?)
+                'INSERT INTO ' . self::TABLE . ' (id, email_enabled, authenticator_enabled)
+                 VALUES (1, ?, ?)
                  ON DUPLICATE KEY UPDATE
                     email_enabled         = VALUES(email_enabled),
-                    sms_enabled           = 0,
                     authenticator_enabled = VALUES(authenticator_enabled),
                     updated_at            = NOW()'
             );
@@ -50,7 +49,6 @@ class MfaSettings extends Model
         return [
             'id'                    => 1,
             'email_enabled'         => 0,
-            'sms_enabled'           => 0,
             'authenticator_enabled' => 1,
             'created_at'            => null,
             'updated_at'            => null,

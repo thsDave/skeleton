@@ -282,15 +282,15 @@ class User extends Model
 
     // ─── 2FA ──────────────────────────────────────────────────────────────────
 
-    public function enableTwoFactor(int $id, string $method, ?string $secretEnc = null, ?string $phone = null): bool
+    public function enableTwoFactor(int $id, string $method, ?string $secretEnc = null): bool
     {
         $stmt = $this->db->prepare(
             'UPDATE ' . self::TABLE . '
              SET two_factor_enabled = 1, two_factor_method = ?,
-                 two_factor_secret_enc = ?, two_factor_phone = ?, updated_at = NOW()
+                 two_factor_secret_enc = ?, updated_at = NOW()
              WHERE id = ?'
         );
-        return $stmt->execute([$method, $secretEnc, $phone, $id]);
+        return $stmt->execute([$method, $secretEnc, $id]);
     }
 
     public function disableTwoFactor(int $id): bool
@@ -298,7 +298,7 @@ class User extends Model
         $stmt = $this->db->prepare(
             'UPDATE ' . self::TABLE . '
              SET two_factor_enabled = 0, two_factor_method = NULL,
-                 two_factor_secret_enc = NULL, two_factor_phone = NULL, updated_at = NOW()
+                 two_factor_secret_enc = NULL, updated_at = NOW()
              WHERE id = ?'
         );
         return $stmt->execute([$id]);
@@ -366,7 +366,7 @@ class User extends Model
             $stmt = $this->db->query(
                 'SELECT two_factor_method, COUNT(*) AS count
                  FROM ' . self::TABLE . '
-                 WHERE two_factor_enabled = 1 AND two_factor_method IS NOT NULL AND two_factor_method != \'sms\'
+                 WHERE two_factor_enabled = 1 AND two_factor_method IS NOT NULL
                  GROUP BY two_factor_method'
             );
             return $stmt->fetchAll(\PDO::FETCH_ASSOC);
