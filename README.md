@@ -11,6 +11,7 @@ Fecha: **2026-05-13**
 - SMTP administrable y prueba de envio.
 - OAuth externo para Google, Microsoft 365 y GitHub.
 - MFA por correo/autenticador, politica de contrasenas e intentos fallidos.
+- Rate limiting (`RateLimitService`) en MFA TOTP, desbloqueo de sesion, recuperacion de contrasena por IP y pruebas administrativas de SMTP/OAuth.
 - Gestion de sesiones activas, historial de sesiones y bloqueo por inactividad.
 - Usuarios, roles, permisos y validacion de permisos en backend.
 - Auditoria, glosario de auditoria y exportaciones Excel.
@@ -134,7 +135,7 @@ En produccion cambia `APP_URL` al dominio real y actualiza las Redirect URI en c
 |---|---|
 | `app/Controllers` | Controladores MVC y flujo HTTP. |
 | `app/Models` | Acceso a datos con PDO. |
-| `app/Services` | Servicios de dominio: correo, OAuth, uploads, sesiones, salud, limpieza. |
+| `app/Services` | Servicios de dominio: correo, OAuth, uploads, sesiones, salud, limpieza, rate limit. |
 | `app/Views` | Vistas PHP. |
 | `app/Views/layouts` | Header, sidebar, topbar y footer. |
 | `config` | Configuracion de aplicacion, DB, uploads y auditoria. |
@@ -161,6 +162,7 @@ En produccion cambia `APP_URL` al dominio real y actualiza las Redirect URI en c
 | `tbl_audit_logs` | Auditoria de acciones del sistema. |
 | `tbl_login_logs` | Registro historico de logins. |
 | `tbl_login_attempts` | Intentos fallidos y proteccion de acceso. |
+| `tbl_rate_limits` | Control generico de intentos por accion (MFA TOTP, desbloqueo de sesion, recuperacion de contrasena por IP, pruebas admin SMTP/OAuth) via `RateLimitService`. |
 | `tbl_security_settings` | Bloqueo por inactividad. |
 | `tbl_smtp_settings` | Configuracion SMTP cifrada. |
 | `tbl_mfa_settings` | Configuracion global MFA. |
@@ -186,7 +188,7 @@ Dominios principales:
 - Configuracion: SMTP, autenticacion, apariencia, sistema y salud.
 - Contenido/manuales: metadatos de manuales y archivos en `public/uploads`.
 - Notificaciones: mensajes internos por usuario.
-- Mantenimiento/temporales: limpieza controlada de tokens, sesiones, intentos, logs y notificaciones.
+- Mantenimiento/temporales: limpieza controlada de tokens, codigos MFA, limites de tasa, sesiones, intentos, logs y notificaciones.
 
 ## Convenciones De Base De Datos
 

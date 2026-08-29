@@ -95,7 +95,7 @@ Usar servicios para responsabilidades transversales:
 - Limpieza de temporales.
 - Politica de contrasenas.
 - Sesiones activas.
-- Rate limit (`App\Services\RateLimitService`): servicio generico para limitar intentos por accion + identificador (IP, email, usuario, etc.). Usarlo en flujos sensibles nuevos que necesiten throttling. Aun no esta conectado a login, MFA, OAuth ni recuperacion de contrasena (planificado para una etapa futura).
+- Rate limit (`App\Services\RateLimitService`): servicio generico para limitar intentos por accion + identificador (IP, email, usuario, etc.), respaldado por `tbl_rate_limits`. Guarda unicamente `identifier_hash` (HMAC-SHA256 con `APP_KEY`), nunca el identificador crudo. El servicio solo cuenta intentos y decide si algo esta bloqueado (`hit()`, `tooManyAttempts()`, `availableIn()`, `clear()`); el mensaje mostrado al usuario y la auditoria los decide siempre el controlador que lo usa, no el servicio. Se limpia automaticamente desde mantenimiento via `TemporaryDataCleanupService` (categoria `rate_limits`), respetando bloqueos activos. Ya esta integrado en: MFA TOTP (`mfa.totp_challenge`), desbloqueo de sesion (`session.unlock`), recuperacion de contrasena por IP (`password_reset.request_ip`, adicional al limite existente por correo) y pruebas administrativas de SMTP/OAuth (`admin.smtp_test`, `admin.oauth_test`). Todavia NO reemplaza el login local ni `LoginSecurityService` (que sigue usando su propio mecanismo por intentos/IP en `tbl_login_attempts`). No usar `RateLimitService` para guardar secretos, tokens, contrasenas ni codigos MFA — solo cuenta intentos por accion+identificador.
 
 ## UploadService
 
