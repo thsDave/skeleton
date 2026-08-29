@@ -328,6 +328,28 @@ CREATE TABLE `tbl_permissions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `tbl_rate_limits` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `action` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Ej: auth.login, mfa.totp_challenge, password_reset.request',
+  `identifier_hash` char(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'HMAC-SHA256 hex del identificador (IP/email/user_id); nunca se guarda el identificador crudo',
+  `identifier_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Ej: ip, email, user, session, custom',
+  `attempts` int NOT NULL DEFAULT '0',
+  `max_attempts` int NOT NULL,
+  `window_seconds` int NOT NULL,
+  `first_attempt_at` datetime NOT NULL,
+  `available_at` datetime DEFAULT NULL COMMENT 'NULL si no esta bloqueado; fecha/hora a partir de la cual vuelve a estar disponible si esta bloqueado',
+  `last_attempt_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_rate_limits_action_identifier` (`action`,`identifier_hash`),
+  KEY `idx_rate_limits_available_at` (`available_at`),
+  KEY `idx_rate_limits_last_attempt_at` (`last_attempt_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Almacenamiento generico de rate limit (Etapa 3.1). Tabla nueva, aun no conectada a ningun flujo funcional.';
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `tbl_role_permissions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `role_id` int NOT NULL,

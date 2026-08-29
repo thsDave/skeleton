@@ -80,6 +80,7 @@ Usar servicios para responsabilidades transversales:
 - Limpieza de temporales.
 - Politica de contrasenas.
 - Sesiones activas.
+- Rate limit (`App\Services\RateLimitService`): servicio generico para limitar intentos por accion + identificador (IP, email, usuario, etc.). Usarlo en flujos sensibles nuevos que necesiten throttling. Aun no esta conectado a login, MFA, OAuth ni recuperacion de contrasena (planificado para una etapa futura).
 
 ## UploadService
 
