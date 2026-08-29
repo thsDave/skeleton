@@ -16,10 +16,23 @@ use App\Models\PasswordReset;
 use App\Services\Mailer;
 use App\Services\NotificationService;
 use App\Services\PasswordPolicyService;
+use App\Services\RateLimitService;
 use App\Services\UserSessionService;
 
 class PasswordResetController extends Controller
 {
+    // Rate limit por IP en la solicitud de recuperacion (Etapa 3.4).
+    // Eje adicional al limite ya existente por correo
+    // (PasswordReset::countRecentRequests()), NO lo reemplaza. Limite
+    // aprobado: 10 solicitudes / 15 minutos, por IP. Se usan constantes
+    // privadas en vez de env() porque el enunciado de esta etapa
+    // prefiere no tocar .env/.env.example; puede externalizarse en una
+    // etapa futura.
+    private const PASSWORD_RESET_IP_RATE_LIMIT_ACTION = 'password_reset.request_ip';
+    private const PASSWORD_RESET_IP_IDENTIFIER_TYPE = 'ip';
+    private const PASSWORD_RESET_IP_MAX_ATTEMPTS = 10;
+    private const PASSWORD_RESET_IP_WINDOW_SECONDS = 900;
+
     private User $userModel;
     private PasswordReset $resetModel;
 
@@ -52,6 +65,68 @@ class PasswordResetController extends Controller
 
         if ($validator->fails()) {
             Redirect::withErrors('/forgot-password', $validator->errors(), ['email' => $email]);
+        }
+
+        // ── Rate limit por IP (Etapa 3.4) — eje adicional, no reemplaza el limite
+        //    por correo. Se evalua ANTES de cualquier trabajo costoso (consulta de
+        //    dominio, busqueda de usuario, generacion de token, envio de correo).
+        $rateLimiter = new RateLimitService();
+        $ip          = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+        if ($rateLimiter->tooManyAttempts(
+            self::PASSWORD_RESET_IP_RATE_LIMIT_ACTION,
+            $ip,
+            self::PASSWORD_RESET_IP_MAX_ATTEMPTS,
+            self::PASSWORD_RESET_IP_WINDOW_SECONDS,
+            self::PASSWORD_RESET_IP_IDENTIFIER_TYPE
+        )) {
+            Logger::security("Password reset IP rate limited (blocked): {$ip}");
+            Audit::log([
+                'module'      => 'password_reset',
+                'action'      => 'password_reset.ip_rate_limited',
+                'description' => 'Solicitud de recuperacion de contrasena mientras la IP esta bloqueada temporalmente',
+                'status'      => 'denied',
+                'user_id'     => null,
+                'new_values'  => [
+                    'action'          => self::PASSWORD_RESET_IP_RATE_LIMIT_ACTION,
+                    'identifier_type' => self::PASSWORD_RESET_IP_IDENTIFIER_TYPE,
+                    'reason'          => 'ip_rate_limit',
+                ],
+            ]);
+            // Mismo mensaje generico que el resto del flujo — nunca revela el motivo.
+            Session::flash('info', __('auth.reset_link_generic_message'));
+            Redirect::to('/forgot-password');
+        }
+
+        // Toda solicitud valida de formulario cuenta para el limite por IP,
+        // exista o no exista el correo, para que un atacante no pueda evadir
+        // el limite probando correos inexistentes.
+        $ipHit = $rateLimiter->hit(
+            self::PASSWORD_RESET_IP_RATE_LIMIT_ACTION,
+            $ip,
+            self::PASSWORD_RESET_IP_IDENTIFIER_TYPE,
+            self::PASSWORD_RESET_IP_MAX_ATTEMPTS,
+            self::PASSWORD_RESET_IP_WINDOW_SECONDS
+        );
+
+        if ($ipHit['blocked']) {
+            Logger::security("Password reset IP rate limit reached: {$ip}");
+            Audit::log([
+                'module'      => 'password_reset',
+                'action'      => 'password_reset.ip_rate_limited',
+                'description' => 'Recuperacion de contrasena bloqueada temporalmente por exceso de solicitudes desde la misma IP',
+                'status'      => 'denied',
+                'user_id'     => null,
+                'new_values'  => [
+                    'action'          => self::PASSWORD_RESET_IP_RATE_LIMIT_ACTION,
+                    'identifier_type' => self::PASSWORD_RESET_IP_IDENTIFIER_TYPE,
+                    'attempts'        => $ipHit['attempts'],
+                    'available_in'    => $ipHit['available_in'],
+                    'reason'          => 'ip_rate_limit',
+                ],
+            ]);
+            Session::flash('info', __('auth.reset_link_generic_message'));
+            Redirect::to('/forgot-password');
         }
 
         // ── Restricción de dominio institucional ──────────────────────────────────
