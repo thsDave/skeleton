@@ -27,6 +27,7 @@ return [
     'auth.session_locked' => $event('Autenticacion', 'Sesion bloqueada por inactividad', 'La sesion fue bloqueada por inactividad.', 'info', 'Normalmente no requiere accion salvo que ocurra durante actividad sospechosa.'),
     'auth.session_unlocked' => $event('Autenticacion', 'Sesion desbloqueada', 'El usuario desbloqueo su sesion por inactividad.', 'success', 'Revisar solo si hay intentos fallidos previos.'),
     'auth.session_unlock_failed' => $event('Autenticacion', 'Desbloqueo de sesion fallido', 'Fallo el desbloqueo de una sesion bloqueada.', 'warning', 'Revisar intentos repetidos o IP inusual.'),
+    'auth.session_unlock_rate_limited' => $event('Autenticacion', 'Desbloqueo de sesion bloqueado temporalmente', 'Se alcanzo o se intento superar el limite de intentos de desbloqueo de sesion.', 'warning', 'Revisar usuario, recurrencia y posibles intentos de acceso fisico o sesion desatendida.'),
     'security.access_denied' => $event('Seguridad', 'Acceso denegado', 'Un usuario intento acceder a una ruta sin permiso suficiente.', 'warning', 'Revisar ruta solicitada, permiso requerido y recurrencia del evento.'),
 
     'external_login.started' => $event('OAuth', 'Inicio de login externo', 'Se inicio un flujo de autenticacion externa.', 'info', 'Confirmar que el proveedor y origen sean esperados.'),

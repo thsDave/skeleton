@@ -453,6 +453,8 @@ return [
     'lock.unlock'                => 'Desbloquear',
     'lock.logout'                => 'Cerrar Sesión',
     'lock.invalid_password'      => 'Contraseña incorrecta. Inténtalo de nuevo.',
+    'lock.unlock_too_many_attempts' => 'Demasiados intentos de desbloqueo. Intenta nuevamente en :seconds segundos.',
+    'lock.unlock_invalid_remaining' => 'Contraseña incorrecta. Intentos restantes: :remaining.',
     'lock.session_unlocked'      => 'Sesión desbloqueada correctamente.',
     'lock.session_locked'        => 'Sesión bloqueada por inactividad',
     'lock.warning_html'          => 'Sin actividad. Tu sesión se bloqueará en <b>:secs</b> segundos.',

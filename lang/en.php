@@ -453,6 +453,8 @@ return [
     'lock.unlock'                => 'Unlock',
     'lock.logout'                => 'Log Out',
     'lock.invalid_password'      => 'Incorrect password. Please try again.',
+    'lock.unlock_too_many_attempts' => 'Too many unlock attempts. Try again in :seconds seconds.',
+    'lock.unlock_invalid_remaining' => 'Incorrect password. Remaining attempts: :remaining.',
     'lock.session_unlocked'      => 'Session unlocked successfully.',
     'lock.session_locked'        => 'Session locked due to inactivity',
     'lock.warning_html'          => 'No activity detected. Your session will lock in <b>:secs</b> seconds.',

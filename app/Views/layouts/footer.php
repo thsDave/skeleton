@@ -91,11 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
     icon: 'success',
     title: <?= json_encode(__('alerts.success'), JSON_UNESCAPED_UNICODE) ?>,
     text: <?= json_encode($_swSuccess, JSON_UNESCAPED_UNICODE) ?>,
-    timer: 3500,
-    timerProgressBar: true,
-    showConfirmButton: false,
-    toast: true,
-    position: 'top-end'
+    confirmButtonColor: '#4680ff'
   });
   <?php endif; ?>
   <?php if ($_swError): ?>

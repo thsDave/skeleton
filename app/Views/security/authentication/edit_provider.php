@@ -413,13 +413,9 @@ document.addEventListener('DOMContentLoaded', function () {
       copyToClipboard(uri,
         function () {
           Swal.fire({
-            toast: true,
-            position: 'top-end',
             icon: 'success',
             title: msgCopied,
-            showConfirmButton: false,
-            timer: 2500,
-            timerProgressBar: true
+            confirmButtonColor: '#4680ff'
           });
         },
         function () {

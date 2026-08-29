@@ -7,9 +7,20 @@ use Core\Session;
 use Core\CSRF;
 use Core\Redirect;
 use App\Models\User;
+use App\Services\RateLimitService;
 
 class LockController
 {
+    // Rate limit del desbloqueo de sesion (Etapa 3.3). Limite aprobado:
+    // 10 intentos / 15 minutos, por usuario. Se usan constantes privadas
+    // en vez de env() porque el enunciado de esta etapa no pidio una
+    // variable de entorno especifica; puede moverse a .env en una etapa
+    // futura si se desea configuracion externa.
+    private const UNLOCK_RATE_LIMIT_ACTION = 'session.unlock';
+    private const UNLOCK_RATE_LIMIT_IDENTIFIER_TYPE = 'user';
+    private const UNLOCK_RATE_LIMIT_MAX_ATTEMPTS = 10;
+    private const UNLOCK_RATE_LIMIT_WINDOW_SECONDS = 900;
+
     public function show(): void
     {
         if (!Session::has('user_id')) {
@@ -84,17 +95,77 @@ class LockController
         $password = $_POST['password'] ?? '';
         $userId   = (int) Session::get('user_id');
 
+        $rateLimiter = new RateLimitService();
+        $identifier  = (string) $userId;
+
+        // ── Bloqueado por intentos previos: no validar la contrasena ────────────
+        if ($rateLimiter->tooManyAttempts(
+            self::UNLOCK_RATE_LIMIT_ACTION,
+            $identifier,
+            self::UNLOCK_RATE_LIMIT_MAX_ATTEMPTS,
+            self::UNLOCK_RATE_LIMIT_WINDOW_SECONDS,
+            self::UNLOCK_RATE_LIMIT_IDENTIFIER_TYPE
+        )) {
+            $availableIn = $rateLimiter->availableIn(
+                self::UNLOCK_RATE_LIMIT_ACTION,
+                $identifier,
+                self::UNLOCK_RATE_LIMIT_IDENTIFIER_TYPE
+            );
+
+            Audit::log(['module' => 'auth', 'action' => 'auth.session_unlock_rate_limited',
+                'entity' => 'user', 'entity_id' => $userId,
+                'description' => 'Intento de desbloqueo de sesion mientras el usuario esta bloqueado temporalmente',
+                'status' => 'denied',
+                'new_values' => [
+                    'action'          => self::UNLOCK_RATE_LIMIT_ACTION,
+                    'identifier_type' => self::UNLOCK_RATE_LIMIT_IDENTIFIER_TYPE,
+                    'available_in'    => $availableIn,
+                ],
+            ]);
+
+            Session::flash('lock_error', __('lock.unlock_too_many_attempts', ['seconds' => $availableIn]));
+            Redirect::to('/lock');
+            exit;
+        }
+
         $userModel = new User();
         $user      = $userModel->findById($userId);
 
         if (!$user || !password_verify($password, $user['password'])) {
+            $result = $rateLimiter->hit(
+                self::UNLOCK_RATE_LIMIT_ACTION,
+                $identifier,
+                self::UNLOCK_RATE_LIMIT_IDENTIFIER_TYPE,
+                self::UNLOCK_RATE_LIMIT_MAX_ATTEMPTS,
+                self::UNLOCK_RATE_LIMIT_WINDOW_SECONDS
+            );
+
             Audit::log(['module' => 'auth', 'action' => 'auth.session_unlock_failed',
                 'entity' => 'user', 'entity_id' => $userId,
                 'description' => 'Intento fallido de desbloqueo de sesión', 'status' => 'failed']);
-            Session::flash('lock_error', __('lock.invalid_password'));
+
+            if ($result['blocked']) {
+                Audit::log(['module' => 'auth', 'action' => 'auth.session_unlock_rate_limited',
+                    'entity' => 'user', 'entity_id' => $userId,
+                    'description' => 'Desbloqueo de sesion bloqueado temporalmente por exceso de intentos',
+                    'status' => 'denied',
+                    'new_values' => [
+                        'action'          => self::UNLOCK_RATE_LIMIT_ACTION,
+                        'identifier_type' => self::UNLOCK_RATE_LIMIT_IDENTIFIER_TYPE,
+                        'attempts'        => $result['attempts'],
+                        'available_in'    => $result['available_in'],
+                    ],
+                ]);
+                Session::flash('lock_error', __('lock.unlock_too_many_attempts', ['seconds' => $result['available_in']]));
+            } else {
+                Session::flash('lock_error', __('lock.unlock_invalid_remaining', ['remaining' => $result['remaining']]));
+            }
+
             Redirect::to('/lock');
             exit;
         }
+
+        $rateLimiter->clear(self::UNLOCK_RATE_LIMIT_ACTION, $identifier, self::UNLOCK_RATE_LIMIT_IDENTIFIER_TYPE);
 
         Audit::log(['module' => 'auth', 'action' => 'auth.session_unlocked',
             'entity' => 'user', 'entity_id' => $userId,
