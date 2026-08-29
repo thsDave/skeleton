@@ -63,7 +63,7 @@ class ProfileController extends Controller
         // Validar idioma
         $langIdInt = $languageId ? (int)$languageId : null;
         if ($langIdInt && !$this->langModel->isActiveById($langIdInt)) {
-            Redirect::withError('/profile', 'El idioma seleccionado no es válido.');
+            Redirect::withError('/profile', __('profile.invalid_language'));
         }
 
         $id = Auth::id();
@@ -184,9 +184,9 @@ class ProfileController extends Controller
                 'description' => 'Perfil de usuario actualizado',
                 'new_values' => $newVals,
                 'status' => 'success']);
-            Redirect::withSuccess('/profile', 'Perfil actualizado correctamente.');
+            Redirect::withSuccess('/profile', __('profile.updated_ok'));
         } else {
-            Redirect::withError('/profile/edit', 'No se pudo actualizar el perfil. Intenta de nuevo.');
+            Redirect::withError('/profile/edit', __('profile.update_error'));
         }
     }
 

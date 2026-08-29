@@ -92,7 +92,7 @@ $loginBgUrl = !empty($appearance['login_background_path'])
               class="form-control <?= isset($errors['app_tagline']) ? 'is-invalid' : '' ?>"
               maxlength="255"
               value="<?= htmlspecialchars($appearance['app_tagline'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-              placeholder="Sistema MVC">
+              placeholder="<?= __('appearance.app_tagline_placeholder') ?>">
             <?php if (isset($errors['app_tagline'])): ?>
               <div class="invalid-feedback"><?= htmlspecialchars($errors['app_tagline'], ENT_QUOTES, 'UTF-8') ?></div>
             <?php endif; ?>

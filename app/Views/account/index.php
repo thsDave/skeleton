@@ -9,14 +9,14 @@ require dirname(__DIR__) . '/layouts/main.php';
     <div class="row align-items-center g-0">
       <div class="col-sm-auto">
         <div class="page-header-title">
-          <h5 class="mb-0">Mi Cuenta</h5>
+          <h5 class="mb-0"><?= __('account.title') ?></h5>
         </div>
       </div>
       <div class="col-sm-auto ms-auto">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard">Inicio</a></li>
-            <li class="breadcrumb-item active">Mi Cuenta</li>
+            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard"><?= __('common.home') ?></a></li>
+            <li class="breadcrumb-item active"><?= __('account.title') ?></li>
           </ol>
         </nav>
       </div>

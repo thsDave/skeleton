@@ -458,7 +458,7 @@ class AccountController extends Controller
                 'entity' => 'user', 'entity_id' => $id,
                 'description' => 'Intento de cambio de contraseña fallido: contraseña actual incorrecta',
                 'status' => 'failed']);
-            Redirect::withErrors('/account/edit-password', ['current_password' => 'La contraseña actual es incorrecta.']);
+            Redirect::withErrors('/account/edit-password', ['current_password' => __('account.current_password_incorrect')]);
         }
 
         $policySvc    = new PasswordPolicyService();
@@ -496,13 +496,13 @@ class AccountController extends Controller
                 'description' => 'Contraseña de cuenta actualizada',
                 'status' => 'success']);
             (new NotificationService())->notifyPasswordChanged((int)$id);
-            $message = 'Contraseña actualizada correctamente.';
+            $message = __('account.pwd_updated');
             if ($closedSessions > 0) {
                 $message .= ' ' . __('sessions.other_sessions_closed');
             }
             Redirect::withSuccess('/account', $message);
         } else {
-            Redirect::withError('/account/edit-password', 'No se pudo actualizar la contraseña. Intenta de nuevo.');
+            Redirect::withError('/account/edit-password', __('password_policy.password_update_error'));
         }
     }
 

@@ -95,6 +95,9 @@ return [
     'profile.lastnames_placeholder' => 'Your last names',
     'profile.select_language'   => '— Select language —',
     'profile.preferences_updated' => 'Preferences updated successfully.',
+    'profile.invalid_language'  => 'The selected language is not valid.',
+    'profile.updated_ok'        => 'Profile updated successfully.',
+    'profile.update_error'      => 'Could not update the profile. Please try again.',
 
     // ── Account ─────────────────────────────────────────────────────────────────
     'account.title'             => 'My Account',
@@ -122,6 +125,7 @@ return [
     'account.active_status'     => 'Active',
     'account.email_updated'     => 'Email updated successfully.',
     'account.pwd_updated'       => 'Password updated successfully.',
+    'account.current_password_incorrect' => 'The current password is incorrect.',
     'account.email_placeholder' => 'new@email.com',
     'account.pwd_placeholder'   => 'Minimum 10 characters',
     'account.confirm_placeholder'=> 'Repeat the new password',
@@ -222,7 +226,15 @@ return [
     'permissions.users.unlock'  => 'Unlock User',
     'users.last_admin'          => 'Cannot inactivate the last active administrator.',
     'users.own_account'         => 'You cannot inactivate your own account.',
+    'users.create_error'        => 'Could not create the user. Please try again.',
+    'users.inactivate_error'    => 'Could not inactivate the user.',
+    'users.confirm_password_placeholder' => 'Repeat password',
+    'users.confirm_new_password_placeholder' => 'Repeat new password',
     'users.invalid_role_status' => 'Invalid role or status.',
+    'users.invalid_role'        => 'The selected role is not valid.',
+    'users.invalid_status'      => 'The selected status is not valid.',
+    'users.email_in_use_other'  => 'This email is already in use by another user.',
+    'users.update_error'        => 'Could not update the user.',
     'users.create_title'        => 'Create User',
     'users.min_pwd'             => 'Minimum 10 characters',
 
@@ -362,6 +374,7 @@ return [
 
     // ── Password (visual validation) ────────────────────────────────────────────
     'password.min_length'        => 'Minimum 10 characters',
+    'password.min_chars'         => 'Minimum :min characters',
     'password.uppercase'         => 'At least one uppercase letter',
     'password.lowercase'         => 'At least one lowercase letter',
     'password.number'            => 'At least one number',
@@ -450,6 +463,10 @@ return [
     'security.sessions.disabled'       => 'Session lock disabled',
     'security.sessions.updated'        => 'Security settings updated successfully.',
     'security.sessions.enable_label'   => 'Enable automatic lock on inactivity',
+    'security.sessions.info_lock_activates'   => 'The lock activates after the configured inactivity time.',
+    'security.sessions.info_unlock_password'  => 'The user can unlock the session by entering their password.',
+    'security.sessions.info_redirect_back'    => 'After unlocking, the user is redirected to the page they were on.',
+    'security.sessions.info_global_timeout'   => 'The global session timeout (30 min) remains active independently.',
 
     // ── Menu – Security ──────────────────────────────────────────────────────────
     'menu.security'                  => 'Security',
@@ -1117,6 +1134,7 @@ return [
     'appearance.identity'                => 'Visual Identity',
     'appearance.app_display_name'        => 'System display name',
     'appearance.app_tagline'             => 'Tagline or short description',
+    'appearance.app_tagline_placeholder' => 'MVC System',
     'appearance.logo'                    => 'System logo',
     'appearance.no_logo'                 => 'No custom logo',
     'appearance.logo_hint'               => 'JPG, PNG or WEBP — max 2 MB',

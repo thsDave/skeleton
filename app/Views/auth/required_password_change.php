@@ -116,7 +116,7 @@ $_rSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
                    data-number="<?= $_rNumber ? '1' : '0' ?>"
                    data-special="<?= $_rSpecial ? '1' : '0' ?>">
                 <div id="req-length" class="text-muted">
-                  <i class="ph-duotone ph-circle me-1"></i>Mínimo <?= $_rMinLen ?> caracteres
+                  <i class="ph-duotone ph-circle me-1"></i><?= __('password.min_chars', ['min' => $_rMinLen]) ?>
                 </div>
                 <?php if ($_rUpper): ?><div id="req-upper" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.uppercase') ?></div><?php endif; ?>
                 <?php if ($_rLower): ?><div id="req-lower" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.lowercase') ?></div><?php endif; ?>

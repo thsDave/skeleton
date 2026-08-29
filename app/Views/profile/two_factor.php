@@ -15,7 +15,7 @@ require dirname(__DIR__) . '/layouts/main.php';
       <div class="col-sm-auto ms-auto">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard"><?= __('common.home') ?></a></li>
             <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/profile"><?= __('menu.my_profile') ?></a></li>
             <li class="breadcrumb-item active"><?= __('2fa.title') ?></li>
           </ol>

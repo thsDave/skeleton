@@ -256,17 +256,17 @@ class UsersController extends Controller
         }
 
         if ($this->userModel->emailExists($email, 0)) {
-            Redirect::withErrors('/users/create', ['email' => 'Este correo electrónico ya está en uso.'], compact(
+            Redirect::withErrors('/users/create', ['email' => __('account.email_change_email_exists')], compact(
                 'nombres', 'apellidos', 'telefono', 'direccion', 'email', 'roleId', 'statusId'
             ));
         }
 
         if (!$this->roleModel->exists($roleId)) {
-            Redirect::withErrors('/users/create', ['role_id' => 'El rol seleccionado no es válido.']);
+            Redirect::withErrors('/users/create', ['role_id' => __('users.invalid_role')]);
         }
 
         if (!$this->statusModel->exists($statusId)) {
-            Redirect::withErrors('/users/create', ['status_id' => 'El estado seleccionado no es válido.']);
+            Redirect::withErrors('/users/create', ['status_id' => __('users.invalid_status')]);
         }
 
         // Procesar imagen
@@ -321,11 +321,11 @@ class UsersController extends Controller
                     'email' => $email, 'role_id' => $roleId, 'status_id' => $statusId,
                     'force_password_change' => $forcePasswordChange],
                 'status' => 'success']);
-            Redirect::withSuccess('/users', 'Usuario creado correctamente.');
+            Redirect::withSuccess('/users', __('users.created_ok'));
         } else {
             Audit::log(['module' => 'users', 'action' => 'users.create_failed',
                 'description' => "Error al crear usuario: {$email}", 'status' => 'failed']);
-            Redirect::withError('/users/create', 'No se pudo crear el usuario. Intenta de nuevo.');
+            Redirect::withError('/users/create', __('users.create_error'));
         }
     }
 
@@ -337,7 +337,7 @@ class UsersController extends Controller
         $user       = $this->userModel->findById($userId);
 
         if (!$user) {
-            Redirect::withError('/users', 'Usuario no encontrado.');
+            Redirect::withError('/users', __('users.not_found'));
         }
 
         $roles      = $this->roleModel->getAll();
@@ -360,7 +360,7 @@ class UsersController extends Controller
         $user      = $this->userModel->findById($userId);
 
         if (!$user) {
-            Redirect::withError('/users', 'Usuario no encontrado.');
+            Redirect::withError('/users', __('users.not_found'));
         }
 
         $nombres   = trim($this->input('nombres', ''));
@@ -417,17 +417,17 @@ class UsersController extends Controller
         }
 
         if ($this->userModel->emailExists($email, $userId)) {
-            Redirect::withErrors("/users/edit/{$userId}", ['email' => 'Este correo ya está en uso por otro usuario.']);
+            Redirect::withErrors("/users/edit/{$userId}", ['email' => __('users.email_in_use_other')]);
         }
 
         if (!$this->roleModel->exists($roleId) || !$this->statusModel->exists($statusId)) {
-            Redirect::withError("/users/edit/{$userId}", 'Rol o estado no válido.');
+            Redirect::withError("/users/edit/{$userId}", __('users.invalid_role_status'));
         }
 
         // Evitar inactivar al último administrador activo
         if ($statusId !== 1 && $user['role_slug'] === 'administrator') {
             if ($this->userModel->isLastActiveAdmin($userId)) {
-                Redirect::withError("/users/edit/{$userId}", 'No se puede inactivar al último administrador activo.');
+                Redirect::withError("/users/edit/{$userId}", __('users.last_admin'));
             }
         }
 
@@ -530,12 +530,12 @@ class UsersController extends Controller
                 'entity' => 'user', 'entity_id' => $userId,
                 'description' => "Usuario ID {$userId} actualizado",
                 'old_values' => $oldAudit, 'new_values' => $newAudit, 'status' => 'success']);
-            Redirect::withSuccess('/users', 'Usuario actualizado correctamente.');
+            Redirect::withSuccess('/users', __('users.updated_ok'));
         } else {
             Audit::log(['module' => 'users', 'action' => 'users.update_failed',
                 'entity' => 'user', 'entity_id' => $userId,
                 'description' => "Error al actualizar usuario ID {$userId}", 'status' => 'failed']);
-            Redirect::withError("/users/edit/{$userId}", 'No se pudo actualizar el usuario.');
+            Redirect::withError("/users/edit/{$userId}", __('users.update_error'));
         }
     }
 
@@ -552,16 +552,16 @@ class UsersController extends Controller
         $userId = (int)$id;
 
         if ($userId === Auth::id()) {
-            Redirect::withError('/users', 'No puedes inactivar tu propia cuenta.');
+            Redirect::withError('/users', __('users.own_account'));
         }
 
         $user = $this->userModel->findById($userId);
         if (!$user) {
-            Redirect::withError('/users', 'Usuario no encontrado.');
+            Redirect::withError('/users', __('users.not_found'));
         }
 
         if ($this->userModel->isLastActiveAdmin($userId)) {
-            Redirect::withError('/users', 'No se puede inactivar al último administrador activo.');
+            Redirect::withError('/users', __('users.last_admin'));
         }
 
         if ($this->userModel->inactivate($userId)) {
@@ -569,9 +569,9 @@ class UsersController extends Controller
             Audit::log(['module' => 'users', 'action' => 'users.deactivated',
                 'entity' => 'user', 'entity_id' => $userId,
                 'description' => "Usuario ID {$userId} inactivado", 'status' => 'success']);
-            Redirect::withSuccess('/users', 'Usuario inactivado correctamente.');
+            Redirect::withSuccess('/users', __('users.inactivated_ok'));
         } else {
-            Redirect::withError('/users', 'No se pudo inactivar el usuario.');
+            Redirect::withError('/users', __('users.inactivate_error'));
         }
     }
 

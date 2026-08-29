@@ -93,21 +93,21 @@ require dirname(dirname(__DIR__)) . '/layouts/main.php';
   <div class="col-lg-5">
     <div class="card">
       <div class="card-header">
-        <h6 class="mb-0"><i class="ph-duotone ph-info me-2 text-info"></i>Información</h6>
+        <h6 class="mb-0"><i class="ph-duotone ph-info me-2 text-info"></i><?= __('security_authentication.info') ?></h6>
       </div>
       <div class="card-body">
         <ul class="list-unstyled mb-0 small text-muted">
           <li class="mb-2"><i class="ph-duotone ph-check-circle text-success me-1"></i>
-            El bloqueo se activa tras el tiempo de inactividad configurado.
+            <?= __('security.sessions.info_lock_activates') ?>
           </li>
           <li class="mb-2"><i class="ph-duotone ph-check-circle text-success me-1"></i>
-            El usuario puede desbloquear la sesión ingresando su contraseña.
+            <?= __('security.sessions.info_unlock_password') ?>
           </li>
           <li class="mb-2"><i class="ph-duotone ph-check-circle text-success me-1"></i>
-            Tras desbloquear, el usuario es redirigido a la página donde estaba.
+            <?= __('security.sessions.info_redirect_back') ?>
           </li>
           <li class="mb-0"><i class="ph-duotone ph-warning text-warning me-1"></i>
-            El timeout de sesión global (30 min) sigue activo independientemente.
+            <?= __('security.sessions.info_global_timeout') ?>
           </li>
         </ul>
       </div>

@@ -2,7 +2,7 @@
 use Core\Session;
 use Core\CSRF;
 
-$pageTitle  = 'Nuevo Usuario';
+$pageTitle  = __('users.new_user');
 $activeMenu = 'users';
 $errors     = Session::getFlash('errors', []);
 $old        = Session::getFlash('old', []);
@@ -15,15 +15,15 @@ require dirname(__DIR__) . '/layouts/main.php';
     <div class="row align-items-center g-0">
       <div class="col-sm-auto">
         <div class="page-header-title">
-          <h5 class="mb-0">Nuevo Usuario</h5>
+          <h5 class="mb-0"><?= __('users.new_user') ?></h5>
         </div>
       </div>
       <div class="col-sm-auto ms-auto">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/users">Usuarios</a></li>
-            <li class="breadcrumb-item active">Nuevo</li>
+            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard"><?= __('common.home') ?></a></li>
+            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/users"><?= __('users.title') ?></a></li>
+            <li class="breadcrumb-item active"><?= __('users.new_user') ?></li>
           </ol>
         </nav>
       </div>
@@ -43,7 +43,7 @@ require dirname(__DIR__) . '/layouts/main.php';
   <div class="col-lg-9">
     <div class="card">
       <div class="card-header">
-        <h5 class="mb-0"><i class="ph-duotone ph-user-plus me-2 text-primary"></i>Crear Usuario</h5>
+        <h5 class="mb-0"><i class="ph-duotone ph-user-plus me-2 text-primary"></i><?= __('users.create_title') ?></h5>
       </div>
       <div class="card-body">
         <form action="<?= BASE_URL ?>/users/store" method="POST" enctype="multipart/form-data" novalidate>
@@ -61,7 +61,7 @@ require dirname(__DIR__) . '/layouts/main.php';
                    style="width:90px;height:90px;object-fit:cover;">
             </div>
             <label for="profile_image" class="form-label fw-semibold d-block">
-              Foto de Perfil <span class="text-muted small fw-normal">(JPG, PNG o WEBP — máx. 2 MB, opcional)</span>
+              <?= __('profile.profile_image') ?> <span class="text-muted small fw-normal">(<?= __('users.image_hint') ?>)</span>
             </label>
             <input type="file"
                    name="profile_image"
@@ -76,21 +76,21 @@ require dirname(__DIR__) . '/layouts/main.php';
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="nombres" class="form-label fw-semibold">Nombres <span class="text-danger">*</span></label>
+              <label for="nombres" class="form-label fw-semibold"><?= __('users.first_names') ?> <span class="text-danger">*</span></label>
               <input type="text" name="nombres" id="nombres"
                      class="form-control <?= isset($errors['nombres']) ? 'is-invalid' : '' ?>"
                      value="<?= htmlspecialchars($old['nombres'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                     maxlength="100" required placeholder="Nombres">
+                     maxlength="100" required placeholder="<?= __('users.first_names') ?>">
               <?php if (isset($errors['nombres'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['nombres'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="apellidos" class="form-label fw-semibold">Apellidos <span class="text-danger">*</span></label>
+              <label for="apellidos" class="form-label fw-semibold"><?= __('users.last_names') ?> <span class="text-danger">*</span></label>
               <input type="text" name="apellidos" id="apellidos"
                      class="form-control <?= isset($errors['apellidos']) ? 'is-invalid' : '' ?>"
                      value="<?= htmlspecialchars($old['apellidos'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                     maxlength="100" required placeholder="Apellidos">
+                     maxlength="100" required placeholder="<?= __('users.last_names') ?>">
               <?php if (isset($errors['apellidos'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['apellidos'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
@@ -98,13 +98,13 @@ require dirname(__DIR__) . '/layouts/main.php';
           </div>
 
           <div class="mb-3">
-            <label for="email" class="form-label fw-semibold">Correo Electrónico <span class="text-danger">*</span></label>
+            <label for="email" class="form-label fw-semibold"><?= __('users.email') ?> <span class="text-danger">*</span></label>
             <div class="input-group">
               <span class="input-group-text"><i data-feather="mail"></i></span>
               <input type="email" name="email" id="email"
                      class="form-control <?= isset($errors['email']) ? 'is-invalid' : '' ?>"
                      value="<?= htmlspecialchars($old['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                     required placeholder="correo@ejemplo.com" autocomplete="off">
+                     required placeholder="<?= __('auth.email_placeholder') ?>" autocomplete="off">
               <?php if (isset($errors['email'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['email'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
@@ -113,10 +113,10 @@ require dirname(__DIR__) . '/layouts/main.php';
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="password" class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
+              <label for="password" class="form-label fw-semibold"><?= __('users.password') ?> <span class="text-danger">*</span></label>
               <input type="password" name="password" id="password"
                      class="form-control <?= isset($errors['password']) ? 'is-invalid' : '' ?>"
-                     required placeholder="Mínimo 10 caracteres" autocomplete="new-password">
+                     required placeholder="<?= __('account.pwd_placeholder') ?>" autocomplete="new-password">
               <?php if (isset($errors['password'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['password'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
@@ -134,19 +134,19 @@ $_cSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
                    data-number="<?= $_cNumber ? '1' : '0' ?>"
                    data-special="<?= $_cSpecial ? '1' : '0' ?>">
                 <div id="req-length" class="text-muted">
-                  <i class="ph-duotone ph-circle me-1"></i>Mínimo <?= $_cMinLen ?> caracteres
+                  <i class="ph-duotone ph-circle me-1"></i><?= __('password.min_chars', ['min' => $_cMinLen]) ?>
                 </div>
-                <?php if ($_cUpper): ?><div id="req-upper" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos una mayúscula</div><?php endif; ?>
-                <?php if ($_cLower): ?><div id="req-lower" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos una minúscula</div><?php endif; ?>
-                <?php if ($_cNumber): ?><div id="req-number" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos un número</div><?php endif; ?>
-                <?php if ($_cSpecial): ?><div id="req-special" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos un carácter especial</div><?php endif; ?>
+                <?php if ($_cUpper): ?><div id="req-upper" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.uppercase') ?></div><?php endif; ?>
+                <?php if ($_cLower): ?><div id="req-lower" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.lowercase') ?></div><?php endif; ?>
+                <?php if ($_cNumber): ?><div id="req-number" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.number') ?></div><?php endif; ?>
+                <?php if ($_cSpecial): ?><div id="req-special" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.special') ?></div><?php endif; ?>
               </div>
             </div>
             <div class="col-md-6 mb-3">
-              <label for="password_confirmation" class="form-label fw-semibold">Confirmar Contraseña <span class="text-danger">*</span></label>
+              <label for="password_confirmation" class="form-label fw-semibold"><?= __('users.confirm_password') ?> <span class="text-danger">*</span></label>
               <input type="password" name="password_confirmation" id="password_confirmation"
                      class="form-control <?= isset($errors['password_confirmation']) ? 'is-invalid' : '' ?>"
-                     required placeholder="Repetir contraseña" autocomplete="new-password">
+                     required placeholder="<?= __('users.confirm_password_placeholder') ?>" autocomplete="new-password">
               <?php if (isset($errors['password_confirmation'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['password_confirmation'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
@@ -155,13 +155,13 @@ $_cSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
           </div>
 
           <div class="mb-3">
-            <label for="telefono" class="form-label fw-semibold">Teléfono</label>
+            <label for="telefono" class="form-label fw-semibold"><?= __('users.phone') ?></label>
             <div class="input-group">
               <span class="input-group-text"><i data-feather="phone"></i></span>
               <input type="text" name="telefono" id="telefono"
                      class="form-control <?= isset($errors['telefono']) ? 'is-invalid' : '' ?>"
                      value="<?= htmlspecialchars($old['telefono'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                     maxlength="25" placeholder="Ej: +503 7000-0000">
+                     maxlength="25" placeholder="<?= __('profile.phone_placeholder') ?>">
               <?php if (isset($errors['telefono'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['telefono'], ENT_QUOTES, 'UTF-8') ?></div>
               <?php endif; ?>
@@ -169,11 +169,11 @@ $_cSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
           </div>
 
           <div class="mb-3">
-            <label for="direccion" class="form-label fw-semibold">Dirección</label>
+            <label for="direccion" class="form-label fw-semibold"><?= __('users.address') ?></label>
             <textarea name="direccion" id="direccion"
                       class="form-control <?= isset($errors['direccion']) ? 'is-invalid' : '' ?>"
                       rows="2" maxlength="255"
-                      placeholder="Dirección completa"><?= htmlspecialchars($old['direccion'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                      placeholder="<?= __('profile.address_placeholder') ?>"><?= htmlspecialchars($old['direccion'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
             <?php if (isset($errors['direccion'])): ?>
               <div class="invalid-feedback"><?= htmlspecialchars($errors['direccion'], ENT_QUOTES, 'UTF-8') ?></div>
             <?php endif; ?>
@@ -181,11 +181,11 @@ $_cSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
 
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label for="role_id" class="form-label fw-semibold">Rol <span class="text-danger">*</span></label>
+              <label for="role_id" class="form-label fw-semibold"><?= __('users.role') ?> <span class="text-danger">*</span></label>
               <select name="role_id" id="role_id"
                       class="form-select select2 <?= isset($errors['role_id']) ? 'is-invalid' : '' ?>"
                       required>
-                <option value="">— Seleccionar rol —</option>
+                <option value=""><?= __('users.select_role') ?></option>
                 <?php foreach ($roles as $role): ?>
                   <option value="<?= (int)$role['id'] ?>"
                     <?= ($old['role_id'] ?? '') == $role['id'] ? 'selected' : '' ?>>
@@ -198,11 +198,11 @@ $_cSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
               <?php endif; ?>
             </div>
             <div class="col-md-6 mb-4">
-              <label for="status_id" class="form-label fw-semibold">Estado <span class="text-danger">*</span></label>
+              <label for="status_id" class="form-label fw-semibold"><?= __('users.status') ?> <span class="text-danger">*</span></label>
               <select name="status_id" id="status_id"
                       class="form-select select2 <?= isset($errors['status_id']) ? 'is-invalid' : '' ?>"
                       required>
-                <option value="">— Seleccionar estado —</option>
+                <option value=""><?= __('users.select_status') ?></option>
                 <?php foreach ($statuses as $status): ?>
                   <option value="<?= (int)$status['id'] ?>"
                     <?= ($old['status_id'] ?? 1) == $status['id'] ? 'selected' : '' ?>>
@@ -230,10 +230,10 @@ $_cSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">
-              <i class="ph-duotone ph-user-plus me-1"></i> Crear Usuario
+              <i class="ph-duotone ph-user-plus me-1"></i> <?= __('users.create_title') ?>
             </button>
             <a href="<?= BASE_URL ?>/users" class="btn btn-outline-secondary">
-              <i class="ph-duotone ph-x me-1"></i> Cancelar
+              <i class="ph-duotone ph-x me-1"></i> <?= __('buttons.cancel') ?>
             </a>
           </div>
         </form>

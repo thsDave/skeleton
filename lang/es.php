@@ -95,6 +95,9 @@ return [
     'profile.lastnames_placeholder' => 'Tus apellidos',
     'profile.select_language'   => '— Seleccionar idioma —',
     'profile.preferences_updated' => 'Preferencias actualizadas correctamente.',
+    'profile.invalid_language'  => 'El idioma seleccionado no es válido.',
+    'profile.updated_ok'        => 'Perfil actualizado correctamente.',
+    'profile.update_error'      => 'No se pudo actualizar el perfil. Intenta de nuevo.',
 
     // ── Cuenta ──────────────────────────────────────────────────────────────────
     'account.title'             => 'Mi Cuenta',
@@ -122,6 +125,7 @@ return [
     'account.active_status'     => 'Activa',
     'account.email_updated'     => 'Correo electrónico actualizado correctamente.',
     'account.pwd_updated'       => 'Contraseña actualizada correctamente.',
+    'account.current_password_incorrect' => 'La contraseña actual es incorrecta.',
     'account.email_placeholder' => 'nuevo@correo.com',
     'account.pwd_placeholder'   => 'Mínimo 10 caracteres',
     'account.confirm_placeholder'=> 'Repite la nueva contraseña',
@@ -222,7 +226,15 @@ return [
     'permissions.users.unlock'  => 'Desbloquear Usuario',
     'users.last_admin'          => 'No se puede inactivar al último administrador activo.',
     'users.own_account'         => 'No puedes inactivar tu propia cuenta.',
+    'users.create_error'        => 'No se pudo crear el usuario. Intenta de nuevo.',
+    'users.inactivate_error'    => 'No se pudo inactivar el usuario.',
+    'users.confirm_password_placeholder' => 'Repetir contraseña',
+    'users.confirm_new_password_placeholder' => 'Repetir nueva contraseña',
     'users.invalid_role_status' => 'Rol o estado no válido.',
+    'users.invalid_role'        => 'El rol seleccionado no es válido.',
+    'users.invalid_status'      => 'El estado seleccionado no es válido.',
+    'users.email_in_use_other'  => 'Este correo ya está en uso por otro usuario.',
+    'users.update_error'        => 'No se pudo actualizar el usuario.',
     'users.create_title'        => 'Crear Usuario',
     'users.min_pwd'             => 'Mínimo 10 caracteres',
 
@@ -362,6 +374,7 @@ return [
 
     // ── Contraseña (validación visual) ──────────────────────────────────────────
     'password.min_length'        => 'Mínimo 10 caracteres',
+    'password.min_chars'         => 'Mínimo :min caracteres',
     'password.uppercase'         => 'Al menos una mayúscula',
     'password.lowercase'         => 'Al menos una minúscula',
     'password.number'            => 'Al menos un número',
@@ -450,6 +463,10 @@ return [
     'security.sessions.disabled'       => 'Bloqueo de sesión desactivado',
     'security.sessions.updated'        => 'Configuración de seguridad actualizada correctamente.',
     'security.sessions.enable_label'   => 'Activar bloqueo automático por inactividad',
+    'security.sessions.info_lock_activates'   => 'El bloqueo se activa tras el tiempo de inactividad configurado.',
+    'security.sessions.info_unlock_password'  => 'El usuario puede desbloquear la sesión ingresando su contraseña.',
+    'security.sessions.info_redirect_back'    => 'Tras desbloquear, el usuario es redirigido a la página donde estaba.',
+    'security.sessions.info_global_timeout'   => 'El timeout de sesión global (30 min) sigue activo independientemente.',
 
     // ── Menú – Seguridad ─────────────────────────────────────────────────────────
     'menu.security'                  => 'Seguridad',
@@ -1114,6 +1131,7 @@ return [
     'appearance.identity'                => 'Identidad visual',
     'appearance.app_display_name'        => 'Nombre visual del sistema',
     'appearance.app_tagline'             => 'Lema o descripción',
+    'appearance.app_tagline_placeholder' => 'Sistema MVC',
     'appearance.logo'                    => 'Logo del sistema',
     'appearance.no_logo'                 => 'Sin logo personalizado',
     'appearance.logo_hint'               => 'JPG, PNG o WEBP — máx. 2 MB',

@@ -2,7 +2,7 @@
 use Core\Session;
 use Core\CSRF;
 
-$pageTitle  = 'Cambiar Contraseña';
+$pageTitle  = __('account.change_password');
 $activeMenu = 'account';
 $errors     = Session::getFlash('errors', []);
 
@@ -14,15 +14,15 @@ require dirname(__DIR__) . '/layouts/main.php';
     <div class="row align-items-center g-0">
       <div class="col-sm-auto">
         <div class="page-header-title">
-          <h5 class="mb-0">Cambiar Contraseña</h5>
+          <h5 class="mb-0"><?= __('account.change_password') ?></h5>
         </div>
       </div>
       <div class="col-sm-auto ms-auto">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/account">Mi Cuenta</a></li>
-            <li class="breadcrumb-item active">Cambiar Contraseña</li>
+            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/dashboard"><?= __('common.home') ?></a></li>
+            <li class="breadcrumb-item"><a href="<?= BASE_URL ?>/account"><?= __('account.title') ?></a></li>
+            <li class="breadcrumb-item active"><?= __('account.change_password') ?></li>
           </ol>
         </nav>
       </div>
@@ -34,7 +34,7 @@ require dirname(__DIR__) . '/layouts/main.php';
   <div class="col-lg-6">
     <div class="card">
       <div class="card-header">
-        <h5 class="mb-0"><i class="ph-duotone ph-lock-key me-2 text-warning"></i>Cambiar Contraseña</h5>
+        <h5 class="mb-0"><i class="ph-duotone ph-lock-key me-2 text-warning"></i><?= __('account.change_password') ?></h5>
       </div>
       <div class="card-body">
         <form action="<?= BASE_URL ?>/account/update-password" method="POST" novalidate>
@@ -42,7 +42,7 @@ require dirname(__DIR__) . '/layouts/main.php';
 
           <div class="mb-3">
             <label for="current_password" class="form-label fw-semibold">
-              Contraseña actual <span class="text-danger">*</span>
+              <?= __('account.current_password') ?> <span class="text-danger">*</span>
             </label>
             <div class="input-group">
               <span class="input-group-text"><i data-feather="lock"></i></span>
@@ -53,7 +53,7 @@ require dirname(__DIR__) . '/layouts/main.php';
                 class="form-control <?= isset($errors['current_password']) ? 'is-invalid' : '' ?>"
                 required
                 autocomplete="current-password"
-                placeholder="Tu contraseña actual"
+                placeholder="<?= __('account.current_placeholder') ?>"
               />
               <?php if (isset($errors['current_password'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['current_password'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -63,7 +63,7 @@ require dirname(__DIR__) . '/layouts/main.php';
 
           <div class="mb-3">
             <label for="new_password" class="form-label fw-semibold">
-              Nueva contraseña <span class="text-danger">*</span>
+              <?= __('account.new_password') ?> <span class="text-danger">*</span>
             </label>
             <div class="input-group">
               <span class="input-group-text"><i data-feather="key"></i></span>
@@ -74,7 +74,7 @@ require dirname(__DIR__) . '/layouts/main.php';
                 class="form-control <?= isset($errors['new_password']) ? 'is-invalid' : '' ?>"
                 required
                 autocomplete="new-password"
-                placeholder="Mínimo 10 caracteres"
+                placeholder="<?= __('password.min_chars', ['min' => 10]) ?>"
               />
               <?php if (isset($errors['new_password'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['new_password'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -94,18 +94,18 @@ $_pSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
                  data-number="<?= $_pNumber ? '1' : '0' ?>"
                  data-special="<?= $_pSpecial ? '1' : '0' ?>">
               <div id="req-length" class="text-muted">
-                <i class="ph-duotone ph-circle me-1"></i>Mínimo <?= $_pMinLen ?> caracteres
+                <i class="ph-duotone ph-circle me-1"></i><?= __('password.min_chars', ['min' => $_pMinLen]) ?>
               </div>
-              <?php if ($_pUpper): ?><div id="req-upper" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos una mayúscula</div><?php endif; ?>
-              <?php if ($_pLower): ?><div id="req-lower" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos una minúscula</div><?php endif; ?>
-              <?php if ($_pNumber): ?><div id="req-number" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos un número</div><?php endif; ?>
-              <?php if ($_pSpecial): ?><div id="req-special" class="text-muted"><i class="ph-duotone ph-circle me-1"></i>Al menos un carácter especial</div><?php endif; ?>
+              <?php if ($_pUpper): ?><div id="req-upper" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.uppercase') ?></div><?php endif; ?>
+              <?php if ($_pLower): ?><div id="req-lower" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.lowercase') ?></div><?php endif; ?>
+              <?php if ($_pNumber): ?><div id="req-number" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.number') ?></div><?php endif; ?>
+              <?php if ($_pSpecial): ?><div id="req-special" class="text-muted"><i class="ph-duotone ph-circle me-1"></i><?= __('password.special') ?></div><?php endif; ?>
             </div>
           </div>
 
           <div class="mb-4">
             <label for="confirm_password" class="form-label fw-semibold">
-              Confirmar nueva contraseña <span class="text-danger">*</span>
+              <?= __('account.confirm_password') ?> <span class="text-danger">*</span>
             </label>
             <div class="input-group">
               <span class="input-group-text"><i data-feather="check-circle"></i></span>
@@ -116,7 +116,7 @@ $_pSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
                 class="form-control <?= isset($errors['confirm_password']) ? 'is-invalid' : '' ?>"
                 required
                 autocomplete="new-password"
-                placeholder="Repite la nueva contraseña"
+                placeholder="<?= __('account.confirm_placeholder') ?>"
               />
               <?php if (isset($errors['confirm_password'])): ?>
                 <div class="invalid-feedback"><?= htmlspecialchars($errors['confirm_password'], ENT_QUOTES, 'UTF-8') ?></div>
@@ -127,10 +127,10 @@ $_pSpecial = !empty($policyReqs['is_enabled']) && !empty($policyReqs['require_sp
 
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-warning">
-              <i class="ph-duotone ph-lock-key me-1"></i> Actualizar Contraseña
+              <i class="ph-duotone ph-lock-key me-1"></i> <?= __('buttons.update_password') ?>
             </button>
             <a href="<?= BASE_URL ?>/account" class="btn btn-outline-secondary">
-              <i class="ph-duotone ph-x me-1"></i> Cancelar
+              <i class="ph-duotone ph-x me-1"></i> <?= __('buttons.cancel') ?>
             </a>
           </div>
         </form>
